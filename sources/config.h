@@ -7,12 +7,14 @@
 
 constexpr auto LOG_LEVEL = spdlog::level::info;
 constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(100);
-constexpr auto FFT_THREADS = 8;
-constexpr auto NOISE_LEVEL = -7.0;
 constexpr auto MAX_SILENCE_TIME = std::chrono::milliseconds(1000);
+constexpr auto MIN_RECORDING_TIME = std::chrono::milliseconds(1000);
+constexpr auto NOISE_LEVEL = -7.0;
+constexpr auto MP3_SAMPLE_RATE = 48000;
+const auto MP3_OUTPUT_DIRECTORY = std::string(getenv("HOME")) + "/sdr_recordings/";
 
-constexpr auto RTL_SDR_GAIN = std::optional<int>(328);
-constexpr auto RTL_SDR_MAX_BUFFER_SIZE = 40960000;
+constexpr auto RTL_SDR_PPM = 0;
+constexpr auto RTL_SDR_GAIN = std::optional<int>(496);
 constexpr auto RTL_SDR_MAX_BANDWIDTH = 2800000;
 
 struct ConfigFrequencyRange {

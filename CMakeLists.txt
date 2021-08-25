@@ -23,8 +23,9 @@ TARGET_LINK_LIBRARIES(auto-sdr
     spdlog::spdlog
     rtlsdr
     Threads::Threads
-    fftw3
-    fftw3_threads
-    fftw3f
-    fftw3f_threads
+    liquid
+    sox
+    soxr
 )
+
+install(TARGETS auto-sdr DESTINATION)

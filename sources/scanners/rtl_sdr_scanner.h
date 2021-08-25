@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algorithms/fft.h>
+#include <algorithms/spectrogram.h>
 #include <config.h>
 
 #include <map>
@@ -30,5 +30,5 @@ class RtlSdrScanner {
   uint32_t m_lastBandwidth;
   std::vector<uint8_t> m_rawBuffer;
   std::vector<std::complex<float>> m_buffer;
-  std::map<uint32_t, std::unique_ptr<FFT>> m_fft;
+  std::map<uint32_t, std::unique_ptr<Spectrogram>> m_spectrogram;
 };

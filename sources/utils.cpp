@@ -3,6 +3,25 @@
 #include <algorithm>
 #include <stdexcept>
 
+std::string Frequency::toString() const {
+  char buf[1024];
+  const auto f1 = frequency / 1000000;
+  const auto f2 = (frequency / 1000) % 1000;
+  const auto f3 = frequency % 1000;
+  sprintf(buf, "frequency: %3d.%03d.%03d Hz", f1, f2, f3);
+  return std::string(buf);
+}
+
+std::string Signal::toString() const {
+  char buf[1024];
+  constexpr auto MIN_POWER = -30.0f;
+  constexpr auto MAX_POWER = 0.0f;
+  constexpr auto BAR_SIZE = 40;
+  const auto p = (std::min(std::max(power, MIN_POWER), MAX_POWER) - MIN_POWER) / (MAX_POWER - MIN_POWER) * BAR_SIZE;
+  sprintf(buf, "%s, power: %6.2f dB ", frequency.toString().c_str(), power);
+  return std::string(buf) + std::string(p, '#') + std::string(BAR_SIZE - p, '_');
+}
+
 uint32_t getSamplesCount(const uint32_t &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
     if (time.count() * sampleRate % 1000 != 0) {
@@ -33,3 +52,27 @@ Signal detectBestSignal(const std::vector<Signal> &signals) {
 }
 
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
+
+void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, uint32_t sampleRate, uint32_t samplesCount) {
+  const auto f = static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate);
+  for (int i = 0; i < samplesCount; ++i) {
+    samples[i] = samples[i] * std::exp(std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * f * static_cast<float>(i));
+  }
+}
+
+std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const ConfigFrequencyRange &configFrequencyRange) {
+  auto f = [&configFrequencyRange](const Signal &signal) {
+    const auto f = signal.frequency.frequency;
+    for (const auto &configIgnoredFrequencyRange : IGNORED_FREQUENCIES) {
+      if (configIgnoredFrequencyRange.start <= f && f <= configIgnoredFrequencyRange.stop) {
+        return false;
+      }
+    }
+    return configFrequencyRange.start <= f && f <= configFrequencyRange.stop;
+  };
+  std::vector<Signal> results;
+  std::copy_if(signals.begin(), signals.end(), std::back_inserter(results), f);
+  return results;
+}
+
+liquid_float_complex *toLiquidComplext(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
