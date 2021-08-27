@@ -1,0 +1,46 @@
+#include "help_structures.h"
+
+std::string Frequency::toString(const std::string label) const {
+  char buf[1024];
+  const auto f1 = value / 1000000;
+  const auto f2 = (value / 1000) % 1000;
+  const auto f3 = value % 1000;
+  if (label.empty()) {
+    sprintf(buf, "frequency: %3d.%03d.%03d Hz", f1, f2, f3);
+  } else {
+    sprintf(buf, "%s: %3d.%03d.%03d Hz", label.c_str(), f1, f2, f3);
+  }
+  return std::string(buf);
+}
+
+std::string Power::toString() const {
+  constexpr auto MIN_POWER = -30.0f;
+  constexpr auto MAX_POWER = 0.0f;
+  constexpr auto BAR_SIZE = 40;
+
+  const auto p = (std::min(std::max(value, MIN_POWER), MAX_POWER) - MIN_POWER) / (MAX_POWER - MIN_POWER) * BAR_SIZE;
+  char buf[1024];
+  sprintf(buf, "power: %6.2f dB ", value);
+  return std::string(buf) + std::string(p, '#') + std::string(BAR_SIZE - p, '_');
+}
+
+std::string Signal::toString() const { return frequency.toString() + ", " + power.toString(); }
+
+std::string FrequencyRange::toString() const {
+  char buf[1024];
+  Frequency b({bandwidth()});
+  sprintf(buf, "%s, %s, %s, %s", start.toString("start").c_str(), stop.toString("stop").c_str(), step.toString("step").c_str(), b.toString("bandwidth").c_str());
+  return std::string(buf);
+}
+
+uint32_t FrequencyRange::center() const { return (start.value + stop.value) / 2; }
+
+uint32_t FrequencyRange::bandwidth() const {
+  uint32_t range = 1;
+  while (step.value * range < stop.value - start.value) {
+    range = range << 1;
+  }
+  return step.value * range;
+}
+
+uint32_t FrequencyRange::fftSize() const { return bandwidth() / step.value; }

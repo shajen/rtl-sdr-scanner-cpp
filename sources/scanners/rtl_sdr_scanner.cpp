@@ -5,9 +5,9 @@
 #include <scanners/recorder.h>
 #include <utils.h>
 
-using StreamCallbackData = std::tuple<RtlSdrScanner*, Recorder*, const ConfigFrequencyRange*>;
+using StreamCallbackData = std::tuple<RtlSdrScanner*, Recorder*, const FrequencyRange*>;
 
-RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std::vector<ConfigFrequencyRange>& configFrequencies, const std::vector<ConfigFrequencyRange>& ignoredConfigFrequencies)
+RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std::vector<FrequencyRange>& configFrequencyRanges, const std::vector<FrequencyRange>& ignoredConfigFrequencies)
     : m_deviceIndex(deviceIndex), m_isRunning(true) {
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
@@ -34,9 +34,23 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
     throw std::runtime_error("can not set tuner ppm");
   }
 
-  uint32_t maxSamples = 0;
+  Logger::logger()->info("original frequency ranges: {}", configFrequencyRanges.size());
+  for (const auto& frequencyRange : configFrequencyRanges) {
+    Logger::logger()->info("frequency range: {}", frequencyRange.toString());
+  }
 
-  for (const auto& frequencyRange : configFrequencies) {
+  const auto splittedFrequencyRanges = splitFrequencyRanges(configFrequencyRanges);
+  Logger::logger()->info("splitted frequency ranges: {}", splittedFrequencyRanges.size());
+  for (const auto& frequencyRange : splittedFrequencyRanges) {
+    Logger::logger()->info("frequency range: {}", frequencyRange.toString());
+  }
+
+  if (splittedFrequencyRanges.empty()) {
+    throw std::runtime_error("empty frequency ranges");
+  }
+
+  uint32_t maxSamples = 0;
+  for (const auto& frequencyRange : splittedFrequencyRanges) {
     maxSamples = std::max(maxSamples, getSamplesCount(frequencyRange.bandwidth(), RANGE_SCANNING_TIME));
     const auto SpectrogramSize = frequencyRange.fftSize();
     if (m_spectrogram.count(SpectrogramSize) == 0) {
@@ -46,12 +60,17 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
   m_rawBuffer.resize(maxSamples);
   m_buffer.resize(maxSamples / 2);
 
-  m_thread = std::make_unique<std::thread>([this, &configFrequencies]() {
-    while (m_isRunning) {
-      for (const auto& frequencyRange : configFrequencies) {
-        readSamples(frequencyRange);
+  m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
+    try {
+      while (m_isRunning) {
+        for (const auto& frequencyRange : splittedFrequencyRanges) {
+          readSamples(frequencyRange);
+        }
       }
+    } catch (const std::exception& exception) {
+      Logger::logger()->error("rtl sdr scanner exception: {}", exception.what());
     }
+    m_isRunning = false;
   });
 }
 
@@ -65,7 +84,9 @@ RtlSdrScanner::~RtlSdrScanner() {
   rtlsdr_close(m_device);
 }
 
-void RtlSdrScanner::readSamples(const ConfigFrequencyRange& frequencyRange) {
+bool RtlSdrScanner::isRunning() const { return m_isRunning; }
+
+void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   std::unique_lock<std::mutex> lock(m_mutex);
 
   const auto centerFrequency = frequencyRange.center();
@@ -116,7 +137,7 @@ void RtlSdrScanner::readSamples(const ConfigFrequencyRange& frequencyRange) {
         StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
         RtlSdrScanner* scanner = std::get<0>(*data);
         Recorder* recorder = std::get<1>(*data);
-        const ConfigFrequencyRange* frequencyRange = std::get<2>(*data);
+        const FrequencyRange* frequencyRange = std::get<2>(*data);
 
         unsigned_to_complex(buf, scanner->m_buffer, len / 2);
         const auto& allSignals = scanner->m_spectrogram[frequencyRange->fftSize()]->psd(frequencyRange->center(), frequencyRange->bandwidth(), scanner->m_buffer, len / 2);

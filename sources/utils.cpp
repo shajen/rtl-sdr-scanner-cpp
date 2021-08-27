@@ -6,25 +6,6 @@
 #include <numeric>
 #include <stdexcept>
 
-std::string Frequency::toString() const {
-  char buf[1024];
-  const auto f1 = frequency / 1000000;
-  const auto f2 = (frequency / 1000) % 1000;
-  const auto f3 = frequency % 1000;
-  sprintf(buf, "frequency: %3d.%03d.%03d Hz", f1, f2, f3);
-  return std::string(buf);
-}
-
-std::string Signal::toString() const {
-  char buf[1024];
-  constexpr auto MIN_POWER = -30.0f;
-  constexpr auto MAX_POWER = 0.0f;
-  constexpr auto BAR_SIZE = 40;
-  const auto p = (std::min(std::max(power, MIN_POWER), MAX_POWER) - MIN_POWER) / (MAX_POWER - MIN_POWER) * BAR_SIZE;
-  sprintf(buf, "%s, power: %6.2f dB ", frequency.toString().c_str(), power);
-  return std::string(buf) + std::string(p, '#') + std::string(BAR_SIZE - p, '_');
-}
-
 uint32_t getSamplesCount(const uint32_t &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
     if (time.count() * sampleRate % 1000 != 0) {
@@ -51,25 +32,25 @@ void unsigned_to_complex(const uint8_t *rawBuffer, std::vector<std::complex<floa
 }
 
 Signal selectMaxSignal(const std::vector<Signal> &signals) {
-  return *std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power < s2.power; });
+  return *std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
 }
 
 std::optional<Signal> detectBestSignal(const std::vector<Signal> &signals) {
-  const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power; });
+  const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power.value; });
   const auto mean = sum / signals.size();
 
-  const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power - mean, 2); });
+  const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power.value - mean, 2); });
   const auto standardDeviation = sqrt(sum2 / signals.size());
   Logger::logger()->trace("mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
 
-  auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power < s2.power; });
+  auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
   const auto range = static_cast<uint32_t>(signals.size() >> 10);
   for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
     Logger::logger()->trace(signals[i].toString());
   }
   for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
-    if (signals[i].power < mean + standardDeviation) {
+    if (signals[i].power.value < mean + standardDeviation) {
       return std::nullopt;
     }
   }
@@ -85,15 +66,15 @@ void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, 
   }
 }
 
-std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const ConfigFrequencyRange &configFrequencyRange) {
-  auto f = [&configFrequencyRange](const Signal &signal) {
-    const auto f = signal.frequency.frequency;
+std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const FrequencyRange &FrequencyRange) {
+  auto f = [&FrequencyRange](const Signal &signal) {
+    const auto f = signal.frequency.value;
     for (const auto &configIgnoredFrequencyRange : IGNORED_FREQUENCIES) {
-      if (configIgnoredFrequencyRange.start <= f && f <= configIgnoredFrequencyRange.stop) {
+      if (configIgnoredFrequencyRange.start.value <= f && f <= configIgnoredFrequencyRange.stop.value) {
         return false;
       }
     }
-    return configFrequencyRange.start <= f && f <= configFrequencyRange.stop;
+    return FrequencyRange.start.value <= f && f <= FrequencyRange.stop.value;
   };
   std::vector<Signal> results;
   std::copy_if(signals.begin(), signals.end(), std::back_inserter(results), f);
@@ -101,3 +82,25 @@ std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const Conf
 }
 
 liquid_float_complex *toLiquidComplext(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
+
+std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRange> &frequencyRanges) {
+  std::vector<FrequencyRange> result;
+  for (const auto &frequencyRange : frequencyRanges) {
+    if (frequencyRange.bandwidth() <= RTL_SDR_MAX_BANDWIDTH) {
+      result.push_back(frequencyRange);
+    } else {
+      uint32_t range = 1;
+      while (frequencyRange.step.value * range * 2 < RTL_SDR_MAX_BANDWIDTH) {
+        range = range << 1;
+      }
+      const auto bandwidth = range * frequencyRange.step.value;
+      const auto factor = std::floor(log10(bandwidth));
+      const auto base = static_cast<uint32_t>(pow(10, factor));
+      const auto max = (bandwidth / base) * base;
+      for (uint32_t start = frequencyRange.start.value; start < frequencyRange.stop.value; start += max) {
+        result.push_back({start, start + max, frequencyRange.step.value});
+      }
+    }
+  }
+  return result;
+}

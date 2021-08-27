@@ -33,7 +33,7 @@ void Recorder::appendSamples(const Signal& bestSignal, bool active, std::vector<
   m_lastDataTime = time();
   if (active) {
     m_lastActiveDataTime = time();
-    m_frequency[bestSignal.frequency.frequency]++;
+    m_frequency[bestSignal.frequency.value]++;
     for (const auto& noisedSample : m_noisedSamples) {
       m_samples.push_back(noisedSample);
     }
@@ -61,7 +61,7 @@ void Recorder::processSamples() {
   const auto duration = (m_lastDataTime - m_startDataTime).count() / 1000.0;
   const auto bestFrequency = getBestFrequency();
   Logger::logger()->debug("processing partial recording, time: {:.2f} s, best {}", duration, bestFrequency.toString());
-  shift(m_samples, m_centerFrequency - bestFrequency.frequency, m_sampleRate, m_samples.size());
+  shift(m_samples, m_centerFrequency - bestFrequency.value, m_sampleRate, m_samples.size());
 
   std::vector<std::complex<float>> downSamples;
   if (m_lastSample.has_value()) {
