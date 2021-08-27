@@ -1,6 +1,7 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <numeric>
 #include <stdexcept>
 
 std::string Frequency::toString() const {
@@ -47,8 +48,30 @@ void unsigned_to_complex(const uint8_t *rawBuffer, std::vector<std::complex<floa
   }
 }
 
-Signal detectBestSignal(const std::vector<Signal> &signals) {
+Signal selectMaxSignal(const std::vector<Signal> &signals) {
   return *std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power < s2.power; });
+}
+
+std::optional<Signal> detectBestSignal(const std::vector<Signal> &signals) {
+  const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power; });
+  const auto mean = sum / signals.size();
+
+  const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power - mean, 2); });
+  const auto standardDeviation = sqrt(sum2 / signals.size());
+  spdlog::trace("mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
+
+  auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power < s2.power; });
+  const auto index = std::distance(signals.begin(), max);
+  const auto range = static_cast<uint32_t>(signals.size() >> 10);
+  for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
+    spdlog::trace(signals[i].toString());
+  }
+  for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
+    if (signals[i].power < mean + standardDeviation) {
+      return std::nullopt;
+    }
+  }
+  return *max;
 }
 
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }

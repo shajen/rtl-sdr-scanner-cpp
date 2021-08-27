@@ -9,7 +9,6 @@ constexpr auto LOG_LEVEL = spdlog::level::info;
 constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(100);
 constexpr auto MAX_SILENCE_TIME = std::chrono::milliseconds(1000);
 constexpr auto MIN_RECORDING_TIME = std::chrono::milliseconds(1000);
-constexpr auto NOISE_LEVEL = -7.0;
 constexpr auto MP3_SAMPLE_RATE = 48000;
 const auto MP3_OUTPUT_DIRECTORY = std::string(getenv("HOME")) + "/sdr_recordings/";
 

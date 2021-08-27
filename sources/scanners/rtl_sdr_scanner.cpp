@@ -107,10 +107,11 @@ void RtlSdrScanner::readSamples(const ConfigFrequencyRange& frequencyRange) {
     spdlog::debug("read bytes: {}", samples);
     const auto& allSignals = m_spectrogram[SpectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
     const auto signals = filterSignals(allSignals, frequencyRange);
+    const auto maxSignal = selectMaxSignal(signals);
+    spdlog::debug("max signal, {}", maxSignal.toString());
     const auto bestSignal = detectBestSignal(signals);
-    spdlog::debug("best signal, {}", bestSignal.toString());
-    if (bestSignal.power >= NOISE_LEVEL) {
-      spdlog::info("best signal, {}", bestSignal.toString());
+    if (bestSignal.has_value()) {
+      spdlog::info("detected signal, {}", bestSignal->toString());
       auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
         spdlog::debug("read bytes: {}", len);
         StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
@@ -121,16 +122,17 @@ void RtlSdrScanner::readSamples(const ConfigFrequencyRange& frequencyRange) {
         unsigned_to_complex(buf, scanner->m_buffer, len / 2);
         const auto& allSignals = scanner->m_spectrogram[frequencyRange->SpectrogramSize()]->psd(frequencyRange->center(), frequencyRange->bandwidth(), scanner->m_buffer, len / 2);
         const auto signals = filterSignals(allSignals, *frequencyRange);
+        const auto maxSignal = selectMaxSignal(signals);
+        spdlog::debug("max signal, {}", maxSignal.toString());
         const auto bestSignal = detectBestSignal(signals);
-        spdlog::debug("best signal, {}", bestSignal.toString());
-        recorder->appendSamples(bestSignal, bestSignal.power >= NOISE_LEVEL, scanner->m_buffer, len / 2);
+        recorder->appendSamples(maxSignal, bestSignal.has_value(), scanner->m_buffer, len / 2);
         if (recorder->isFinished() || !scanner->m_isRunning) {
           spdlog::info("stop stream");
           rtlsdr_cancel_async(scanner->m_device);
         }
       };
       spdlog::info("start stream");
-      Recorder recorder(bestSignal, centerFrequency, bandwidth, sampleRate, *m_spectrogram[SpectrogramSize]);
+      Recorder recorder(bestSignal.value(), centerFrequency, bandwidth, sampleRate, *m_spectrogram[SpectrogramSize]);
       StreamCallbackData data({this, &recorder, &frequencyRange});
       rtlsdr_read_async(m_device, f, &data, 0, samples);
     }
