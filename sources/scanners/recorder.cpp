@@ -1,8 +1,8 @@
 #include "recorder.h"
 
 #include <config.h>
+#include <logger.h>
 #include <math.h>
-#include <spdlog/spdlog.h>
 
 #include <map>
 
@@ -25,7 +25,7 @@ Recorder::~Recorder() {
   processSamples();
   iirdecim_crcf_destroy(m_decimator);
   freqdem_destroy(m_fmDemodulator);
-  spdlog::debug("close recording");
+  Logger::logger()->debug("close recording");
 }
 
 void Recorder::appendSamples(const Signal& bestSignal, bool active, std::vector<std::complex<float>>& buffer, const uint32_t samples) {
@@ -60,7 +60,7 @@ void Recorder::processSamples() {
   }
   const auto duration = (m_lastDataTime - m_startDataTime).count() / 1000.0;
   const auto bestFrequency = getBestFrequency();
-  spdlog::debug("processing partial recording, time: {:.2f} s, best {}", duration, bestFrequency.toString());
+  Logger::logger()->debug("processing partial recording, time: {:.2f} s, best {}", duration, bestFrequency.toString());
   shift(m_samples, m_centerFrequency - bestFrequency.frequency, m_sampleRate, m_samples.size());
 
   std::vector<std::complex<float>> downSamples;
@@ -80,7 +80,7 @@ void Recorder::processSamples() {
 
   m_lastSample = downSamples.back();
   m_samples.clear();
-  spdlog::debug("finish partial processing recording");
+  Logger::logger()->debug("finish partial processing recording");
 }
 
 Frequency Recorder::getBestFrequency() const {

@@ -1,6 +1,10 @@
 #include "spectrogram.h"
 
-Spectrogram::Spectrogram(uint32_t size) : m_size(size), m_buffer(size), m_signals(size), m_spectrogram(spgramcf_create_default(size)) {}
+#include <logger.h>
+
+Spectrogram::Spectrogram(uint32_t size) : m_size(size), m_buffer(size), m_signals(size), m_spectrogram(spgramcf_create_default(size)) {
+  Logger::logger()->info("creating spectrogram with size: {}", size);
+}
 
 Spectrogram::~Spectrogram() { spgramcf_destroy(m_spectrogram); }
 

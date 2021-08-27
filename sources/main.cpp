@@ -1,16 +1,15 @@
 #include <algorithms/spectrogram.h>
 #include <config.h>
+#include <logger.h>
 #include <scanners/rtl_sdr_scanner.h>
 #include <signal.h>
-#include <spdlog/spdlog.h>
 
 volatile bool isRunning{true};
 
 void handler(int) { isRunning = false; }
 
 int main() {
-  spdlog::set_level(LOG_LEVEL);
-  spdlog::info("start auto SDR");
+  Logger::logger()->info("start app auto-sdr");
 
   std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
   for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {
@@ -18,7 +17,7 @@ int main() {
   }
 
   if (scanners.empty()) {
-    spdlog::warn("not found RtlSdr devices");
+    Logger::logger()->warn("not found RtlSdr devices");
   } else {
     signal(SIGINT, handler);
     while (isRunning) {
@@ -26,6 +25,6 @@ int main() {
     }
   }
 
-  spdlog::info("stop auto SDR");
+  Logger::logger()->info("stop app auto-sdr");
   return 0;
 }

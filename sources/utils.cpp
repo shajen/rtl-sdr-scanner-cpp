@@ -1,5 +1,7 @@
 #include "utils.h"
 
+#include <logger.h>
+
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
@@ -58,13 +60,13 @@ std::optional<Signal> detectBestSignal(const std::vector<Signal> &signals) {
 
   const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power - mean, 2); });
   const auto standardDeviation = sqrt(sum2 / signals.size());
-  spdlog::trace("mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
+  Logger::logger()->trace("mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
 
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power < s2.power; });
   const auto index = std::distance(signals.begin(), max);
   const auto range = static_cast<uint32_t>(signals.size() >> 10);
   for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
-    spdlog::trace(signals[i].toString());
+    Logger::logger()->trace(signals[i].toString());
   }
   for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
     if (signals[i].power < mean + standardDeviation) {
