@@ -2,3 +2,5 @@ CMakeLists.txt.user
 build
 *.wav
 todo.txt
+sync.sh
+.bash_history

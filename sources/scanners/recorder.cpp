@@ -9,13 +9,13 @@
 constexpr auto DOWNSAMPLE = 10;
 constexpr auto DOWNSAMPLE_FILTER_LENGTH = 10;
 
-Recorder::Recorder(Signal signal, uint32_t centerFrequency, uint32_t bandwidth, uint32_t sampleRate, Spectrogram& Spectrogram)
+Recorder::Recorder(Signal signal, Frequency centerFrequency, Frequency bandwidth, Frequency sampleRate, Spectrogram& Spectrogram)
     : m_centerFrequency(centerFrequency),
       m_bandwidth(bandwidth),
       m_sampleRate(sampleRate),
       m_spectrogram(Spectrogram),
       m_fmDemodulator(freqdem_create(0.5f)),
-      m_Mp3Writer(signal.frequency, sampleRate / DOWNSAMPLE),
+      m_Mp3Writer(signal.frequency, {sampleRate.value / DOWNSAMPLE}),
       m_decimator(iirdecim_crcf_create_default(DOWNSAMPLE, DOWNSAMPLE_FILTER_LENGTH)),
       m_startDataTime(time()),
       m_lastActiveDataTime(time()),
@@ -47,7 +47,7 @@ void Recorder::appendSamples(const Signal& bestSignal, bool active, std::vector<
     }
   }
 
-  if (m_sampleRate <= m_samples.size()) {
+  if (m_sampleRate.value <= m_samples.size()) {
     processSamples();
   }
 }
@@ -61,7 +61,7 @@ void Recorder::processSamples() {
   const auto duration = (m_lastDataTime - m_startDataTime).count() / 1000.0;
   const auto bestFrequency = getBestFrequency();
   Logger::logger()->debug("processing partial recording, time: {:.2f} s, best {}", duration, bestFrequency.toString());
-  shift(m_samples, m_centerFrequency - bestFrequency.value, m_sampleRate, m_samples.size());
+  shift(m_samples, m_centerFrequency.value - bestFrequency.value, m_sampleRate, m_samples.size());
 
   std::vector<std::complex<float>> downSamples;
   if (m_lastSample.has_value()) {

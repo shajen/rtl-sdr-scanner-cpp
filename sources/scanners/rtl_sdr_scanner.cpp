@@ -36,13 +36,13 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
 
   Logger::logger()->info("original frequency ranges: {}", configFrequencyRanges.size());
   for (const auto& frequencyRange : configFrequencyRanges) {
-    Logger::logger()->info("frequency range: {}", frequencyRange.toString());
+    Logger::logger()->info("frequency range, {}", frequencyRange.toString());
   }
 
   const auto splittedFrequencyRanges = splitFrequencyRanges(configFrequencyRanges);
   Logger::logger()->info("splitted frequency ranges: {}", splittedFrequencyRanges.size());
   for (const auto& frequencyRange : splittedFrequencyRanges) {
-    Logger::logger()->info("frequency range: {}", frequencyRange.toString());
+    Logger::logger()->info("frequency range, {}", frequencyRange.toString());
   }
 
   if (splittedFrequencyRanges.empty()) {
@@ -95,22 +95,22 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   const auto samples = getSamplesCount(sampleRate, RANGE_SCANNING_TIME);
   const auto SpectrogramSize = frequencyRange.fftSize();
 
-  if (m_lastBandwidth != bandwidth) {
-    Logger::logger()->debug("set bandwidth: {} Hz", bandwidth);
-    if (rtlsdr_set_tuner_bandwidth(m_device, bandwidth) != 0) {
+  if (m_lastBandwidth.value != bandwidth.value) {
+    Logger::logger()->debug("set {}", bandwidth.toString("bandwidth"));
+    if (rtlsdr_set_tuner_bandwidth(m_device, bandwidth.value) != 0) {
       throw std::runtime_error("set bandwidth error");
     }
     m_lastBandwidth = bandwidth;
   }
-  if (rtlsdr_get_sample_rate(m_device) != sampleRate) {
-    Logger::logger()->debug("set sample rate: {} Hz", sampleRate);
-    if (rtlsdr_set_sample_rate(m_device, sampleRate) != 0) {
+  if (rtlsdr_get_sample_rate(m_device) != sampleRate.value) {
+    Logger::logger()->debug("set {}", sampleRate.toString("sample rate"));
+    if (rtlsdr_set_sample_rate(m_device, sampleRate.value) != 0) {
       throw std::runtime_error("set sample rate error");
     }
   }
-  if (rtlsdr_get_center_freq(m_device) != centerFrequency) {
-    Logger::logger()->debug("set center frequency: {} Hz", centerFrequency);
-    if (rtlsdr_set_center_freq(m_device, centerFrequency) != 0) {
+  if (rtlsdr_get_center_freq(m_device) != centerFrequency.value) {
+    Logger::logger()->debug("set {}", centerFrequency.toString("center frequency"));
+    if (rtlsdr_set_center_freq(m_device, centerFrequency.value) != 0) {
       throw std::runtime_error("set center frequency error");
     }
     rtlsdr_reset_buffer(m_device);

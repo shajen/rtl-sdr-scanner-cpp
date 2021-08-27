@@ -6,18 +6,18 @@
 #include <numeric>
 #include <stdexcept>
 
-uint32_t getSamplesCount(const uint32_t &sampleRate, const std::chrono::milliseconds &time) {
+uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
-    if (time.count() * sampleRate % 1000 != 0) {
+    if (time.count() * sampleRate.value % 1000 != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
-    return 2 * time.count() * sampleRate / 1000;
+    return 2 * time.count() * sampleRate.value / 1000;
   } else {
     const auto factor = (1000 / time.count());
-    if (sampleRate % factor != 0) {
+    if (sampleRate.value % factor != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
-    return sampleRate / factor * 2;
+    return sampleRate.value / factor * 2;
   }
 }
 
@@ -46,10 +46,12 @@ std::optional<Signal> detectBestSignal(const std::vector<Signal> &signals) {
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
   const auto range = static_cast<uint32_t>(signals.size() >> 10);
-  for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
+  const auto from = std::max(static_cast<uint32_t>(0), static_cast<uint32_t>(index - range));
+  const auto to = std::min(static_cast<uint32_t>(signals.size()), static_cast<uint32_t>(index + range));
+  for (int i = from; i < to; ++i) {
     Logger::logger()->trace(signals[i].toString());
   }
-  for (int i = std::max(0l, index - range); i < std::min(static_cast<long int>(signals.size()), index + range); ++i) {
+  for (int i = from; i < to; ++i) {
     if (signals[i].power.value < mean + standardDeviation) {
       return std::nullopt;
     }
@@ -59,8 +61,8 @@ std::optional<Signal> detectBestSignal(const std::vector<Signal> &signals) {
 
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
 
-void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, uint32_t sampleRate, uint32_t samplesCount) {
-  const auto f = static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate);
+void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
+  const auto f = static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value);
   for (int i = 0; i < samplesCount; ++i) {
     samples[i] = samples[i] * std::exp(std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * f * static_cast<float>(i));
   }
@@ -86,8 +88,8 @@ liquid_float_complex *toLiquidComplext(std::complex<float> *ptr) { return reinte
 std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRange> &frequencyRanges) {
   std::vector<FrequencyRange> result;
   for (const auto &frequencyRange : frequencyRanges) {
-    if (frequencyRange.bandwidth() <= RTL_SDR_MAX_BANDWIDTH) {
-      result.push_back(frequencyRange);
+    if (frequencyRange.bandwidth().value <= RTL_SDR_MAX_BANDWIDTH) {
+      result.push_back({frequencyRange.start.value, frequencyRange.stop.value, frequencyRange.step.value, RTL_SDR_MAX_BANDWIDTH});
     } else {
       uint32_t range = 1;
       while (frequencyRange.step.value * range * 2 < RTL_SDR_MAX_BANDWIDTH) {
@@ -98,7 +100,7 @@ std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRang
       const auto base = static_cast<uint32_t>(pow(10, factor));
       const auto max = (bandwidth / base) * base;
       for (uint32_t start = frequencyRange.start.value; start < frequencyRange.stop.value; start += max) {
-        result.push_back({start, start + max, frequencyRange.step.value});
+        result.push_back({start, start + max, frequencyRange.step.value, RTL_SDR_MAX_BANDWIDTH});
       }
     }
   }

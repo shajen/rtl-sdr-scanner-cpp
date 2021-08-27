@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-uint32_t getSamplesCount(const uint32_t& sampleRate, const std::chrono::milliseconds& time);
+uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time);
 
 void unsigned_to_complex(const uint8_t* rawBuffer, std::vector<std::complex<float>>& buffer, const uint32_t samples);
 
@@ -18,7 +18,7 @@ std::optional<Signal> detectBestSignal(const std::vector<Signal>& signals);
 
 std::chrono::milliseconds time();
 
-void shift(std::vector<std::complex<float>>& samples, int32_t frequencyOffset, uint32_t sampleRate, uint32_t samplesCount);
+void shift(std::vector<std::complex<float>>& samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount);
 
 std::vector<Signal> filterSignals(const std::vector<Signal>& signals, const FrequencyRange& FrequencyRange);
 

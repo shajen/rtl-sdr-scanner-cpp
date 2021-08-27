@@ -19,13 +19,13 @@ include_directories("${CMAKE_SOURCE_DIR}/sources")
 add_executable(auto-sdr ${SRC})
 
 TARGET_LINK_LIBRARIES(auto-sdr
-    spdlog
     spdlog::spdlog
     rtlsdr
     Threads::Threads
     liquid
     sox
     soxr
+    stdc++fs
 )
 
 install(TARGETS auto-sdr DESTINATION)

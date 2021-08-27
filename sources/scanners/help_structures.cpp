@@ -33,14 +33,20 @@ std::string FrequencyRange::toString() const {
   return std::string(buf);
 }
 
-uint32_t FrequencyRange::center() const { return (start.value + stop.value) / 2; }
+Frequency FrequencyRange::center() const { return {(start.value + stop.value) / 2}; }
 
-uint32_t FrequencyRange::bandwidth() const {
+Frequency FrequencyRange::bandwidth() const {
   uint32_t range = 1;
-  while (step.value * range < stop.value - start.value) {
-    range = range << 1;
+  if (maxBandwidth.value) {
+    while (step.value * range * 2 < maxBandwidth.value) {
+      range = range << 1;
+    }
+  } else {
+    while (step.value * range < stop.value - start.value) {
+      range = range << 1;
+    }
   }
-  return step.value * range;
+  return {step.value * range};
 }
 
-uint32_t FrequencyRange::fftSize() const { return bandwidth() / step.value; }
+uint32_t FrequencyRange::fftSize() const { return bandwidth().value / step.value; }

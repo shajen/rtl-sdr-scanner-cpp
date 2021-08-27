@@ -8,14 +8,14 @@
 
 class Mp3Writer {
  public:
-  Mp3Writer(const Frequency& frequency, uint32_t sampleRate);
+  Mp3Writer(const Frequency& frequency, Frequency sampleRate);
   ~Mp3Writer();
 
   void appendSamples(const std::vector<float>& samples);
 
  private:
   const std::string m_path;
-  const uint32_t m_sampleRate;
+  const Frequency m_sampleRate;
   std::vector<float> m_resamplerBuffer;
   std::vector<sox_sample_t> m_mp3Buffer;
   uint64_t m_samples;

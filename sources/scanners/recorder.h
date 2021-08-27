@@ -11,7 +11,7 @@
 
 class Recorder {
  public:
-  Recorder(Signal signal, uint32_t centerFrequency, uint32_t bandwidth, uint32_t sampleRate, Spectrogram& Spectrogram);
+  Recorder(Signal signal, Frequency centerFrequency, Frequency bandwidth, Frequency sampleRate, Spectrogram& Spectrogram);
   ~Recorder();
 
   void appendSamples(const Signal& bestSignal, bool active, std::vector<std::complex<float>>& buffer, const uint32_t samples);
@@ -21,9 +21,9 @@ class Recorder {
   void processSamples();
   Frequency getBestFrequency() const;
 
-  const uint32_t m_centerFrequency;
-  const uint32_t m_bandwidth;
-  const uint32_t m_sampleRate;
+  const Frequency m_centerFrequency;
+  const Frequency m_bandwidth;
+  const Frequency m_sampleRate;
   Spectrogram& m_spectrogram;
   freqdem m_fmDemodulator;
   iirdecim_crcf m_decimator;

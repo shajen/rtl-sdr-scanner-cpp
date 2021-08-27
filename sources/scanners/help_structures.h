@@ -25,11 +25,12 @@ struct Signal {
 struct FrequencyRange {
   std::string toString() const;
 
-  uint32_t center() const;
-  uint32_t bandwidth() const;
+  Frequency center() const;
+  Frequency bandwidth() const;
   uint32_t fftSize() const;
 
   Frequency start;
   Frequency stop;
   Frequency step;
+  const Frequency maxBandwidth;
 };

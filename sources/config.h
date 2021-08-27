@@ -10,11 +10,11 @@ constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(100);
 constexpr auto MAX_SILENCE_TIME = std::chrono::milliseconds(1000);
 constexpr auto MIN_RECORDING_TIME = std::chrono::milliseconds(1000);
 constexpr auto RECORDING_SAMPLE_RATE = 48000;
-const auto RECORDING_OUTPUT_DIRECTORY = std::string(getenv("HOME")) + "/sdr_recordings/";
+const auto RECORDING_OUTPUT_DIRECTORY = std::string(getenv("HOME")) + "/sdr/recordings/";
 
 constexpr auto LOG_LEVEL_CONSOLE = spdlog::level::info;
 constexpr auto LOG_LEVEL_FILE = spdlog::level::debug;
-const auto LOG_DIR = std::string(getenv("HOME")) + "/sdr_logs/";
+const auto LOG_DIR = std::string(getenv("HOME")) + "/sdr/logs/";
 
 constexpr auto RTL_SDR_PPM = 0;
 constexpr auto RTL_SDR_GAIN = std::optional<int>(496);

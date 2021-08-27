@@ -28,18 +28,18 @@ sox_signalinfo_t config() {
   return c;
 }
 
-Mp3Writer::Mp3Writer(const Frequency& frequency, uint32_t sampleRate)
+Mp3Writer::Mp3Writer(const Frequency& frequency, Frequency sampleRate)
     : m_path(getPath(frequency)),
       m_sampleRate(sampleRate),
       m_samples(0),
-      m_resampler(soxr_create(sampleRate, RECORDING_SAMPLE_RATE, 1, nullptr, nullptr, nullptr, nullptr)),
+      m_resampler(soxr_create(sampleRate.value, RECORDING_SAMPLE_RATE, 1, nullptr, nullptr, nullptr, nullptr)),
       m_mp3Info(config()),
       m_mp3File(sox_open_write(m_path.c_str(), &m_mp3Info, nullptr, nullptr, nullptr, nullptr)) {}
 
 Mp3Writer::~Mp3Writer() {
   soxr_delete(m_resampler);
   sox_close(m_mp3File);
-  const auto duration = std::chrono::milliseconds(1000 * m_samples / m_sampleRate);
+  const auto duration = std::chrono::milliseconds(1000 * m_samples / m_sampleRate.value);
   if (duration < MIN_RECORDING_TIME) {
     Logger::logger()->info("recording time: {:.2f} s, too short, removing", duration.count() / 1000.0);
     std::filesystem::remove(m_path);
@@ -61,7 +61,7 @@ void Mp3Writer::appendSamples(const std::vector<float>& samples) {
   soxr_process(m_resampler, samples.data(), samples.size(), &read, m_resamplerBuffer.data(), m_resamplerBuffer.size(), &write);
 
   if (read > 0 && write > 0) {
-    Logger::logger()->debug("recording resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate, read, RECORDING_SAMPLE_RATE, write);
+    Logger::logger()->debug("recording resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, read, RECORDING_SAMPLE_RATE, write);
     for (int i = 0; i < write; ++i) {
       m_mp3Buffer[i] = m_resamplerBuffer[i] * 1000000000;
     }
