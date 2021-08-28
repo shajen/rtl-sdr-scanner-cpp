@@ -17,11 +17,18 @@ std::shared_ptr<spdlog::logger> Logger::logger() {
     char logsFilePath[4096];
     sprintf(logsFilePath, "%s/auto-sdr %04d-%02d-%02d %02d:%02d:%02d.txt", LOG_DIR.c_str(), tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-    auto fileLogger = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logsFilePath, true);
-    fileLogger->set_level(LOG_LEVEL_FILE);
+    if (LOG_LEVEL_FILE == spdlog::level::off) {
+      std::initializer_list<spdlog::sink_ptr> loggers{consoleLogger};
+      _logger = std::make_shared<spdlog::logger>("auto-sdr", loggers);
 
-    std::initializer_list<spdlog::sink_ptr> loggers{consoleLogger, fileLogger};
-    _logger = std::make_shared<spdlog::logger>("auto-sdr", loggers);
+    } else {
+      auto fileLogger = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logsFilePath, true);
+      fileLogger->set_level(LOG_LEVEL_FILE);
+
+      std::initializer_list<spdlog::sink_ptr> loggers{consoleLogger, fileLogger};
+      _logger = std::make_shared<spdlog::logger>("auto-sdr", loggers);
+    }
+
     _logger->set_level(spdlog::level::trace);
   }
   return _logger;
