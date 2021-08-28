@@ -45,9 +45,9 @@ std::optional<Signal> detectBestSignal(const std::vector<Signal> &signals) {
 
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
-  const auto range = static_cast<uint32_t>(signals.size() >> 10);
-  const auto from = std::max(static_cast<uint32_t>(0), static_cast<uint32_t>(index - range));
-  const auto to = std::min(static_cast<uint32_t>(signals.size()), static_cast<uint32_t>(index + range));
+  const auto range = static_cast<int32_t>(signals.size() >> 10);
+  const auto from = std::max(static_cast<int32_t>(0), static_cast<int32_t>(index - range));
+  const auto to = std::min(static_cast<int32_t>(signals.size()), static_cast<int32_t>(index + range));
   for (int i = from; i < to; ++i) {
     Logger::logger()->trace(signals[i].toString());
   }

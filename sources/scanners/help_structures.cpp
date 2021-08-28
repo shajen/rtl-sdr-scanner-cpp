@@ -36,6 +36,9 @@ std::string FrequencyRange::toString() const {
 Frequency FrequencyRange::center() const { return {(start.value + stop.value) / 2}; }
 
 Frequency FrequencyRange::bandwidth() const {
+  if (step.value == 0) {
+    return { 0 };
+  }
   uint32_t range = 1;
   if (maxBandwidth.value) {
     while (step.value * range * 2 < maxBandwidth.value) {
