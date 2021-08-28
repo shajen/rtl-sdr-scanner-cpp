@@ -107,15 +107,3 @@ std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRang
   }
   return result;
 }
-
-void decimate(uint32_t rate, std::complex<float> *in, uint32_t size, std::complex<float> *out) {
-  iirdecim_crcf decimator = iirdecim_crcf_create_default(rate, RESAMPLER_FILTER_LENGTH);
-  iirdecim_crcf_execute_block(decimator, toLiquidComplex(in), size, toLiquidComplex(out));
-  iirdecim_crcf_destroy(decimator);
-}
-
-void demodulateFm(std::complex<float> *in, uint32_t size, float *out) {
-  freqdem demodulator = freqdem_create(FM_DEMODULATOR_FACTOR);
-  freqdem_demodulate_block(demodulator, toLiquidComplex(in), size, out);
-  freqdem_destroy(demodulator);
-}

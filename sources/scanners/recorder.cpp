@@ -12,6 +12,7 @@ Recorder::Recorder(Signal signal, Frequency centerFrequency, Frequency bandwidth
       m_sampleRate(sampleRate),
       m_decimateRate(std::floor(static_cast<float>(sampleRate.value) / RESAMPLER_MINIMAL_OUT_SAMPLE_RATE)),
       m_spectrogram(Spectrogram),
+      m_decimator(m_decimateRate),
       m_mp3Writer(signal.frequency, {sampleRate.value / m_decimateRate}),
       m_startDataTime(time()),
       m_lastActiveDataTime(time()),
@@ -69,10 +70,10 @@ void Recorder::processSamples() {
   }
 
   shift(m_samples, m_centerFrequency.value - bestFrequency.value, m_sampleRate, m_samples.size());
-  decimate(m_decimateRate, m_samples.data(), m_samples.size() / m_decimateRate, m_decimatorBuffer.data());
+  m_decimator.decimate(m_samples.data(), m_samples.size() / m_decimateRate, m_decimatorBuffer.data());
   Logger::logger()->debug("recording first resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, m_samples.size(), m_sampleRate.value / m_decimateRate, downSamples);
 
-  demodulateFm(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
+  m_demodulator.demodulate(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
   Logger::logger()->debug("recording demodulate fm, in {}, out: {}", downSamples, fmSamples);
 
   m_mp3Writer.appendSamples(m_fmBuffer.data(), fmSamples);

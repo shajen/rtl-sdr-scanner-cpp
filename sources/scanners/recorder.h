@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithms/decimator.h>
+#include <algorithms/fm_demodulator.h>
 #include <algorithms/spectrogram.h>
 #include <mp3_writer.h>
 #include <utils.h>
@@ -26,6 +28,8 @@ class Recorder {
   const uint32_t m_decimateRate;
 
   Spectrogram& m_spectrogram;
+  Decimator m_decimator;
+  FmDemodulator m_demodulator;
   Mp3Writer m_mp3Writer;
   std::mutex m_mutex;
 
