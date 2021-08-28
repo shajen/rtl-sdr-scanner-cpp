@@ -6,20 +6,20 @@
 
 #include <map>
 
-constexpr auto DOWNSAMPLE = 10;
-constexpr auto DOWNSAMPLE_FILTER_LENGTH = 10;
-
 Recorder::Recorder(Signal signal, Frequency centerFrequency, Frequency bandwidth, Frequency sampleRate, Spectrogram& Spectrogram)
     : m_centerFrequency(centerFrequency),
       m_bandwidth(bandwidth),
       m_sampleRate(sampleRate),
+      m_decimateRate(std::floor(static_cast<float>(sampleRate.value) / RESAMPLER_MINIMAL_OUT_SAMPLE_RATE)),
       m_spectrogram(Spectrogram),
-      m_fmDemodulator(freqdem_create(0.5f)),
-      m_Mp3Writer(signal.frequency, {sampleRate.value / DOWNSAMPLE}),
-      m_decimator(iirdecim_crcf_create_default(DOWNSAMPLE, DOWNSAMPLE_FILTER_LENGTH)),
+      m_fmDemodulator(freqdem_create(FM_DEMODULATOR_FACTOR)),
+      m_Mp3Writer(signal.frequency, {sampleRate.value / m_decimateRate}),
+      m_decimator(iirdecim_crcf_create_default(m_decimateRate, RESAMPLER_FILTER_LENGTH)),
       m_startDataTime(time()),
       m_lastActiveDataTime(time()),
-      m_lastDataTime(time()) {}
+      m_lastDataTime(time()) {
+  Logger::logger()->debug("recording decimate rate: {}", m_decimateRate);
+}
 
 Recorder::~Recorder() {
   processSamples();
@@ -66,12 +66,14 @@ void Recorder::processSamples() {
   std::vector<std::complex<float>> downSamples;
   if (m_lastSample.has_value()) {
     downSamples.push_back(m_lastSample.value());
-    downSamples.resize(m_samples.size() / DOWNSAMPLE + 1);
-    iirdecim_crcf_execute_block(m_decimator, reinterpret_cast<liquid_float_complex*>(m_samples.data()), m_samples.size() / DOWNSAMPLE, reinterpret_cast<liquid_float_complex*>(downSamples.data() + 1));
+    downSamples.resize(m_samples.size() / m_decimateRate + 1);
+    iirdecim_crcf_execute_block(m_decimator, reinterpret_cast<liquid_float_complex*>(m_samples.data()), m_samples.size() / m_decimateRate,
+                                reinterpret_cast<liquid_float_complex*>(downSamples.data() + 1));
   } else {
-    downSamples.resize(m_samples.size() / DOWNSAMPLE);
-    iirdecim_crcf_execute_block(m_decimator, toLiquidComplext(m_samples.data()), m_samples.size() / DOWNSAMPLE, toLiquidComplext(downSamples.data()));
+    downSamples.resize(m_samples.size() / m_decimateRate);
+    iirdecim_crcf_execute_block(m_decimator, toLiquidComplext(m_samples.data()), m_samples.size() / m_decimateRate, toLiquidComplext(downSamples.data()));
   }
+  Logger::logger()->debug("recording first resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, m_samples.size(), m_sampleRate.value / m_decimateRate, downSamples.size());
 
   std::vector<float> fm;
   fm.resize(downSamples.size() - 1);

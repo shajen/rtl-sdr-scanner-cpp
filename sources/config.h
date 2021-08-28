@@ -22,3 +22,9 @@ constexpr auto RTL_SDR_MAX_BANDWIDTH = 2500000;
 
 const std::vector<FrequencyRange> SCANNER_FREQUENCIES{{430000000, 440000000, 125}};
 const std::vector<FrequencyRange> IGNORED_FREQUENCIES;
+
+// experts only
+constexpr auto RESAMPLER_FILTER_LENGTH = 10;
+constexpr auto RESAMPLER_MINIMAL_OUT_SAMPLE_RATE = 200000;
+constexpr auto FM_DEMODULATOR_FACTOR = 0.5f;
+constexpr auto SPECTROGAM_FACTOR = 1.0f;

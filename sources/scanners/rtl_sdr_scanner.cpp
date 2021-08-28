@@ -34,6 +34,11 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
     throw std::runtime_error("can not set tuner ppm");
   }
 
+  Logger::logger()->info("ignored frequency ranges: {}", IGNORED_FREQUENCIES.size());
+  for (const auto& frequencyRange : IGNORED_FREQUENCIES) {
+    Logger::logger()->info("frequency range, {}", frequencyRange.toString());
+  }
+
   Logger::logger()->info("original frequency ranges: {}", configFrequencyRanges.size());
   for (const auto& frequencyRange : configFrequencyRanges) {
     Logger::logger()->info("frequency range, {}", frequencyRange.toString());

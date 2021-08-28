@@ -13,6 +13,12 @@ void handler(int) {
 
 int main() {
   Logger::logger()->info("start app auto-sdr");
+#ifndef NDEBUG
+  Logger::logger()->info("build type: debug");
+#else
+  Logger::logger()->info("build type: release");
+#endif
+
   try {
     std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
     for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {
@@ -20,7 +26,7 @@ int main() {
     }
 
     if (scanners.empty()) {
-      Logger::logger()->warn("not found RtlSdr devices");
+      Logger::logger()->warn("not found rtl sdr devices");
     } else {
       signal(SIGINT, handler);
       while (isRunning && !scanners.empty()) {

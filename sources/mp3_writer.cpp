@@ -61,7 +61,7 @@ void Mp3Writer::appendSamples(const std::vector<float>& samples) {
   soxr_process(m_resampler, samples.data(), samples.size(), &read, m_resamplerBuffer.data(), m_resamplerBuffer.size(), &write);
 
   if (read > 0 && write > 0) {
-    Logger::logger()->debug("recording resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, read, RECORDING_SAMPLE_RATE, write);
+    Logger::logger()->debug("recording mp3 resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, read, RECORDING_SAMPLE_RATE, write);
     for (int i = 0; i < write; ++i) {
       m_mp3Buffer[i] = m_resamplerBuffer[i] * 1000000000;
     }

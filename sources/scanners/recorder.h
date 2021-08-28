@@ -24,6 +24,7 @@ class Recorder {
   const Frequency m_centerFrequency;
   const Frequency m_bandwidth;
   const Frequency m_sampleRate;
+  const uint32_t m_decimateRate;
   Spectrogram& m_spectrogram;
   freqdem m_fmDemodulator;
   iirdecim_crcf m_decimator;
