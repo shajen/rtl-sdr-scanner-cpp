@@ -5,7 +5,6 @@
 
 #include <map>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <thread>
 
@@ -24,7 +23,6 @@ class RtlSdrScanner {
 
   const int m_deviceIndex;
   std::atomic_bool m_isRunning;
-  std::mutex m_mutex;
   std::unique_ptr<std::thread> m_thread;
   rtlsdr_dev_t* m_device;
 

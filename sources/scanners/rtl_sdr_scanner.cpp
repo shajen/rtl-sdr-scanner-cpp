@@ -92,8 +92,6 @@ RtlSdrScanner::~RtlSdrScanner() {
 bool RtlSdrScanner::isRunning() const { return m_isRunning; }
 
 void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
-  std::unique_lock<std::mutex> lock(m_mutex);
-
   const auto centerFrequency = frequencyRange.center();
   const auto bandwidth = frequencyRange.bandwidth();
   const auto sampleRate = bandwidth;
