@@ -71,7 +71,8 @@ void Recorder::processSamples() {
 
   shift(m_samples, m_centerFrequency.value - bestFrequency.value, m_sampleRate, m_samples.size());
   m_decimator.decimate(m_samples.data(), m_samples.size() / m_decimateRate, m_decimatorBuffer.data());
-  Logger::logger()->debug("recording first resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, m_samples.size(), m_sampleRate.value / m_decimateRate, downSamples);
+  Logger::logger()->debug("recording first resampling, in rate/samples: {}/{}, out rate/samples: {}/{}, threads: {}", m_sampleRate.value, m_samples.size(), m_sampleRate.value / m_decimateRate,
+                          downSamples, DECIMATOR_THREADS);
 
   m_demodulator.demodulate(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
   Logger::logger()->debug("recording demodulate fm, in {}, out: {}", downSamples, fmSamples);

@@ -4,6 +4,7 @@
 
 #include <complex>
 #include <cstdint>
+#include <vector>
 
 class Decimator {
  public:
@@ -13,5 +14,6 @@ class Decimator {
   void decimate(std::complex<float>* in, uint32_t size, std::complex<float>* out);
 
  private:
-  iirdecim_crcf m_decimator;
+  const uint32_t m_rate;
+  std::vector<iirdecim_crcf> m_decimators;
 };
