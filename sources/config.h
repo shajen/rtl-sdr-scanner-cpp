@@ -1,6 +1,6 @@
 #pragma once
 
-#include <scanners/help_structures.h>
+#include <radio/help_structures.h>
 #include <spdlog/spdlog.h>
 
 #include <optional>

@@ -1,8 +1,8 @@
 #include "rtl_sdr_scanner.h"
 
 #include <logger.h>
+#include <radio/recorder.h>
 #include <rtl-sdr.h>
-#include <scanners/recorder.h>
 #include <utils.h>
 
 using StreamCallbackData = std::tuple<RtlSdrScanner*, Recorder*, const FrequencyRange*>;

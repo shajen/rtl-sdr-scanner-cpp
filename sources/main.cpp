@@ -1,7 +1,7 @@
 #include <algorithms/spectrogram.h>
 #include <config.h>
 #include <logger.h>
-#include <scanners/rtl_sdr_scanner.h>
+#include <radio/rtl_sdr_scanner.h>
 #include <signal.h>
 
 volatile bool isRunning{true};
