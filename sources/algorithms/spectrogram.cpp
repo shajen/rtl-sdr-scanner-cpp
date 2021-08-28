@@ -17,9 +17,9 @@ const std::vector<Signal>& Spectrogram::psd(Frequency centerFrequency, Frequency
     for (int i = 0; i < buffer.size(); i += step) {
       data.push_back(buffer[i]);
     }
-    spgramcf_write(m_spectrogram, toLiquidComplext(data.data()), data.size());
+    spgramcf_write(m_spectrogram, toLiquidComplex(data.data()), data.size());
   } else {
-    spgramcf_write(m_spectrogram, toLiquidComplext(buffer.data()), size);
+    spgramcf_write(m_spectrogram, toLiquidComplex(buffer.data()), size);
   }
   spgramcf_get_psd(m_spectrogram, m_buffer.data());
 

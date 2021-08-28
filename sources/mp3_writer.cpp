@@ -48,17 +48,17 @@ Mp3Writer::~Mp3Writer() {
   }
 }
 
-void Mp3Writer::appendSamples(const std::vector<float>& samples) {
-  m_samples += samples.size();
-  if (m_resamplerBuffer.size() < samples.size()) {
-    m_resamplerBuffer.resize(samples.size());
+void Mp3Writer::appendSamples(const float* samples, uint32_t size) {
+  m_samples += size;
+  if (m_resamplerBuffer.size() < size) {
+    m_resamplerBuffer.resize(size);
   }
-  if (m_mp3Buffer.size() < samples.size()) {
-    m_mp3Buffer.resize(samples.size());
+  if (m_mp3Buffer.size() < size) {
+    m_mp3Buffer.resize(size);
   }
   size_t read{0};
   size_t write{0};
-  soxr_process(m_resampler, samples.data(), samples.size(), &read, m_resamplerBuffer.data(), m_resamplerBuffer.size(), &write);
+  soxr_process(m_resampler, samples, size, &read, m_resamplerBuffer.data(), m_resamplerBuffer.size(), &write);
 
   if (read > 0 && write > 0) {
     Logger::logger()->debug("recording mp3 resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, read, RECORDING_SAMPLE_RATE, write);

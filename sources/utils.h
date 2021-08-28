@@ -22,6 +22,10 @@ void shift(std::vector<std::complex<float>>& samples, int32_t frequencyOffset, F
 
 std::vector<Signal> filterSignals(const std::vector<Signal>& signals, const FrequencyRange& FrequencyRange);
 
-liquid_float_complex* toLiquidComplext(std::complex<float>* ptr);
+liquid_float_complex* toLiquidComplex(std::complex<float>* ptr);
 
 std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRange>& frequencyRanges);
+
+void decimate(uint32_t rate, std::complex<float>* in, uint32_t size, std::complex<float>* out);
+
+void demodulateFm(std::complex<float>* in, uint32_t size, float* out);

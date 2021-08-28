@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithms/spectrogram.h>
-#include <liquid/liquid.h>
 #include <mp3_writer.h>
 #include <utils.h>
 
@@ -25,16 +24,18 @@ class Recorder {
   const Frequency m_bandwidth;
   const Frequency m_sampleRate;
   const uint32_t m_decimateRate;
+
   Spectrogram& m_spectrogram;
-  freqdem m_fmDemodulator;
-  iirdecim_crcf m_decimator;
-  Mp3Writer m_Mp3Writer;
+  Mp3Writer m_mp3Writer;
   std::mutex m_mutex;
+
   const std::chrono::milliseconds m_startDataTime;
   std::chrono::milliseconds m_lastActiveDataTime;
   std::chrono::milliseconds m_lastDataTime;
+
   std::map<uint32_t, uint32_t> m_frequency;
   std::vector<std::complex<float>> m_samples;
   std::vector<std::complex<float>> m_noisedSamples;
-  std::optional<std::complex<float>> m_lastSample;
+  std::vector<std::complex<float>> m_decimatorBuffer;
+  std::vector<float> m_fmBuffer;
 };

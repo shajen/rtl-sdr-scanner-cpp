@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <liquid/liquid.h>
 #include <logger.h>
 
 #include <algorithm>
@@ -83,7 +84,7 @@ std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const Freq
   return results;
 }
 
-liquid_float_complex *toLiquidComplext(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
+liquid_float_complex *toLiquidComplex(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
 
 std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRange> &frequencyRanges) {
   std::vector<FrequencyRange> result;
@@ -105,4 +106,16 @@ std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRang
     }
   }
   return result;
+}
+
+void decimate(uint32_t rate, std::complex<float> *in, uint32_t size, std::complex<float> *out) {
+  iirdecim_crcf decimator = iirdecim_crcf_create_default(rate, RESAMPLER_FILTER_LENGTH);
+  iirdecim_crcf_execute_block(decimator, toLiquidComplex(in), size, toLiquidComplex(out));
+  iirdecim_crcf_destroy(decimator);
+}
+
+void demodulateFm(std::complex<float> *in, uint32_t size, float *out) {
+  freqdem demodulator = freqdem_create(FM_DEMODULATOR_FACTOR);
+  freqdem_demodulate_block(demodulator, toLiquidComplex(in), size, out);
+  freqdem_destroy(demodulator);
 }
