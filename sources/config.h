@@ -30,3 +30,4 @@ constexpr auto FM_DEMODULATOR_FACTOR = 0.5f;
 constexpr auto SPECTROGAM_FACTOR = 1.0f;
 constexpr auto SIGNAL_DETECTION_FACTOR = 0.001f;
 constexpr auto DECIMATOR_THREADS = 4;
+constexpr auto SHIFTER_THREADS = 4;

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
+#include <thread>
 
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
@@ -60,8 +61,27 @@ std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono
 
 void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
   const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
-  for (int i = 0; i < samplesCount; ++i) {
-    samples[i] *= std::exp(f * static_cast<float>(i));
+  Logger::logger()->trace("[utils] shifting, samples: {}, threads: {}", samplesCount, SHIFTER_THREADS);
+
+  if (SHIFTER_THREADS <= 1) {
+    for (int i = 0; i < samplesCount; ++i) {
+      samples[i] *= std::exp(f * static_cast<float>(i));
+    }
+  } else {
+    const auto subCount = samplesCount / SHIFTER_THREADS;
+    std::vector<std::thread> threads;
+    for (int i = 0; i < SHIFTER_THREADS; ++i) {
+      const auto offset = i * subCount;
+      std::thread thread([&samples, f, subCount, offset]() {
+        for (int i = 0; i < subCount; ++i) {
+          samples[i + offset] *= std::exp(f * static_cast<float>(i + offset));
+        }
+      });
+      threads.push_back(std::move(thread));
+    }
+    for (auto &thread : threads) {
+      thread.join();
+    }
   }
 }
 
