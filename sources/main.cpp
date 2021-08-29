@@ -7,16 +7,16 @@
 volatile bool isRunning{true};
 
 void handler(int) {
-  Logger::logger()->info("[main] received stop signal");
+  Logger::info("main", "received stop signal");
   isRunning = false;
 }
 
 int main() {
-  Logger::logger()->info("[main] start app auto-sdr");
+  Logger::info("main", "start app auto-sdr");
 #ifndef NDEBUG
-  Logger::logger()->info("[main] build type: debug");
+  Logger::info("main", "build type: debug");
 #else
-  Logger::logger()->info("[main] build type: release");
+  Logger::info("main", "build type: release");
 #endif
 
   try {
@@ -26,7 +26,7 @@ int main() {
     }
 
     if (scanners.empty()) {
-      Logger::logger()->warn("[main] not found rtl sdr devices");
+      Logger::warn("main", "not found rtl sdr devices");
     } else {
       signal(SIGINT, handler);
       while (isRunning && !scanners.empty()) {
@@ -35,8 +35,8 @@ int main() {
       }
     }
   } catch (const std::exception& exception) {
-    Logger::logger()->error("[main] main exception: {}", exception.what());
+    Logger::error("main", "main exception: {}", exception.what());
   }
-  Logger::logger()->info("[main] stop app auto-sdr");
+  Logger::info("main", "stop app auto-sdr");
   return 0;
 }

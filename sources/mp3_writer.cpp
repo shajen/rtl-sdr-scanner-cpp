@@ -41,10 +41,10 @@ Mp3Writer::~Mp3Writer() {
   sox_close(m_mp3File);
   const auto duration = std::chrono::milliseconds(1000 * m_samples / m_sampleRate.value);
   if (duration < MIN_RECORDING_TIME) {
-    Logger::logger()->info("[mp3] recording time: {:.2f} s, too short, removing", duration.count() / 1000.0);
+    Logger::info("mp3", "recording time: {:.2f} s, too short, removing", duration.count() / 1000.0);
     std::filesystem::remove(m_path);
   } else {
-    Logger::logger()->info("[mp3] recording time: {:.2f} s", duration.count() / 1000.0);
+    Logger::info("mp3", "recording time: {:.2f} s", duration.count() / 1000.0);
   }
 }
 
@@ -61,7 +61,7 @@ void Mp3Writer::appendSamples(const float* samples, uint32_t size) {
   soxr_process(m_resampler, samples, size, &read, m_resamplerBuffer.data(), m_resamplerBuffer.size(), &write);
 
   if (read > 0 && write > 0) {
-    Logger::logger()->trace("[mp3] recording resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, read, RECORDING_SAMPLE_RATE, write);
+    Logger::trace("mp3", "recording resampling, in rate/samples: {}/{}, out rate/samples: {}/{}", m_sampleRate.value, read, RECORDING_SAMPLE_RATE, write);
     for (int i = 0; i < write; ++i) {
       m_mp3Buffer[i] = m_resamplerBuffer[i] * 1000000000;
     }

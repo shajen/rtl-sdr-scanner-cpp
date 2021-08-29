@@ -11,7 +11,7 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
     : m_deviceIndex(deviceIndex), m_isRunning(true) {
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
-  Logger::logger()->info("[rtl_sdr] open device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
+  Logger::info("rtl_sdr", "open device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
 
   if (rtlsdr_open(&m_device, deviceIndex) != 0) {
     throw std::runtime_error("can not open rtl sdr device");
@@ -34,20 +34,20 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
     throw std::runtime_error("can not set tuner ppm");
   }
 
-  Logger::logger()->info("[rtl_sdr] ignored frequency ranges: {}", IGNORED_FREQUENCIES.size());
+  Logger::info("rtl_sdr", "ignored frequency ranges: {}", IGNORED_FREQUENCIES.size());
   for (const auto& frequencyRange : IGNORED_FREQUENCIES) {
-    Logger::logger()->info("[rtl_sdr] frequency range, {}", frequencyRange.toString());
+    Logger::info("rtl_sdr", "frequency range, {}", frequencyRange.toString());
   }
 
-  Logger::logger()->info("[rtl_sdr] original frequency ranges: {}", configFrequencyRanges.size());
+  Logger::info("rtl_sdr", "original frequency ranges: {}", configFrequencyRanges.size());
   for (const auto& frequencyRange : configFrequencyRanges) {
-    Logger::logger()->info("[rtl_sdr] frequency range, {}", frequencyRange.toString());
+    Logger::info("rtl_sdr", "frequency range, {}", frequencyRange.toString());
   }
 
   const auto splittedFrequencyRanges = splitFrequencyRanges(configFrequencyRanges);
-  Logger::logger()->info("[rtl_sdr] splitted frequency ranges: {}", splittedFrequencyRanges.size());
+  Logger::info("rtl_sdr", "splitted frequency ranges: {}", splittedFrequencyRanges.size());
   for (const auto& frequencyRange : splittedFrequencyRanges) {
-    Logger::logger()->info("[rtl_sdr] frequency range, {}", frequencyRange.toString());
+    Logger::info("rtl_sdr", "frequency range, {}", frequencyRange.toString());
   }
 
   if (splittedFrequencyRanges.empty()) {
@@ -73,7 +73,7 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
         }
       }
     } catch (const std::exception& exception) {
-      Logger::logger()->error("[rtl_sdr] exception: {}", exception.what());
+      Logger::error("rtl_sdr", "exception: {}", exception.what());
     }
     m_isRunning = false;
   });
@@ -82,7 +82,7 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
 RtlSdrScanner::~RtlSdrScanner() {
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
-  Logger::logger()->info("[rtl_sdr] close device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
+  Logger::info("rtl_sdr", "close device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
 
   m_isRunning = false;
   m_thread->join();
@@ -99,20 +99,20 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   const auto SpectrogramSize = frequencyRange.fftSize();
 
   if (m_lastBandwidth.value != bandwidth.value) {
-    Logger::logger()->debug("[rtl_sdr] set {}", bandwidth.toString("bandwidth"));
+    Logger::debug("rtl_sdr", "set {}", bandwidth.toString("bandwidth"));
     if (rtlsdr_set_tuner_bandwidth(m_device, bandwidth.value) != 0) {
       throw std::runtime_error("set bandwidth error");
     }
     m_lastBandwidth = bandwidth;
   }
   if (rtlsdr_get_sample_rate(m_device) != sampleRate.value) {
-    Logger::logger()->debug("[rtl_sdr] set {}", sampleRate.toString("sample rate"));
+    Logger::debug("rtl_sdr", "set {}", sampleRate.toString("sample rate"));
     if (rtlsdr_set_sample_rate(m_device, sampleRate.value) != 0) {
       throw std::runtime_error("set sample rate error");
     }
   }
   if (rtlsdr_get_center_freq(m_device) != centerFrequency.value) {
-    Logger::logger()->debug("[rtl_sdr] set {}", centerFrequency.toString("center frequency"));
+    Logger::debug("rtl_sdr", "set {}", centerFrequency.toString("center frequency"));
     if (rtlsdr_set_center_freq(m_device, centerFrequency.value) != 0) {
       throw std::runtime_error("set center frequency error");
     }
@@ -122,52 +122,52 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   int read{0};
   const auto status = rtlsdr_read_sync(m_device, m_rawBuffer.data(), samples, &read);
   if (status != 0) {
-    Logger::logger()->warn("[rtl_sdr] read error: {}", status);
+    throw std::runtime_error("read samples error");
   } else if (read != samples) {
-    Logger::logger()->warn("[rtl_sdr] read error, dropped samples: {}", samples - read);
+    throw std::runtime_error("read samples error, dropped samples");
   } else {
-    Logger::logger()->trace("[rtl_sdr] read bytes: {}", samples);
+    Logger::trace("rtl_sdr", "read bytes: {}", samples);
     unsigned_to_complex(m_rawBuffer.data(), m_buffer, samples / 2);
-    Logger::logger()->trace("[rtl_sdr] convert to complex finished");
+    Logger::trace("rtl_sdr", "convert to complex finished");
     const auto& allSignals = m_spectrogram[SpectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
     const auto signals = filterSignals(allSignals, frequencyRange);
     const auto bestSignal = detectbestSignal(signals);
     if (bestSignal.second) {
-      Logger::logger()->info("[rtl_sdr] strong signal, {}", bestSignal.first.toString());
+      Logger::info("rtl_sdr", "strong signal, {}", bestSignal.first.toString());
     } else {
-      Logger::logger()->debug("[rtl_sdr] best signal, {}", bestSignal.first.toString());
+      Logger::debug("rtl_sdr", "best signal, {}", bestSignal.first.toString());
     }
     if (bestSignal.second) {
       auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
-        Logger::logger()->trace("[rtl_sdr] read bytes: {}", len);
+        Logger::trace("rtl_sdr", "read bytes: {}", len);
         StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
         RtlSdrScanner* scanner = std::get<0>(*data);
         Recorder* recorder = std::get<1>(*data);
         const FrequencyRange* frequencyRange = std::get<2>(*data);
 
         unsigned_to_complex(buf, scanner->m_buffer, len / 2);
-        Logger::logger()->trace("[rtl_sdr] convert to complex finished");
+        Logger::trace("rtl_sdr", "convert to complex finished");
         const auto& allSignals = scanner->m_spectrogram[frequencyRange->fftSize()]->psd(frequencyRange->center(), frequencyRange->bandwidth(), scanner->m_buffer, len / 2);
         const auto signals = filterSignals(allSignals, *frequencyRange);
         const auto bestSignal = detectbestSignal(signals);
         if (bestSignal.second) {
-          Logger::logger()->info("[rtl_sdr] strong signal, {}", bestSignal.first.toString());
+          Logger::info("rtl_sdr", "strong signal, {}", bestSignal.first.toString());
         } else {
-          Logger::logger()->debug("[rtl_sdr] best signal, {}", bestSignal.first.toString());
+          Logger::debug("rtl_sdr", "best signal, {}", bestSignal.first.toString());
         }
         recorder->appendSamples(bestSignal, scanner->m_buffer, len / 2);
         if (recorder->isFinished() || !scanner->m_isRunning) {
-          Logger::logger()->info("[rtl_sdr] stop stream");
+          Logger::info("rtl_sdr", "stop stream");
           rtlsdr_cancel_async(scanner->m_device);
         }
-        Logger::logger()->trace("[rtl_sdr] stream processing finished");
+        Logger::trace("rtl_sdr", "stream processing finished");
       };
-      Logger::logger()->info("[rtl_sdr] start stream");
+      Logger::info("rtl_sdr", "start stream");
       Recorder recorder(bestSignal.first, centerFrequency, bandwidth, sampleRate, *m_spectrogram[SpectrogramSize]);
       StreamCallbackData data({this, &recorder, &frequencyRange});
       rtlsdr_read_async(m_device, f, &data, 0, samples);
     }
-    Logger::logger()->trace("[rtl_sdr] processing finished");
+    Logger::trace("rtl_sdr", "processing finished");
   }
 }
 

@@ -39,7 +39,7 @@ std::pair<Signal, bool> detectbestSignal(const std::vector<Signal> &signals) {
 
   const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power.value - mean, 2); });
   const auto standardDeviation = sqrt(sum2 / signals.size());
-  Logger::logger()->trace("[utils] mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
+  Logger::trace("utils", "mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
 
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
@@ -47,7 +47,7 @@ std::pair<Signal, bool> detectbestSignal(const std::vector<Signal> &signals) {
   const auto from = std::max(static_cast<int32_t>(0), static_cast<int32_t>(index - range));
   const auto to = std::min(static_cast<int32_t>(signals.size()), static_cast<int32_t>(index + range));
   for (int i = from; i < to; ++i) {
-    Logger::logger()->trace("[utils] {}", signals[i].toString());
+    Logger::trace("utils", "{}", signals[i].toString());
   }
   for (int i = from; i < to; ++i) {
     if (signals[i].power.value < mean + standardDeviation) {
@@ -61,7 +61,7 @@ std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono
 
 void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
   const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
-  Logger::logger()->trace("[utils] shifting, samples: {}, threads: {}", samplesCount, SHIFTER_THREADS);
+  Logger::trace("utils", "shifting, samples: {}, threads: {}", samplesCount, SHIFTER_THREADS);
 
   if (SHIFTER_THREADS <= 1) {
     for (int i = 0; i < samplesCount; ++i) {
