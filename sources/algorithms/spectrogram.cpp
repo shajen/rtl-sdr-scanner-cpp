@@ -10,16 +10,7 @@ const std::vector<Signal>& Spectrogram::psd(Frequency centerFrequency, Frequency
   const auto correctedSize = std::min(size, static_cast<uint32_t>(std::lround(size * SPECTROGAM_FACTOR)));
   Logger::logger()->trace("[spectrogram] calculating started, samples: {}", correctedSize);
   spgramcf_reset(m_spectrogram);
-  if (correctedSize != size) {
-    const auto step = size / correctedSize;
-    std::vector<std::complex<float>> data;
-    for (int i = 0; i < buffer.size(); i += step) {
-      data.push_back(buffer[i]);
-    }
-    spgramcf_write(m_spectrogram, toLiquidComplex(data.data()), data.size());
-  } else {
-    spgramcf_write(m_spectrogram, toLiquidComplex(buffer.data()), size);
-  }
+  spgramcf_write(m_spectrogram, toLiquidComplex(buffer.data()), correctedSize);
   spgramcf_get_psd(m_spectrogram, m_buffer.data());
 
   for (int i = 0; i < m_size; ++i) {
