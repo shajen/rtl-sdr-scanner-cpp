@@ -17,20 +17,20 @@ Recorder::Recorder(Signal signal, Frequency centerFrequency, Frequency bandwidth
       m_startDataTime(time()),
       m_lastActiveDataTime(time()),
       m_lastDataTime(time()) {
-  Logger::logger()->debug("recording decimate rate: {}", m_decimateRate);
+  Logger::logger()->debug("[recorder] start, decimate rate: {}", m_decimateRate);
 }
 
 Recorder::~Recorder() {
   processSamples();
-  Logger::logger()->debug("close recording");
+  Logger::logger()->debug("[recorder] stop");
 }
 
-void Recorder::appendSamples(const Signal& bestSignal, bool active, std::vector<std::complex<float>>& buffer, const uint32_t samples) {
+void Recorder::appendSamples(const std::pair<Signal, bool>& bestSignal, std::vector<std::complex<float>>& buffer, const uint32_t samples) {
   std::unique_lock<std::mutex> lock(m_mutex);
   m_lastDataTime = time();
-  if (active) {
+  if (bestSignal.second) {
     m_lastActiveDataTime = time();
-    m_frequency[bestSignal.frequency.value]++;
+    m_frequency[bestSignal.first.frequency.value]++;
     for (const auto& noisedSample : m_noisedSamples) {
       m_samples.push_back(noisedSample);
     }
@@ -56,32 +56,37 @@ void Recorder::processSamples() {
     return;
   }
 
-  const auto duration = (m_lastDataTime - m_startDataTime).count() / 1000.0;
+  const auto duration = static_cast<float>(m_samples.size()) / m_sampleRate.value;
+  const auto totalDuration = (m_lastDataTime - m_startDataTime).count() / 1000.0;
   const auto bestFrequency = getBestFrequency();
   const auto downSamples = m_samples.size() / m_decimateRate;
   const auto fmSamples = downSamples - 1;
-  Logger::logger()->debug("processing partial recording, time: {:.2f} s, best {}", duration, bestFrequency.toString());
+  Logger::logger()->debug("[recorder] partial processing started, samples: {}, time: {:.2f} s, total time: {:.2f} s, best {}", m_samples.size(), duration, totalDuration, bestFrequency.toString());
 
   if (m_decimatorBuffer.size() < downSamples) {
     m_decimatorBuffer.resize(downSamples);
+    Logger::logger()->debug("[recorder] decimator buffer resized, size: {}", downSamples);
   }
   if (m_fmBuffer.size() < fmSamples) {
     m_fmBuffer.resize(fmSamples);
+    Logger::logger()->debug("[recorder] fm buffer resized, size: {}", fmSamples);
   }
 
   shift(m_samples, m_centerFrequency.value - bestFrequency.value, m_sampleRate, m_samples.size());
+  Logger::logger()->trace("[recorder] shift finished");
+
   m_decimator.decimate(m_samples.data(), m_samples.size() / m_decimateRate, m_decimatorBuffer.data());
-  Logger::logger()->debug("recording first resampling, in rate/samples: {}/{}, out rate/samples: {}/{}, threads: {}", m_sampleRate.value, m_samples.size(), m_sampleRate.value / m_decimateRate,
+  Logger::logger()->trace("[recorder] resampling finished , in rate/samples: {}/{}, out rate/samples: {}/{}, threads: {}", m_sampleRate.value, m_samples.size(), m_sampleRate.value / m_decimateRate,
                           downSamples, DECIMATOR_THREADS);
 
   m_demodulator.demodulate(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
-  Logger::logger()->debug("recording demodulate fm, in {}, out: {}", downSamples, fmSamples);
+  Logger::logger()->trace("[recorder] fm demodulation finished, in {}, out: {}", downSamples, fmSamples);
 
   m_mp3Writer.appendSamples(m_fmBuffer.data(), fmSamples);
-  Logger::logger()->debug("recording write samples to mp3");
+  Logger::logger()->trace("[recorder] writing samples to mp3 finished");
 
   m_samples.clear();
-  Logger::logger()->debug("finish partial processing recording");
+  Logger::logger()->debug("[recorder] partial processing finished");
 }
 
 Frequency Recorder::getBestFrequency() const {

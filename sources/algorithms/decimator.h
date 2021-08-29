@@ -13,7 +13,7 @@
 
 class DecimatorWorker {
  public:
-  DecimatorWorker(uint32_t rate);
+  DecimatorWorker(uint32_t id, uint32_t rate);
   ~DecimatorWorker();
 
   void decimate(std::complex<float>* in, uint32_t size, std::complex<float>* out);

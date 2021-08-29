@@ -12,9 +12,7 @@ uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::millise
 
 void unsigned_to_complex(const uint8_t* rawBuffer, std::vector<std::complex<float>>& buffer, const uint32_t samples);
 
-Signal selectMaxSignal(const std::vector<Signal>& signals);
-
-std::optional<Signal> detectBestSignal(const std::vector<Signal>& signals);
+std::pair<Signal, bool> detectbestSignal(const std::vector<Signal>& signals);
 
 std::chrono::milliseconds time();
 

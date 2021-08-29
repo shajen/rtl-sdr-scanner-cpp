@@ -4,9 +4,9 @@
 #include <logger.h>
 #include <utils.h>
 
-DecimatorWorker::DecimatorWorker(uint32_t rate)
-    : m_decimator(iirdecim_crcf_create_default(rate, RESAMPLER_FILTER_LENGTH)), m_isRunning(true), m_thread([this]() {
-        Logger::logger()->debug("start decimator thread");
+DecimatorWorker::DecimatorWorker(uint32_t id, uint32_t rate)
+    : m_decimator(iirdecim_crcf_create_default(rate, RESAMPLER_FILTER_LENGTH)), m_isRunning(true), m_thread([this, id]() {
+        Logger::logger()->debug("start decimator thread: {}", id);
         while (m_isRunning) {
           std::unique_lock<std::mutex> lock(m_mutex);
           m_cv.wait(lock);
@@ -15,7 +15,7 @@ DecimatorWorker::DecimatorWorker(uint32_t rate)
             m_isReady = true;
           }
         }
-        Logger::logger()->debug("stop decimator thread");
+        Logger::logger()->debug("stop decimator thread: {}", id);
       }) {}
 
 DecimatorWorker::~DecimatorWorker() {
@@ -41,7 +41,7 @@ void DecimatorWorker::waitForReady() {
 
 Decimator::Decimator(uint32_t rate) : m_rate(rate) {
   for (int i = 0; i < DECIMATOR_THREADS; ++i) {
-    m_workers.push_back(std::make_unique<DecimatorWorker>(m_rate));
+    m_workers.push_back(std::make_unique<DecimatorWorker>(i, m_rate));
   }
 }
 

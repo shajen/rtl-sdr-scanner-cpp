@@ -15,7 +15,7 @@ class Recorder {
   Recorder(Signal signal, Frequency centerFrequency, Frequency bandwidth, Frequency sampleRate, Spectrogram& Spectrogram);
   ~Recorder();
 
-  void appendSamples(const Signal& bestSignal, bool active, std::vector<std::complex<float>>& buffer, const uint32_t samples);
+  void appendSamples(const std::pair<Signal, bool>& bestSignal, std::vector<std::complex<float>>& buffer, const uint32_t samples);
   bool isFinished() const;
 
  private:
