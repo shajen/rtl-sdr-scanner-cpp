@@ -23,7 +23,7 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
   }
 }
 
-void unsigned_to_complex(const uint8_t *rawBuffer, std::vector<std::complex<float> > &buffer, const uint32_t samples) {
+void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float> > &buffer, const uint32_t samples) {
   if (buffer.size() < samples) {
     throw std::runtime_error("buffer size to small");
   }
@@ -61,39 +61,20 @@ std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono
 
 void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
   const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
-  Logger::trace("utils", "shifting, samples: {}, threads: {}", samplesCount, SHIFTER_THREADS);
-
-  if (SHIFTER_THREADS <= 1) {
-    for (int i = 0; i < samplesCount; ++i) {
-      samples[i] *= std::exp(f * static_cast<float>(i));
-    }
-  } else {
-    const auto subCount = samplesCount / SHIFTER_THREADS;
-    std::vector<std::thread> threads;
-    for (int i = 0; i < SHIFTER_THREADS; ++i) {
-      const auto offset = i * subCount;
-      std::thread thread([&samples, f, subCount, offset]() {
-        for (int i = 0; i < subCount; ++i) {
-          samples[i + offset] *= std::exp(f * static_cast<float>(i + offset));
-        }
-      });
-      threads.push_back(std::move(thread));
-    }
-    for (auto &thread : threads) {
-      thread.join();
-    }
+  for (int i = 0; i < samplesCount; ++i) {
+    samples[i] *= std::exp(f * static_cast<float>(i));
   }
 }
 
-std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const FrequencyRange &FrequencyRange) {
-  auto f = [&FrequencyRange](const Signal &signal) {
+std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const FrequencyRange &frequencyRange) {
+  auto f = [&frequencyRange](const Signal &signal) {
     const auto f = signal.frequency.value;
     for (const auto &configIgnoredFrequencyRange : IGNORED_FREQUENCIES) {
       if (configIgnoredFrequencyRange.start.value <= f && f <= configIgnoredFrequencyRange.stop.value) {
         return false;
       }
     }
-    return FrequencyRange.start.value <= f && f <= FrequencyRange.stop.value;
+    return frequencyRange.start.value <= f && f <= frequencyRange.stop.value;
   };
   std::vector<Signal> results;
   std::copy_if(signals.begin(), signals.end(), std::back_inserter(results), f);

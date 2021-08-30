@@ -37,7 +37,7 @@ Frequency FrequencyRange::center() const { return {(start.value + stop.value) / 
 
 Frequency FrequencyRange::bandwidth() const {
   if (step.value == 0) {
-    return { 0 };
+    return {0};
   }
   uint32_t range = 1;
   if (maxBandwidth.value) {
@@ -51,5 +51,7 @@ Frequency FrequencyRange::bandwidth() const {
   }
   return {step.value * range};
 }
+
+Frequency FrequencyRange::sampleRate() const { return bandwidth(); }
 
 uint32_t FrequencyRange::fftSize() const { return bandwidth().value / step.value; }

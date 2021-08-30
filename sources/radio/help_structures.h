@@ -27,6 +27,7 @@ struct FrequencyRange {
 
   Frequency center() const;
   Frequency bandwidth() const;
+  Frequency sampleRate() const;
   uint32_t fftSize() const;
 
   Frequency start;

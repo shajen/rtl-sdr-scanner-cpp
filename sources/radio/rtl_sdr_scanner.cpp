@@ -5,10 +5,11 @@
 #include <rtl-sdr.h>
 #include <utils.h>
 
-using StreamCallbackData = std::tuple<RtlSdrScanner*, Recorder*, const FrequencyRange*>;
+using StreamCallbackData = std::tuple<RtlSdrScanner*, Recorder*>;
 
 RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std::vector<FrequencyRange>& configFrequencyRanges, const std::vector<FrequencyRange>& ignoredConfigFrequencies)
     : m_deviceIndex(deviceIndex), m_isRunning(true) {
+  Logger::debug("rtl_sdr", "init");
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
   Logger::info("rtl_sdr", "open device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
@@ -80,6 +81,7 @@ RtlSdrScanner::RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std
 }
 
 RtlSdrScanner::~RtlSdrScanner() {
+  Logger::debug("rtl_sdr", "deinit");
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
   Logger::info("rtl_sdr", "close device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
@@ -94,9 +96,9 @@ bool RtlSdrScanner::isRunning() const { return m_isRunning; }
 void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   const auto centerFrequency = frequencyRange.center();
   const auto bandwidth = frequencyRange.bandwidth();
-  const auto sampleRate = bandwidth;
+  const auto sampleRate = frequencyRange.sampleRate();
   const auto samples = getSamplesCount(sampleRate, RANGE_SCANNING_TIME);
-  const auto SpectrogramSize = frequencyRange.fftSize();
+  const auto spectrogramSize = frequencyRange.fftSize();
 
   if (m_lastBandwidth.value != bandwidth.value) {
     Logger::debug("rtl_sdr", "set {}", bandwidth.toString("bandwidth"));
@@ -126,10 +128,10 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   } else if (read != samples) {
     throw std::runtime_error("read samples error, dropped samples");
   } else {
-    Logger::trace("rtl_sdr", "read bytes: {}", samples);
-    unsigned_to_complex(m_rawBuffer.data(), m_buffer, samples / 2);
+    Logger::debug("rtl_sdr", "read bytes: {}", samples);
+    toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
-    const auto& allSignals = m_spectrogram[SpectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
+    const auto allSignals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
     const auto signals = filterSignals(allSignals, frequencyRange);
     const auto bestSignal = detectbestSignal(signals);
     if (bestSignal.second) {
@@ -139,33 +141,21 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     }
     if (bestSignal.second) {
       auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
-        Logger::trace("rtl_sdr", "read bytes: {}", len);
+        Logger::debug("rtl_sdr", "read bytes: {}", len);
         StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
-        RtlSdrScanner* scanner = std::get<0>(*data);
-        Recorder* recorder = std::get<1>(*data);
-        const FrequencyRange* frequencyRange = std::get<2>(*data);
-
-        unsigned_to_complex(buf, scanner->m_buffer, len / 2);
-        Logger::trace("rtl_sdr", "convert to complex finished");
-        const auto& allSignals = scanner->m_spectrogram[frequencyRange->fftSize()]->psd(frequencyRange->center(), frequencyRange->bandwidth(), scanner->m_buffer, len / 2);
-        const auto signals = filterSignals(allSignals, *frequencyRange);
-        const auto bestSignal = detectbestSignal(signals);
-        if (bestSignal.second) {
-          Logger::info("rtl_sdr", "strong signal, {}", bestSignal.first.toString());
-        } else {
-          Logger::debug("rtl_sdr", "best signal, {}", bestSignal.first.toString());
-        }
-        recorder->appendSamples(bestSignal, scanner->m_buffer, len / 2);
-        if (recorder->isFinished() || !scanner->m_isRunning) {
-          Logger::info("rtl_sdr", "stop stream");
+        RtlSdrScanner* scanner = reinterpret_cast<RtlSdrScanner*>(std::get<0>(*data));
+        Recorder* recorder = reinterpret_cast<Recorder*>(std::get<1>(*data));
+        recorder->appendSamples(std::move(std::vector<uint8_t>({buf, buf + len})));
+        if (!scanner->m_isRunning || recorder->isFinished()) {
           rtlsdr_cancel_async(scanner->m_device);
+          Logger::info("rtl_sdr", "cancel stream");
         }
-        Logger::trace("rtl_sdr", "stream processing finished");
       };
+      Recorder recorder(bestSignal.first.frequency, frequencyRange);
+      StreamCallbackData data(this, &recorder);
       Logger::info("rtl_sdr", "start stream");
-      Recorder recorder(bestSignal.first, centerFrequency, bandwidth, sampleRate, *m_spectrogram[SpectrogramSize]);
-      StreamCallbackData data({this, &recorder, &frequencyRange});
       rtlsdr_read_async(m_device, f, &data, 0, samples);
+      Logger::info("rtl_sdr", "stop stream");
     }
     Logger::trace("rtl_sdr", "processing finished");
   }

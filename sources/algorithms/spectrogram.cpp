@@ -2,22 +2,23 @@
 
 #include <logger.h>
 
-Spectrogram::Spectrogram(uint32_t size) : m_size(size), m_buffer(size), m_signals(size), m_spectrogram(spgramcf_create_default(size)) { Logger::info("spectrum", "new, size: {}", size); }
+Spectrogram::Spectrogram(uint32_t size) : m_size(size), m_buffer(size), m_spectrogram(spgramcf_create_default(size)) { Logger::debug("spectrum", "init, size: {}", size); }
 
-Spectrogram::~Spectrogram() { spgramcf_destroy(m_spectrogram); }
+Spectrogram::~Spectrogram() {
+  Logger::debug("spectrum", "deinit");
+  spgramcf_destroy(m_spectrogram);
+}
 
-const std::vector<Signal>& Spectrogram::psd(Frequency centerFrequency, Frequency bandwidth, std::vector<std::complex<float>>& buffer, uint32_t size) {
+std::vector<Signal> Spectrogram::psd(Frequency centerFrequency, Frequency bandwidth, std::vector<std::complex<float>>& buffer, uint32_t size) {
   const auto correctedSize = std::min(size, static_cast<uint32_t>(std::lround(size * SPECTROGAM_FACTOR)));
-  Logger::trace("spectrum", "calculating started, samples: {}", correctedSize);
   spgramcf_reset(m_spectrogram);
   spgramcf_write(m_spectrogram, toLiquidComplex(buffer.data()), correctedSize);
   spgramcf_get_psd(m_spectrogram, m_buffer.data());
 
+  std::vector<Signal> signals(m_size);
   for (int i = 0; i < m_size; ++i) {
-    m_signals[i].power.value = m_buffer[i];
-    m_signals[i].frequency.value = (centerFrequency.value - bandwidth.value / 2) + static_cast<uint64_t>(i) * bandwidth.value / m_size;
+    signals[i].power.value = m_buffer[i];
+    signals[i].frequency.value = (centerFrequency.value - bandwidth.value / 2) + static_cast<uint64_t>(i) * bandwidth.value / m_size;
   }
-
-  Logger::trace("spectrum", "calculating finished");
-  return m_signals;
+  return signals;
 }

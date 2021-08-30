@@ -3,4 +3,5 @@ build
 *.wav
 todo.txt
 sync.sh
+download.sh
 .bash_history
