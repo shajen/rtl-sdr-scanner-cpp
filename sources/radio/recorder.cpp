@@ -7,8 +7,8 @@
 
 #include <map>
 
-Recorder::Recorder(const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
-    : m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isWorking(true), m_thread([this]() {
+Recorder::Recorder(const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
+    : m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isWorking(true), m_thread([this]() {
         Logger::debug("recorder", "start thread");
         while (m_isWorking) {
           {
@@ -49,8 +49,8 @@ Recorder::Recorder(const Frequency& bandwidth, const Frequency& sampleRate, uint
         Logger::debug("recorder", "stop thread");
       }) {
   Logger::debug("recorder", "init");
-  for (int i = 0; i < THREADS; ++i) {
-    auto worker = std::make_unique<RecorderWorker>(i, bandwidth, sampleRate, spectrogramSize, m_inMutex, m_inCv, m_inSamples, m_outMutex, m_outCv, m_outSamples);
+  for (int i = 0; i < config.threads(); ++i) {
+    auto worker = std::make_unique<RecorderWorker>(m_config, i, bandwidth, sampleRate, spectrogramSize, m_inMutex, m_inCv, m_inSamples, m_outMutex, m_outCv, m_outSamples);
     m_workers.push_back(std::move(worker));
   }
 }
@@ -64,8 +64,8 @@ Recorder::~Recorder() {
 
 void Recorder::start(Frequency frequency, FrequencyRange frequencyRange) {
   Logger::info("recorder", "start recording {}", frequency.toString());
-  const Frequency mp3SampleRate{m_sampleRate.value / (m_sampleRate.value / RESAMPLER_MINIMAL_OUT_SAMPLE_RATE)};
-  m_mp3Writer = std::make_unique<Mp3Writer>(frequency, mp3SampleRate);
+  const Frequency mp3SampleRate{m_sampleRate.value / (m_sampleRate.value / m_config.resamplerMinimalOutSampleRate())};
+  m_mp3Writer = std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate);
 
   m_frequencyRange = frequencyRange;
 
@@ -102,7 +102,7 @@ void Recorder::appendSamples(std::vector<uint8_t> samples) {
   m_inCv.notify_one();
 }
 
-bool Recorder::isFinished() const { return m_lastActiveDataTime + MAX_SILENCE_TIME < time(); }
+bool Recorder::isFinished() const { return m_lastActiveDataTime + m_config.maxSilenceTime() < time(); }
 
 Frequency Recorder::getBestFrequency() const {
   auto max = std::max_element(m_frequency.begin(), m_frequency.end(), [](const auto& x, const auto& y) { return x.second < y.second; });

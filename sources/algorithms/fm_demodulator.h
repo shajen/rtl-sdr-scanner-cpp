@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <liquid/liquid.h>
 
 #include <complex>
@@ -7,7 +8,7 @@
 
 class FmDemodulator {
  public:
-  FmDemodulator();
+  FmDemodulator(const Config& config);
   ~FmDemodulator();
 
   void demodulate(std::complex<float>* in, uint32_t size, float* out);

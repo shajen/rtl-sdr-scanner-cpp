@@ -28,13 +28,14 @@ struct OutputSamples {
 
 class RecorderWorker {
  public:
-  RecorderWorker(int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv, std::deque<InputSamples> &inSamples,
-                 std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples);
+  RecorderWorker(const Config &config, int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv,
+                 std::deque<InputSamples> &inSamples, std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples);
   ~RecorderWorker();
 
  private:
   OutputSamples processSamples(const InputSamples &inputSamples);
 
+  const Config &m_config;
   const int m_id;
   const Frequency m_bandwidth;
   const Frequency m_sampleRate;

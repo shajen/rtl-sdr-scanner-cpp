@@ -17,7 +17,7 @@
 
 class Recorder {
  public:
-  Recorder(const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize);
+  Recorder(const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize);
   ~Recorder();
 
   void start(Frequency frequency, FrequencyRange frequencyRange);
@@ -26,6 +26,7 @@ class Recorder {
   bool isFinished() const;
 
  private:
+  const Config& m_config;
   Frequency getBestFrequency() const;
 
   const Frequency m_bandwidth;

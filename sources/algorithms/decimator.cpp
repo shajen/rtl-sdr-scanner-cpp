@@ -1,11 +1,10 @@
 #include "decimator.h"
 
-#include <config.h>
 #include <logger.h>
 #include <utils.h>
 
-Decimator::Decimator(uint32_t rate) : m_rate(rate), m_decimator(iirdecim_crcf_create_default(rate, RESAMPLER_FILTER_LENGTH)) {
-  Logger::debug("decimator", "init, rate: {}, filter length: {}", m_rate, RESAMPLER_FILTER_LENGTH);
+Decimator::Decimator(const Config &config, uint32_t rate) : m_rate(rate), m_decimator(iirdecim_crcf_create_default(rate, config.resamplerFilterLength())) {
+  Logger::debug("decimator", "init, rate: {}, filter length: {}", m_rate, config.resamplerFilterLength());
 }
 
 Decimator::~Decimator() {

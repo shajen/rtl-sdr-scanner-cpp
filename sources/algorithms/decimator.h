@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <liquid/liquid.h>
 
 #include <complex>
@@ -7,7 +8,7 @@
 
 class Decimator {
  public:
-  Decimator(uint32_t rate);
+  Decimator(const Config& config, uint32_t rate);
   ~Decimator();
 
   void decimate(std::complex<float>* in, uint32_t size, std::complex<float>* out);

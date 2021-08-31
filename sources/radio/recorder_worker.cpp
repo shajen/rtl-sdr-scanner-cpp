@@ -2,14 +2,16 @@
 
 #include <logger.h>
 
-RecorderWorker::RecorderWorker(int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv,
+RecorderWorker::RecorderWorker(const Config &config, int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv,
                                std::deque<InputSamples> &inSamples, std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples)
-    : m_id(id),
+    : m_config(config),
+      m_id(id),
       m_sampleRate(sampleRate),
       m_bandwidth(bandwidth),
-      m_decimateRate(sampleRate.value / RESAMPLER_MINIMAL_OUT_SAMPLE_RATE),
-      m_spectrogram(spectrogramSize),
-      m_decimator(m_decimateRate),
+      m_decimateRate(sampleRate.value / config.resamplerMinimalOutSampleRate()),
+      m_spectrogram(config, spectrogramSize),
+      m_decimator(config, m_decimateRate),
+      m_demodulator(config),
       m_inMutex(inMutex),
       m_inCv(inCv),
       m_inSamples(inSamples),
@@ -59,13 +61,13 @@ RecorderWorker::~RecorderWorker() {
 }
 
 OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
-  const auto bestFrequency = inputSamples.frequency;
+  const auto frequency = inputSamples.frequency;
   const auto rawBufferSamples = inputSamples.samples.size() / 2;
   const auto downSamples = rawBufferSamples / m_decimateRate;
   const auto fmSamples = downSamples;
   const auto center = inputSamples.frequencyRange.center();
 
-  Logger::trace("recorder", "thread: {}, processing started, samples: {}, {}", m_id, inputSamples.samples.size(), bestFrequency.toString());
+  Logger::debug("recorder", "thread: {}, processing started, samples: {}, {}", m_id, inputSamples.samples.size(), frequency.toString());
 
   if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
@@ -86,11 +88,11 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
   const auto allSignals = m_spectrogram.psd(center, m_bandwidth, m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, psd finished", m_id);
 
-  const auto signals = filterSignals(allSignals, inputSamples.frequencyRange);
-  const auto bestSignal = detectbestSignal(signals);
+  const auto signals = filterSignals(m_config.ignoredFrequencies(), allSignals, inputSamples.frequencyRange);
+  const auto bestSignal = detectbestSignal(m_config.signalDetectionFactor(), signals);
   Logger::trace("recorder", "thread: {}, best signal finished", m_id);
 
-  shift(m_rawBuffer, center.value - bestFrequency.value, m_sampleRate, rawBufferSamples);
+  shift(m_rawBuffer, center.value - frequency.value, m_sampleRate, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, shift finished", m_id);
 
   m_decimator.decimate(m_rawBuffer.data(), rawBufferSamples / m_decimateRate, m_decimatorBuffer.data());

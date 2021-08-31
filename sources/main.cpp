@@ -12,6 +12,9 @@ void handler(int) {
 }
 
 int main() {
+  const Config config;
+  Logger::configure(config);
+
   Logger::info("main", "start app auto-sdr");
 #ifndef NDEBUG
   Logger::info("main", "build type: debug");
@@ -22,7 +25,7 @@ int main() {
   try {
     std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
     for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {
-      scanners.push_back(std::make_unique<RtlSdrScanner>(i, RTL_SDR_GAIN, SCANNER_FREQUENCIES, IGNORED_FREQUENCIES));
+      scanners.push_back(std::make_unique<RtlSdrScanner>(config, i));
     }
 
     if (scanners.empty()) {

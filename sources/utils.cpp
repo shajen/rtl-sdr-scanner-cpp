@@ -33,17 +33,17 @@ void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float> > &buff
   }
 }
 
-std::pair<Signal, bool> detectbestSignal(const std::vector<Signal> &signals) {
+std::pair<Signal, bool> detectbestSignal(const float signalDetectionFactor, const std::vector<Signal> &signals) {
   const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power.value; });
   const auto mean = sum / signals.size();
 
   const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power.value - mean, 2); });
   const auto standardDeviation = sqrt(sum2 / signals.size());
-  Logger::trace("utils", "mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
+  Logger::debug("utils", "mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
 
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
-  const auto range = static_cast<int32_t>(signals.size() * SIGNAL_DETECTION_FACTOR);
+  const auto range = static_cast<int32_t>(signals.size() * signalDetectionFactor);
   const auto from = std::max(static_cast<int32_t>(0), static_cast<int32_t>(index - range));
   const auto to = std::min(static_cast<int32_t>(signals.size()), static_cast<int32_t>(index + range));
   for (int i = from; i < to; ++i) {
@@ -66,10 +66,10 @@ void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, 
   }
 }
 
-std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const FrequencyRange &frequencyRange) {
-  auto f = [&frequencyRange](const Signal &signal) {
+std::vector<Signal> filterSignals(const std::vector<FrequencyRange> &ignoredFrequencies, const std::vector<Signal> &signals, const FrequencyRange &frequencyRange) {
+  auto f = [&ignoredFrequencies, &frequencyRange](const Signal &signal) {
     const auto f = signal.frequency.value;
-    for (const auto &configIgnoredFrequencyRange : IGNORED_FREQUENCIES) {
+    for (const auto &configIgnoredFrequencyRange : ignoredFrequencies) {
       if (configIgnoredFrequencyRange.start.value <= f && f <= configIgnoredFrequencyRange.stop.value) {
         return false;
       }
@@ -83,14 +83,14 @@ std::vector<Signal> filterSignals(const std::vector<Signal> &signals, const Freq
 
 liquid_float_complex *toLiquidComplex(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
 
-std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRange> &frequencyRanges) {
+std::vector<FrequencyRange> splitFrequencyRanges(const uint32_t maxBandwidth, const std::vector<FrequencyRange> &frequencyRanges) {
   std::vector<FrequencyRange> result;
   for (const auto &frequencyRange : frequencyRanges) {
-    if (frequencyRange.bandwidth().value <= RTL_SDR_MAX_BANDWIDTH) {
-      result.push_back({frequencyRange.start.value, frequencyRange.stop.value, frequencyRange.step.value, RTL_SDR_MAX_BANDWIDTH});
+    if (frequencyRange.bandwidth().value <= maxBandwidth) {
+      result.push_back({frequencyRange.start.value, frequencyRange.stop.value, frequencyRange.step.value, maxBandwidth});
     } else {
       uint32_t range = 1;
-      while (frequencyRange.step.value * range * 2 < RTL_SDR_MAX_BANDWIDTH) {
+      while (frequencyRange.step.value * range * 2 < maxBandwidth) {
         range = range << 1;
       }
       const auto bandwidth = range * frequencyRange.step.value;
@@ -98,7 +98,7 @@ std::vector<FrequencyRange> splitFrequencyRanges(const std::vector<FrequencyRang
       const auto base = static_cast<uint32_t>(pow(10, factor));
       const auto max = (bandwidth / base) * base;
       for (uint32_t start = frequencyRange.start.value; start < frequencyRange.stop.value; start += max) {
-        result.push_back({start, start + max, frequencyRange.step.value, RTL_SDR_MAX_BANDWIDTH});
+        result.push_back({start, start + max, frequencyRange.step.value, maxBandwidth});
       }
     }
   }

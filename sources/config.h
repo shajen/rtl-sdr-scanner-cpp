@@ -6,27 +6,30 @@
 #include <optional>
 #include <vector>
 
-constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(100);
-constexpr auto MAX_SILENCE_TIME = std::chrono::milliseconds(1000);
-constexpr auto MIN_RECORDING_TIME = std::chrono::milliseconds(1000);
-constexpr auto RECORDING_SAMPLE_RATE = 48000;
-const auto RECORDING_OUTPUT_DIRECTORY = std::string(getenv("HOME")) + "/sdr/recordings/";
+class Config {
+ public:
+  std::chrono::milliseconds rangeScanningTime() const;
+  std::chrono::milliseconds maxSilenceTime() const;
+  std::chrono::milliseconds minRecordingTime() const;
+  uint32_t recordingSampleRate() const;
+  std::string recordingOutputDirectory() const;
 
-constexpr auto LOG_LEVEL_CONSOLE = spdlog::level::info;
-constexpr auto LOG_LEVEL_FILE = spdlog::level::debug;
-const auto LOG_DIR = std::string(getenv("HOME")) + "/sdr/logs/";
+  spdlog::level::level_enum logLevelConsole() const;
+  spdlog::level::level_enum logLevelFile() const;
+  std::string logDir() const;
 
-constexpr auto RTL_SDR_PPM = 0;
-constexpr auto RTL_SDR_GAIN = std::optional<int>(496);
-constexpr auto RTL_SDR_MAX_BANDWIDTH = 2500000;
+  uint32_t rtlSdrPpm() const;
+  std::optional<int> rtlSdrGain() const;
+  uint32_t rtlSdrMaxBandwidth() const;
 
-const std::vector<FrequencyRange> SCANNER_FREQUENCIES{{430000000, 440000000, 125}};
-const std::vector<FrequencyRange> IGNORED_FREQUENCIES;
+  std::vector<FrequencyRange> scannerFrequencies() const;
+  std::vector<FrequencyRange> ignoredFrequencies() const;
 
-// experts only
-constexpr auto RESAMPLER_FILTER_LENGTH = 10;
-constexpr auto RESAMPLER_MINIMAL_OUT_SAMPLE_RATE = 200000;
-constexpr auto FM_DEMODULATOR_FACTOR = 0.5f;
-constexpr auto SPECTROGAM_FACTOR = 0.1f;
-constexpr auto SIGNAL_DETECTION_FACTOR = 0.001f;
-constexpr auto THREADS = 4;
+  uint32_t resamplerFilterLength() const;
+  uint32_t resamplerMinimalOutSampleRate() const;
+  float fmDemodulatorFactor() const;
+  uint32_t fmCutOffMargin() const;
+  float spectrogramFactor() const;
+  float signalDetectionFactor() const;
+  uint8_t threads() const;
+};

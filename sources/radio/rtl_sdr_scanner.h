@@ -13,13 +13,14 @@ typedef struct rtlsdr_dev rtlsdr_dev_t;
 
 class RtlSdrScanner {
  public:
-  RtlSdrScanner(int deviceIndex, std::optional<int> gain, const std::vector<FrequencyRange>& configFrequencies, const std::vector<FrequencyRange>& ignoredConfigFrequencies);
+  RtlSdrScanner(const Config& config, int deviceIndex);
   ~RtlSdrScanner();
 
   bool isRunning() const;
   static int devicesCount();
 
  private:
+  const Config& m_config;
   void readSamples(const FrequencyRange& frequencyRange);
 
   const int m_deviceIndex;

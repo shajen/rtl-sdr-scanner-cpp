@@ -1,10 +1,9 @@
 #include "fm_demodulator.h"
 
-#include <config.h>
 #include <logger.h>
 #include <utils.h>
 
-FmDemodulator::FmDemodulator() : m_demodulator(freqdem_create(FM_DEMODULATOR_FACTOR)) { Logger::debug("fm_dem", "init, factor: {:.4f}", FM_DEMODULATOR_FACTOR); }
+FmDemodulator::FmDemodulator(const Config &config) : m_demodulator(freqdem_create(config.fmDemodulatorFactor())) { Logger::debug("fm_dem", "init, factor: {:.4f}", config.fmDemodulatorFactor()); }
 
 FmDemodulator::~FmDemodulator() {
   Logger::debug("fm_dem", "deinit");
