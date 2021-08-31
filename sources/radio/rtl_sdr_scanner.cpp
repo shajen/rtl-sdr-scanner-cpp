@@ -136,8 +136,9 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
     const auto allSignals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
+    const auto signalDetectionRange = static_cast<int32_t>(allSignals.size() * m_config.signalDetectionFactor());
     const auto signals = filterSignals(m_config.ignoredFrequencies(), allSignals, frequencyRange);
-    const auto bestSignal = detectbestSignal(m_config.signalDetectionFactor(), signals);
+    const auto bestSignal = detectbestSignal(signalDetectionRange, signals);
     if (bestSignal.second) {
       Logger::info("rtl_sdr", "strong signal, {}", bestSignal.first.toString());
     } else {

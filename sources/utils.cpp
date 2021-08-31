@@ -33,7 +33,7 @@ void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float> > &buff
   }
 }
 
-std::pair<Signal, bool> detectbestSignal(const float signalDetectionFactor, const std::vector<Signal> &signals) {
+std::pair<Signal, bool> detectbestSignal(const uint32_t signalDetectionRange, const std::vector<Signal> &signals) {
   const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power.value; });
   const auto mean = sum / signals.size();
 
@@ -43,26 +43,16 @@ std::pair<Signal, bool> detectbestSignal(const float signalDetectionFactor, cons
 
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
-  const auto range = static_cast<int32_t>(signals.size() * signalDetectionFactor);
-  const auto from = std::max(static_cast<int32_t>(0), static_cast<int32_t>(index - range));
-  const auto to = std::min(static_cast<int32_t>(signals.size()), static_cast<int32_t>(index + range));
-  for (int i = from; i < to; ++i) {
-    Logger::trace("utils", "{}", signals[i].toString());
-  }
-
   const auto threshold = mean + standardDeviation;
   uint32_t minPosition = index;
   while (0 < minPosition && threshold <= signals[minPosition - 1].power.value) minPosition--;
   uint32_t maxPosition = index;
   while (maxPosition < signals.size() - 1 && threshold <= signals[maxPosition + 1].power.value) maxPosition++;
-  Logger::debug("utils", "signal range: {}", maxPosition - minPosition + 1);
+  Logger::debug("utils", "signal range, left: {}, right: {}, threshold: {}", index - minPosition, maxPosition - index, signalDetectionRange);
 
-  for (int i = from; i < to; ++i) {
-    if (signals[i].power.value < threshold) {
-      return {*max, false};
-    }
-  }
-  return {*max, true};
+  const auto isStrongLeftSide = signalDetectionRange <= index - minPosition || minPosition == 0;
+  const auto isStrongRightSize = signalDetectionRange <= maxPosition - index || maxPosition == signals.size() - 1;
+  return {*max, isStrongLeftSide && isStrongRightSize};
 }
 
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }

@@ -4,7 +4,6 @@
 
 Spectrogram::Spectrogram(const Config& config, uint32_t size) : m_config(config), m_size(size), m_buffer(size), m_spectrogram(spgramcf_create_default(size)) {
   Logger::debug("spectrum", "init, size: {}", size);
-  Logger::debug("spectrum", "best signal window size: {}", static_cast<uint32_t>(std::floor(2 * size * config.signalDetectionFactor())));
 }
 
 Spectrogram::~Spectrogram() {

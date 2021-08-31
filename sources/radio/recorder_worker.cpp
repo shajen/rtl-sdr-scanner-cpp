@@ -88,8 +88,9 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
   const auto allSignals = m_spectrogram.psd(center, m_bandwidth, m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, psd finished", m_id);
 
+  const auto signalDetectionRange = static_cast<int32_t>(allSignals.size() * m_config.signalDetectionFactor());
   const auto signals = filterSignals(m_config.ignoredFrequencies(), allSignals, inputSamples.frequencyRange);
-  const auto bestSignal = detectbestSignal(m_config.signalDetectionFactor(), signals);
+  const auto bestSignal = detectbestSignal(signalDetectionRange, signals);
   Logger::trace("recorder", "thread: {}, best signal finished", m_id);
 
   shift(m_rawBuffer, center.value - frequency.value, m_sampleRate, rawBufferSamples);

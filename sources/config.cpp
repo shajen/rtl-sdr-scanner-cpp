@@ -25,7 +25,7 @@ constexpr auto RESAMPLER_MINIMAL_OUT_SAMPLE_RATE = 200000;
 constexpr auto FM_DEMODULATOR_FACTOR = 0.5f;
 constexpr auto FM_CUT_OFF_MARGIN = 10;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
-constexpr auto SIGNAL_DETECTION_FACTOR = 0.0025f;
+constexpr auto SIGNAL_DETECTION_FACTOR = 0.01f;
 constexpr auto THREADS = 4;
 
 std::chrono::milliseconds Config::rangeScanningTime() const { return RANGE_SCANNING_TIME; }
