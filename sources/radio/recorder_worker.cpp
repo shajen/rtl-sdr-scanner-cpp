@@ -12,6 +12,7 @@ RecorderWorker::RecorderWorker(const Config &config, int id, const Frequency &ba
       m_spectrogram(config, spectrogramSize),
       m_decimator(config, m_decimateRate),
       m_demodulator(config),
+      m_transmisionDetector(1024),
       m_inMutex(inMutex),
       m_inCv(inCv),
       m_inSamples(inSamples),
@@ -102,6 +103,9 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
 
   m_demodulator.demodulate(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
   Logger::trace("recorder", "thread: {}, fm demodulation finished, in {}, out: {}", m_id, downSamples, fmSamples);
+
+  m_transmisionDetector.detect(m_fmBuffer);
+  Logger::trace("recorder", "thread: {}, transmision detector finished", m_id);
 
   Logger::trace("recorder", "thread: {}, processing finished", m_id);
   return {inputSamples.time, m_fmBuffer, bestSignal.first, bestSignal.second};

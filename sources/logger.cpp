@@ -6,7 +6,7 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-constexpr auto MAX_MESSAGE_LABEL_LEN = 10;
+constexpr auto MAX_MESSAGE_LABEL_LEN = 11;
 constexpr auto MAX_MESSAGE_TYPE_LEN = 8;
 
 void Logger::Logger::configure(const Config &config) {

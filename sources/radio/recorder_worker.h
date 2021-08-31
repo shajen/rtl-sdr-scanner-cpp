@@ -3,6 +3,7 @@
 #include <algorithms/decimator.h>
 #include <algorithms/fm_demodulator.h>
 #include <algorithms/spectrogram.h>
+#include <algorithms/transmision_detector.h>
 #include <utils.h>
 
 #include <condition_variable>
@@ -48,6 +49,7 @@ class RecorderWorker {
   Spectrogram m_spectrogram;
   Decimator m_decimator;
   FmDemodulator m_demodulator;
+  TransmisionDetector m_transmisionDetector;
 
   std::mutex &m_inMutex;
   std::condition_variable &m_inCv;
