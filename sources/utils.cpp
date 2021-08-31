@@ -39,7 +39,7 @@ std::pair<Signal, bool> detectbestSignal(const float signalDetectionFactor, cons
 
   const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power.value - mean, 2); });
   const auto standardDeviation = sqrt(sum2 / signals.size());
-  Logger::debug("utils", "mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
+  Logger::debug("utils", "signals mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
 
   auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
   const auto index = std::distance(signals.begin(), max);
@@ -49,8 +49,16 @@ std::pair<Signal, bool> detectbestSignal(const float signalDetectionFactor, cons
   for (int i = from; i < to; ++i) {
     Logger::trace("utils", "{}", signals[i].toString());
   }
+
+  const auto threshold = mean + standardDeviation;
+  uint32_t minPosition = index;
+  while (0 < minPosition && threshold <= signals[minPosition - 1].power.value) minPosition--;
+  uint32_t maxPosition = index;
+  while (maxPosition < signals.size() - 1 && threshold <= signals[maxPosition + 1].power.value) maxPosition++;
+  Logger::debug("utils", "signal range: {}", maxPosition - minPosition + 1);
+
   for (int i = from; i < to; ++i) {
-    if (signals[i].power.value < mean + standardDeviation) {
+    if (signals[i].power.value < threshold) {
       return {*max, false};
     }
   }
