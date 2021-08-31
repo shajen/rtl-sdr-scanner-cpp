@@ -17,16 +17,23 @@
 
 class Recorder {
  public:
-  Recorder(Frequency frequency, const FrequencyRange& frequencyRange);
+  Recorder(const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize);
   ~Recorder();
 
+  void start(Frequency frequency, FrequencyRange frequencyRange);
+  void stop();
   void appendSamples(std::vector<uint8_t> samples);
   bool isFinished() const;
 
  private:
   Frequency getBestFrequency() const;
 
-  const std::chrono::milliseconds m_startDataTime;
+  const Frequency m_bandwidth;
+  const Frequency m_sampleRate;
+
+  FrequencyRange m_frequencyRange;
+
+  std::chrono::milliseconds m_startDataTime;
   std::chrono::milliseconds m_lastActiveDataTime;
   std::chrono::milliseconds m_lastDataTime;
 
@@ -40,7 +47,7 @@ class Recorder {
 
   std::map<uint32_t, uint32_t> m_frequency;
   std::vector<std::unique_ptr<RecorderWorker>> m_workers;
-  Mp3Writer m_mp3Writer;
+  std::unique_ptr<Mp3Writer> m_mp3Writer;
   std::deque<OutputSamples> m_noisedSamples;
   std::atomic_bool m_isWorking;
   std::thread m_thread;

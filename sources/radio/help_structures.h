@@ -33,5 +33,5 @@ struct FrequencyRange {
   Frequency start;
   Frequency stop;
   Frequency step;
-  const Frequency maxBandwidth;
+  Frequency maxBandwidth;
 };

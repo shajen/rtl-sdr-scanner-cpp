@@ -16,6 +16,7 @@ struct InputSamples {
   std::chrono::milliseconds time;
   std::vector<uint8_t> samples;
   Frequency frequency;
+  FrequencyRange frequencyRange;
 };
 
 struct OutputSamples {
@@ -27,15 +28,16 @@ struct OutputSamples {
 
 class RecorderWorker {
  public:
-  RecorderWorker(int id, const FrequencyRange &frequencyRange, std::mutex &inMutex, std::condition_variable &inCv, std::deque<InputSamples> &inSamples, std::mutex &outMutex,
-                 std::condition_variable &outCv, std::deque<OutputSamples> &outSamples);
+  RecorderWorker(int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv, std::deque<InputSamples> &inSamples,
+                 std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples);
   ~RecorderWorker();
 
  private:
   OutputSamples processSamples(const InputSamples &inputSamples);
 
   const int m_id;
-  const FrequencyRange m_frequencyRange;
+  const Frequency m_bandwidth;
+  const Frequency m_sampleRate;
   const uint32_t m_decimateRate;
 
   std::vector<std::complex<float>> m_rawBuffer;
