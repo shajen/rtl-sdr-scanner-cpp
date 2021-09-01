@@ -135,16 +135,13 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     Logger::debug("rtl_sdr", "read bytes: {}", samples);
     toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
-    const auto allSignals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
-    const auto signalDetectionRange = static_cast<int32_t>(allSignals.size() * m_config.signalDetectionFactor());
-    const auto signals = filterSignals(m_config.ignoredFrequencies(), allSignals, frequencyRange);
-    const auto bestSignal = detectbestSignal(signalDetectionRange, signals);
-    if (bestSignal.second) {
-      Logger::info("rtl_sdr", "strong signal, {}", bestSignal.first.toString());
-    } else {
-      Logger::debug("rtl_sdr", "best signal, {}", bestSignal.first.toString());
-    }
-    if (bestSignal.second) {
+    const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
+    const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
+    const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
+    if (!strongSignals.empty()) {
+      for (const auto& strongSignal : strongSignals) {
+        Logger::info("rtl_sdr", "strong signal, {}", strongSignal.toString());
+      }
       auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
         Logger::debug("rtl_sdr", "read bytes: {}", len);
         StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
@@ -158,7 +155,7 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
       };
       const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
       auto& recorder = m_recorders[key];
-      recorder->start(bestSignal.first.frequency, frequencyRange);
+      recorder->start(strongSignals.front().frequency, frequencyRange);
       StreamCallbackData data(this, recorder);
       Logger::info("rtl_sdr", "start stream");
       rtlsdr_read_async(m_device, f, &data, 0, samples);

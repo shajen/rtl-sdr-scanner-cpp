@@ -31,5 +31,7 @@ class Config {
   uint32_t fmCutOffMargin() const;
   float spectrogramFactor() const;
   float signalDetectionFactor() const;
+  uint32_t debugSignalsLimit() const;
+  uint32_t signalMargin() const;
   uint8_t threads() const;
 };

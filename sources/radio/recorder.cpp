@@ -29,9 +29,14 @@ Recorder::Recorder(const Config& config, const Frequency& bandwidth, const Frequ
               m_outSamples.pop_front();
               Logger::debug("recorder", "pop output samples, size: {}", m_outSamples.size());
             }
-            if (outputSamples.isStrongSignal) {
-              Logger::info("recorder", "strong signal, {}", outputSamples.bestSignal.toString());
-              m_frequency[outputSamples.bestSignal.frequency.value]++;
+            for (const auto& strongSignal : outputSamples.strongSignals) {
+              Logger::info("recorder", "strong signal, {}", strongSignal.toString());
+            }
+            const auto bestFrequency = getBestFrequency();
+            const auto f = [this, bestFrequency](const Signal& s) { return std::abs(static_cast<int>(bestFrequency.value) - static_cast<int>(s.frequency.value)) < m_config.signalMargin(); };
+            const auto strongSignal = std::find_if(outputSamples.strongSignals.begin(), outputSamples.strongSignals.end(), f);
+            if (strongSignal != outputSamples.strongSignals.end()) {
+              m_frequency[strongSignal->frequency.value]++;
               m_lastDataTime = outputSamples.time;
               m_lastActiveDataTime = outputSamples.time;
               for (const auto& noisedSamples : m_noisedSamples) {
@@ -40,7 +45,6 @@ Recorder::Recorder(const Config& config, const Frequency& bandwidth, const Frequ
               m_noisedSamples.clear();
               m_noisedSamples.push_back(std::move(outputSamples));
             } else {
-              Logger::debug("recorder", "best signal, {}", outputSamples.bestSignal.toString());
               m_lastDataTime = outputSamples.time;
               m_noisedSamples.push_back(std::move(outputSamples));
             }

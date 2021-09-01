@@ -86,12 +86,11 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
   toComplex(inputSamples.samples.data(), m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, uint8 to complex finished", m_id);
 
-  const auto allSignals = m_spectrogram.psd(center, m_bandwidth, m_rawBuffer, rawBufferSamples);
+  const auto signals = m_spectrogram.psd(center, m_bandwidth, m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, psd finished", m_id);
 
-  const auto signalDetectionRange = static_cast<int32_t>(allSignals.size() * m_config.signalDetectionFactor());
-  const auto signals = filterSignals(m_config.ignoredFrequencies(), allSignals, inputSamples.frequencyRange);
-  const auto bestSignal = detectbestSignal(signalDetectionRange, signals);
+  const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
+  const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, inputSamples.frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
   Logger::trace("recorder", "thread: {}, best signal finished", m_id);
 
   shift(m_rawBuffer, center.value - frequency.value, m_sampleRate, rawBufferSamples);
@@ -107,6 +106,6 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
   m_transmisionDetector.detect(m_fmBuffer);
   Logger::trace("recorder", "thread: {}, transmision detector finished", m_id);
 
-  Logger::trace("recorder", "thread: {}, processing finished", m_id);
-  return {inputSamples.time, m_fmBuffer, bestSignal.first, bestSignal.second};
+  Logger::debug("recorder", "thread: {}, processing finished", m_id);
+  return {inputSamples.time, m_fmBuffer, strongSignals};
 }

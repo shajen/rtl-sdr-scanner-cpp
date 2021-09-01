@@ -17,7 +17,7 @@ constexpr auto RTL_SDR_GAIN = std::optional<int>(496);
 constexpr auto RTL_SDR_MAX_BANDWIDTH = 2500000;
 
 const std::vector<FrequencyRange> SCANNER_FREQUENCIES{{144000000, 146000000, 125}};
-const std::vector<FrequencyRange> IGNORED_FREQUENCIES{range(144000000), range(144150000, 70000), range(144800000), range(145000000), range(145820000)};
+const std::vector<FrequencyRange> IGNORED_FREQUENCIES;
 
 // experts only
 constexpr auto RESAMPLER_FILTER_LENGTH = 10;
@@ -25,7 +25,9 @@ constexpr auto RESAMPLER_MINIMAL_OUT_SAMPLE_RATE = 200000;
 constexpr auto FM_DEMODULATOR_FACTOR = 0.5f;
 constexpr auto FM_CUT_OFF_MARGIN = 10;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
-constexpr auto SIGNAL_DETECTION_FACTOR = 0.01f;
+constexpr auto SIGNAL_DETECTION_FACTOR = 0.003f;
+constexpr auto DEBUG_SIGNALS_LIMIT = 2;
+constexpr auto SIGNAL_MARGIN = 25000;
 constexpr auto THREADS = 4;
 
 std::chrono::milliseconds Config::rangeScanningTime() const { return RANGE_SCANNING_TIME; }
@@ -65,5 +67,9 @@ uint32_t Config::fmCutOffMargin() const { return FM_CUT_OFF_MARGIN; }
 float Config::spectrogramFactor() const { return SPECTROGAM_FACTOR; }
 
 float Config::signalDetectionFactor() const { return SIGNAL_DETECTION_FACTOR; }
+
+uint32_t Config::debugSignalsLimit() const { return DEBUG_SIGNALS_LIMIT; }
+
+uint32_t Config::signalMargin() const { return SIGNAL_MARGIN; }
 
 uint8_t Config::threads() const { return THREADS; }

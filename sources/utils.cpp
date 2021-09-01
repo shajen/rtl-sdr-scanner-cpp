@@ -23,7 +23,7 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
   }
 }
 
-void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float> > &buffer, const uint32_t samples) {
+void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffer, const uint32_t samples) {
   if (buffer.size() < samples) {
     throw std::runtime_error("buffer size to small");
   }
@@ -33,39 +33,9 @@ void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float> > &buff
   }
 }
 
-std::pair<Signal, bool> detectbestSignal(const uint32_t signalDetectionRange, const std::vector<Signal> &signals) {
-  const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power.value; });
-  const auto mean = sum / signals.size();
-
-  const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power.value - mean, 2); });
-  const auto standardDeviation = sqrt(sum2 / signals.size());
-  Logger::debug("utils", "signals mean: {:2f}, standard deviation: {:2f}, variance: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0));
-
-  auto max = std::max_element(signals.begin(), signals.end(), [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
-  const auto index = std::distance(signals.begin(), max);
-  const auto threshold = mean + standardDeviation;
-  uint32_t minPosition = index;
-  while (0 < minPosition && threshold <= signals[minPosition - 1].power.value) minPosition--;
-  uint32_t maxPosition = index;
-  while (maxPosition < signals.size() - 1 && threshold <= signals[maxPosition + 1].power.value) maxPosition++;
-  Logger::debug("utils", "signal range, left: {}, right: {}, threshold: {}", index - minPosition, maxPosition - index, signalDetectionRange);
-
-  const auto isStrongLeftSide = signalDetectionRange <= index - minPosition || minPosition == 0;
-  const auto isStrongRightSize = signalDetectionRange <= maxPosition - index || maxPosition == signals.size() - 1;
-  return {*max, isStrongLeftSide && isStrongRightSize};
-}
-
-std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
-
-void shift(std::vector<std::complex<float> > &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
-  const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
-  for (int i = 0; i < samplesCount; ++i) {
-    samples[i] *= std::exp(f * static_cast<float>(i));
-  }
-}
-
-std::vector<Signal> filterSignals(const std::vector<FrequencyRange> &ignoredFrequencies, const std::vector<Signal> &signals, const FrequencyRange &frequencyRange) {
-  auto f = [&ignoredFrequencies, &frequencyRange](const Signal &signal) {
+std::vector<Signal> detectStrongSignals(const std::vector<Signal> &signals, const uint32_t signalDetectionRange, const FrequencyRange &frequencyRange,
+                                        const std::vector<FrequencyRange> &ignoredFrequencies, uint32_t signalsLimit) {
+  auto isSignalOk = [&ignoredFrequencies, &frequencyRange](const Signal &signal) {
     const auto f = signal.frequency.value;
     for (const auto &configIgnoredFrequencyRange : ignoredFrequencies) {
       if (configIgnoredFrequencyRange.start.value <= f && f <= configIgnoredFrequencyRange.stop.value) {
@@ -74,9 +44,78 @@ std::vector<Signal> filterSignals(const std::vector<FrequencyRange> &ignoredFreq
     }
     return frequencyRange.start.value <= f && f <= frequencyRange.stop.value;
   };
-  std::vector<Signal> results;
-  std::copy_if(signals.begin(), signals.end(), std::back_inserter(results), f);
-  return results;
+
+  const auto sum = std::accumulate(signals.begin(), signals.end(), 0.0f, [](float accu, const Signal &signal) { return accu + signal.power.value; });
+  const auto mean = sum / signals.size();
+
+  const auto sum2 = std::accumulate(signals.begin(), signals.end(), 0.0f, [&mean](float accu, const Signal &signal) { return accu + pow(signal.power.value - mean, 2); });
+  const auto standardDeviation = sqrt(sum2 / signals.size());
+  const auto threshold = mean + standardDeviation;
+  Logger::debug("utils", "signals mean: {:2f}, standard deviation: {:2f}, variance: {:2f}, threshold: {:2f}", mean, standardDeviation, pow(standardDeviation, 2.0), threshold);
+
+  std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> possibleSignals;
+  uint32_t i = 0;
+  while (i < signals.size()) {
+    while (i < signals.size() && signals[i].power.value < threshold) ++i;
+    const auto start = i;
+    while (i < signals.size() - 1 && threshold < signals[i + 1].power.value) ++i;
+    const auto stop = i;
+    if (threshold <= signals[start].power.value && threshold <= signals[stop].power.value) {
+      const auto max = std::max_element(signals.begin() + start, signals.begin() + stop, [](const Signal &s1, const Signal &s2) { return s1.power.value < s2.power.value; });
+      const auto index = std::distance(signals.begin(), max);
+      possibleSignals.push_back({start, index, stop});
+    }
+    i++;
+  }
+
+  std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> topSignals;
+  auto debugSignals = [&signals, &possibleSignals, &topSignals, &isSignalOk, signalsLimit, signalDetectionRange]() {
+    int processedSignals = 0;
+    for (const auto &[start, index, stop] : possibleSignals) {
+      if (isSignalOk(signals[index])) {
+        if (++processedSignals <= signalsLimit) {
+          topSignals.push_back({start, index, stop});
+        } else {
+          break;
+        }
+      }
+    }
+  };
+  std::sort(possibleSignals.begin(), possibleSignals.end(), [&signals](const auto &s1, const auto &s2) { return signals[std::get<1>(s1)].power.value > signals[std::get<1>(s2)].power.value; });
+  debugSignals();
+  std::sort(possibleSignals.begin(), possibleSignals.end(), [&signals](const auto &s1, const auto &s2) { return std::get<2>(s1) - std::get<0>(s1) > std::get<2>(s2) - std::get<0>(s2); });
+  debugSignals();
+
+  std::sort(topSignals.begin(), topSignals.end(), [&signals](const auto &s1, const auto &s2) { return signals[std::get<1>(s1)].power.value > signals[std::get<1>(s2)].power.value; });
+  topSignals.erase(std::unique(topSignals.begin(), topSignals.end()), topSignals.end());
+  for (const auto &[start, index, stop] : topSignals) {
+    Logger::debug("utils", "best signal, width: {:3d}/{:3d}/{}, {}", index - start, stop - index, signalDetectionRange, signals[index].toString());
+  }
+
+  std::vector<Signal> strongSignals;
+  for (const auto &[start, index, stop] : possibleSignals) {
+    if (isSignalOk(signals[index])) {
+      const auto isStrongLeftSide = signalDetectionRange <= index - start || start == 0;
+      const auto isStrongRightSize = signalDetectionRange <= stop - index || stop == signals.size() - 1;
+      if (isStrongLeftSide && isStrongRightSize) {
+        strongSignals.push_back(signals[index]);
+      } else {
+        break;
+      }
+    }
+  }
+  auto sortCallback = [](const Signal &s1, const Signal &s2) { return s1.power.value > s2.power.value; };
+  std::sort(strongSignals.begin(), strongSignals.end(), sortCallback);
+  return strongSignals;
+}
+
+std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
+
+void shift(std::vector<std::complex<float>> &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
+  const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
+  for (int i = 0; i < samplesCount; ++i) {
+    samples[i] *= std::exp(f * static_cast<float>(i));
+  }
 }
 
 liquid_float_complex *toLiquidComplex(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }

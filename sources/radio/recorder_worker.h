@@ -23,8 +23,7 @@ struct InputSamples {
 struct OutputSamples {
   std::chrono::milliseconds time;
   std::vector<float> samples;
-  Signal bestSignal;
-  bool isStrongSignal;
+  std::vector<Signal> strongSignals;
 };
 
 class RecorderWorker {

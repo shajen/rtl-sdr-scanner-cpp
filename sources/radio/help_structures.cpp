@@ -1,5 +1,7 @@
 #include "help_structures.h"
 
+#include <cmath>
+
 std::string Frequency::toString(const std::string label) const {
   char buf[1024];
   const auto f1 = value / 1000000;
@@ -15,10 +17,10 @@ std::string Frequency::toString(const std::string label) const {
 
 std::string Power::toString() const {
   constexpr auto MIN_POWER = -30.0f;
-  constexpr auto MAX_POWER = 0.0f;
-  constexpr auto BAR_SIZE = 40;
+  constexpr auto MAX_POWER = 10.0f;
+  constexpr auto BAR_SIZE = 30;
 
-  const auto p = (std::min(std::max(value, MIN_POWER), MAX_POWER) - MIN_POWER) / (MAX_POWER - MIN_POWER) * BAR_SIZE;
+  const auto p = std::lround(std::min(std::max((value - MIN_POWER) / (MAX_POWER - MIN_POWER), 0.0f), 1.0f) * BAR_SIZE);
   char buf[1024];
   sprintf(buf, "power: %6.2f dB ", value);
   return std::string(buf) + std::string(p, '#') + std::string(BAR_SIZE - p, '_');
