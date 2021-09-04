@@ -139,8 +139,11 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
     const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
     if (!strongSignals.empty()) {
+      const auto recordingSignal = strongSignals.front();
       for (const auto& strongSignal : strongSignals) {
-        Logger::info("rtl_sdr", "strong signal, {}", strongSignal.toString());
+        if (strongSignal.frequency.value != recordingSignal.frequency.value) {
+          Logger::info("rtl_sdr", "strong signal, {}", strongSignal.toString());
+        }
       }
       auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
         Logger::debug("rtl_sdr", "read bytes: {}", len);
@@ -155,7 +158,8 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
       };
       const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
       auto& recorder = m_recorders[key];
-      recorder->start(strongSignals.front().frequency, frequencyRange);
+      Logger::info("rtl_sdr", "recording signal, {}", recordingSignal.toString());
+      recorder->start(recordingSignal.frequency, frequencyRange);
       StreamCallbackData data(this, recorder);
       Logger::info("rtl_sdr", "start stream");
       rtlsdr_read_async(m_device, f, &data, 0, samples);
