@@ -39,14 +39,20 @@ Recorder::Recorder(const Config& config, const Frequency& bandwidth, const Frequ
             }
             if (recordingSignal != outputSamples.strongSignals.end()) {
               Logger::info("recorder", "recording signal, {}", recordingSignal->toString());
-              m_frequency[recordingSignal->frequency.value]++;
-              m_lastDataTime = outputSamples.time;
-              m_lastActiveDataTime = outputSamples.time;
-              for (const auto& noisedSamples : m_noisedSamples) {
-                m_mp3Writer->appendSamples(noisedSamples.samples);
+              if (outputSamples.isTransmision) {
+                m_frequency[recordingSignal->frequency.value]++;
+                m_lastDataTime = outputSamples.time;
+                m_lastActiveDataTime = outputSamples.time;
+                for (const auto& noisedSamples : m_noisedSamples) {
+                  m_mp3Writer->appendSamples(noisedSamples.samples);
+                }
+                m_noisedSamples.clear();
+                m_noisedSamples.push_back(std::move(outputSamples));
+              } else {
+                Logger::info("recorder", "no transmission");
+                m_lastDataTime = outputSamples.time;
+                m_noisedSamples.push_back(std::move(outputSamples));
               }
-              m_noisedSamples.clear();
-              m_noisedSamples.push_back(std::move(outputSamples));
             } else {
               Logger::info("recorder", "no signal");
               m_lastDataTime = outputSamples.time;

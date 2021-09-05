@@ -28,6 +28,9 @@ constexpr auto SPECTROGAM_FACTOR = 0.1f;
 constexpr auto SIGNAL_DETECTION_FACTOR = 0.003f;
 constexpr auto DEBUG_SIGNALS_LIMIT = 2;
 constexpr auto SIGNAL_MARGIN = 25000;
+constexpr auto TRANSMISSION_DETECTOR_SIZE = 1024;
+constexpr auto TRANSMISSION_DETECTOR_MEAN = -15.0f;
+constexpr auto TRANSMISSION_DETECTOR_STANDARD_DEVIATION = 1.5f;
 constexpr auto THREADS = 4;
 
 std::chrono::milliseconds Config::rangeScanningTime() const { return RANGE_SCANNING_TIME; }
@@ -71,5 +74,11 @@ float Config::signalDetectionFactor() const { return SIGNAL_DETECTION_FACTOR; }
 uint32_t Config::debugSignalsLimit() const { return DEBUG_SIGNALS_LIMIT; }
 
 uint32_t Config::signalMargin() const { return SIGNAL_MARGIN; }
+
+uint32_t Config::transmissionDetectorSize() const { return TRANSMISSION_DETECTOR_SIZE; }
+
+float Config::transmissionDetectorMean() const { return TRANSMISSION_DETECTOR_MEAN; }
+
+float Config::transmissionDetectorStandardDeviation() const { return TRANSMISSION_DETECTOR_STANDARD_DEVIATION; }
 
 uint8_t Config::threads() const { return THREADS; }

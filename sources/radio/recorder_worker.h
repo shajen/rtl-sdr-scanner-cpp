@@ -24,6 +24,7 @@ struct OutputSamples {
   std::chrono::milliseconds time;
   std::vector<float> samples;
   std::vector<Signal> strongSignals;
+  bool isTransmision;
 };
 
 class RecorderWorker {

@@ -1,16 +1,18 @@
 #pragma once
 
+#include <config.h>
 #include <liquid/liquid.h>
 
 #include <vector>
 
 class TransmisionDetector {
  public:
-  TransmisionDetector(uint32_t size);
+  TransmisionDetector(const Config& config);
   virtual ~TransmisionDetector();
-  void detect(std::vector<float>& samples);
+  bool isTransmision(std::vector<float>& samples);
 
  private:
+  const Config& m_config;
   const uint32_t m_size;
   std::vector<float> m_buffer;
   spgramf m_spectrogram;

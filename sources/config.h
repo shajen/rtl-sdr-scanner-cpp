@@ -33,5 +33,8 @@ class Config {
   float signalDetectionFactor() const;
   uint32_t debugSignalsLimit() const;
   uint32_t signalMargin() const;
+  uint32_t transmissionDetectorSize() const;
+  float transmissionDetectorMean() const;
+  float transmissionDetectorStandardDeviation() const;
   uint8_t threads() const;
 };
