@@ -1,5 +1,7 @@
 CMakeLists.txt.user
 build
+build.sh
+rebuild.sh
 *.wav
 todo.txt
 sync.sh
