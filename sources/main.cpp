@@ -11,9 +11,14 @@ void handler(int) {
   isRunning = false;
 }
 
-int main() {
-  const Config config;
-  Logger::configure(config);
+int main(int argc, char* argv[]) {
+  std::unique_ptr<Config> config;
+  if (argc >= 2) {
+    config = std::make_unique<Config>(argv[1]);
+  } else {
+    config = std::make_unique<Config>();
+  }
+  Logger::configure(*config);
 
   Logger::info("main", "start app auto-sdr");
 #ifndef NDEBUG
@@ -25,7 +30,7 @@ int main() {
   try {
     std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
     for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {
-      scanners.push_back(std::make_unique<RtlSdrScanner>(config, i));
+      scanners.push_back(std::make_unique<RtlSdrScanner>(*config, i));
     }
 
     if (scanners.empty()) {

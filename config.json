@@ -1,0 +1,33 @@
+{
+  "scanner_frequencies_ranges": [
+    {
+      "start": 144000000,
+      "stop": 146000000,
+      "step": 125
+    },
+    {
+      "start": 430000000,
+      "stop": 440000000,
+      "step": 125
+    }
+  ],
+  "ignored_frequencies_ranges": [],
+  "device": {
+    "ppm_error": 0,
+    "tuner_gain": 0.0,
+    "bandwidth": 2000000
+  },
+  "recording": {
+    "range_scanning_time_ms": 100,
+    "max_silence_time_ms": 2000,
+    "min_recording_time_ms": 1000,
+    "sample_rate": 48000,
+    "threads": 4
+  },
+  "output": {
+    "recordings": "sdr/recordings",
+    "logs": "sdr/logs",
+    "file_log_level": "info",
+    "console_log_level": "info"
+  }
+}

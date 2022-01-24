@@ -1,8 +1,8 @@
-# rtl-sdr-cpp scanner and recorder
+# Introduction
 
 This project contains rtl-sdr tool written in `c++` to scan and record interesting frequencies. See video below for details.
 
-This project is new version of [rtl-sdr-scanner](https://github.com/shajen/rtl-sdr-scanner) written in `python`.
+This project is a new version of [rtl-sdr-scanner](https://github.com/shajen/rtl-sdr-scanner) which was written in `python`.
 
 An improvement over the previous version:
 - huge performance boost
@@ -12,17 +12,15 @@ An improvement over the previous version:
 
 [![YouTube video](http://img.youtube.com/vi/TSDbcb7wSjs/0.jpg)](http://www.youtube.com/watch?v=TSDbcb7wSjs "YouTube video")
 
+# Run
+
 ## Prerequisites
 
 You need `gcc`, `cmake` and some libraries to start the work. Install it before continue. For example on Debian based distribution run follow commands:
 
 ```
-sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev
+sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev
 ```
-
-## Configuration
-
-Edit your configuration in file [sources/config.cpp](sources/config.cpp).
 
 ## Build
 
@@ -34,15 +32,19 @@ make -j$(nproc)
 cd ..
 ```
 
-## Run
+## Configuration
+
+Edit your configuration in file [config.json](config.json).
+
+## Execute
 
 ```
-./build/auto-sdr
+./build/auto-sdr config.json
 ```
 
 ## Example
 ```
-shajen@artemida:~/git/auto-sdr-cpp $ ./build/auto-sdr 
+shajen@artemida:~/git/auto-sdr-cpp $ ./build/auto-sdr config.json
 [2022-01-21 03:00:55.105] [auto-sdr] [info]     [main]        start app auto-sdr
 [2022-01-21 03:00:55.105] [auto-sdr] [info]     [main]        build type: release
 [2022-01-21 03:00:55.172] [auto-sdr] [info]     [rtl_sdr]     open device, index: 0, name: Generic RTL2832U OEM, serial: 00000001
@@ -80,9 +82,9 @@ shajen@artemida:~/git/auto-sdr-cpp $ ./build/auto-sdr
 [2022-01-21 04:30:51.539] [auto-sdr] [info]     [mp3]         recording time: 0.00 s, too short, removing
 ```
 
-All recorded frequencies are stored in `~/sdr/recordings/` directory by default.
+Recordings are stored in `sdr/recordings/` directory by default.
 
-## Contributing
+# Contributing
 
 In general don't be afraid to send pull request. Use the "fork-and-pull" Git workflow.
 
@@ -94,13 +96,13 @@ In general don't be afraid to send pull request. Use the "fork-and-pull" Git wor
 
 NOTE: Be sure to merge the **latest** from **upstream** before making a pull request!
 
-## Donations
+# Donations
 
 If you enjoy this project and want to thanks, please use follow link:
 
 [![Support via PayPal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/pp-acceptance-medium.png)](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
 
-## License
+# License
 
 [![License](https://img.shields.io/:license-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl.html)
 

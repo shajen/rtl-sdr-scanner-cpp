@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(spdlog REQUIRED)
 find_package(rtlsdr REQUIRED)
 find_package(Threads REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 find_library(LIQUID_LIB liquid)
 if(NOT LIQUID_LIB)
@@ -41,6 +42,7 @@ TARGET_LINK_LIBRARIES(auto-sdr
     sox
     soxr
     stdc++fs
+    nlohmann_json::nlohmann_json
 )
 
 install(TARGETS auto-sdr DESTINATION)

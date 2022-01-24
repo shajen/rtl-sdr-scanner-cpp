@@ -16,11 +16,11 @@ RtlSdrScanner::RtlSdrScanner(const Config& config, int deviceIndex) : m_config(c
     throw std::runtime_error("can not open rtl sdr device");
   }
 
-  if (config.rtlSdrGain().has_value()) {
+  if (0.01 <= config.rtlSdrGain()) {
     if (rtlsdr_set_tuner_gain_mode(m_device, 1) != 0) {
       throw std::runtime_error("can not set tuner gain manual");
     }
-    if (rtlsdr_set_tuner_gain(m_device, config.rtlSdrGain().value()) != 0) {
+    if (rtlsdr_set_tuner_gain(m_device, std::lround(config.rtlSdrGain() * 10)) != 0) {
       throw std::runtime_error("can not set tuner gain");
     }
   } else {
