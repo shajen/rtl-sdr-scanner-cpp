@@ -25,11 +25,8 @@ sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-de
 ## Build
 
 ```
-mkdir build
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$(nproc)
-cd ..
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
 ```
 
 ## Configuration
