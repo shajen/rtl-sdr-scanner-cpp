@@ -39,7 +39,21 @@ Edit your configuration in file [config.json](config.json).
 ./build/auto-sdr config.json
 ```
 
-## Example
+# Run in Docker
+
+## Build image
+
+```
+docker build -t auto-sdr --build-arg URL="https://github.com/shajen/rtl-sdr-scanner-cpp/archive/refs/heads/master.zip" .
+```
+
+## Run image
+
+```
+docker run --hostname auto-sdr -it -v $(pwd)/sdr:/sdr -v $(pwd)/config.json:/root/config.json auto-sdr
+```
+
+# Example
 ```
 shajen@artemida:~/git/auto-sdr-cpp $ ./build/auto-sdr config.json
 [2022-01-21 03:00:55.105] [auto-sdr] [info]     [main]        start app auto-sdr

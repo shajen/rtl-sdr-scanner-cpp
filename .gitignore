@@ -2,6 +2,8 @@ CMakeLists.txt.user
 build
 build.sh
 rebuild.sh
+docker.sh
+sdr
 *.wav
 todo.txt
 sync.sh
