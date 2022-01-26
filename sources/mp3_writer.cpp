@@ -78,6 +78,6 @@ void Mp3Writer::appendSamples(const std::vector<float>& samples) {
     }
     sox_write(m_mp3File, m_mp3Buffer.data() + m_config.fmCutOffMargin(), write - m_config.fmCutOffMargin());
   } else {
-    throw std::runtime_error("recording resampling error");
+    Logger::error("mp3", "recording resampling error");
   }
 }

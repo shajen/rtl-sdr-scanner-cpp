@@ -7,8 +7,8 @@
 
 #include <map>
 
-Recorder::Recorder(const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
-    : m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isWorking(true), m_thread([this]() {
+Recorder::Recorder(RadioController& radioController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
+    : m_radioController(radioController), m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isWorking(true), m_thread([this]() {
         Logger::debug("recorder", "start thread");
         while (m_isWorking) {
           {
@@ -29,6 +29,7 @@ Recorder::Recorder(const Config& config, const Frequency& bandwidth, const Frequ
               m_outSamples.pop_front();
               Logger::debug("recorder", "pop output samples, size: {}", m_outSamples.size());
             }
+            m_radioController.pushSignals(outputSamples.signals, m_frequencyRange, outputSamples.time);
             const auto bestFrequency = getBestFrequency();
             const auto f = [this, bestFrequency](const Signal& s) { return std::abs(static_cast<int>(bestFrequency.value) - static_cast<int>(s.frequency.value)) < m_config.signalMargin(); };
             const auto recordingSignal = std::find_if(outputSamples.strongSignals.begin(), outputSamples.strongSignals.end(), f);

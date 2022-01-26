@@ -23,6 +23,7 @@ struct InputSamples {
 struct OutputSamples {
   std::chrono::milliseconds time;
   std::vector<float> samples;
+  std::vector<Signal> signals;
   std::vector<Signal> strongSignals;
   bool isTransmision;
 };

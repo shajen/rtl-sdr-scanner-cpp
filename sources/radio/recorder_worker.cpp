@@ -107,5 +107,5 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
   Logger::trace("recorder", "thread: {}, transmision detector finished", m_id);
 
   Logger::debug("recorder", "thread: {}, processing finished", m_id);
-  return {inputSamples.time, m_fmBuffer, strongSignals, isTransmision};
+  return {inputSamples.time, m_fmBuffer, signals, strongSignals, isTransmision};
 }

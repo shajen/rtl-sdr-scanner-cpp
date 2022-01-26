@@ -15,6 +15,8 @@ std::string Frequency::toString(const std::string label) const {
   return std::string(buf);
 }
 
+bool Frequency::operator==(const Frequency &frequency) const { return value == frequency.value; }
+
 std::string Power::toString() const {
   constexpr auto MIN_POWER = -30.0f;
   constexpr auto MAX_POWER = 10.0f;

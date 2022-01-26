@@ -2,6 +2,7 @@
 
 #include <algorithms/spectrogram.h>
 #include <config.h>
+#include <network/radio_controller.h>
 #include <radio/recorder.h>
 
 #include <map>
@@ -13,16 +14,17 @@ typedef struct rtlsdr_dev rtlsdr_dev_t;
 
 class RtlSdrScanner {
  public:
-  RtlSdrScanner(const Config& config, int deviceIndex);
+  RtlSdrScanner(RadioController& radioController, const Config& config, int deviceIndex);
   ~RtlSdrScanner();
 
   bool isRunning() const;
   static int devicesCount();
 
  private:
-  const Config& m_config;
   void readSamples(const FrequencyRange& frequencyRange);
 
+  RadioController& m_radioController;
+  const Config& m_config;
   const int m_deviceIndex;
   std::atomic_bool m_isRunning;
   std::unique_ptr<std::thread> m_thread;

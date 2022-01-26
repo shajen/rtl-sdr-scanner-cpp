@@ -16,6 +16,7 @@ class Config {
   std::chrono::milliseconds minRecordingTime() const;
   uint32_t recordingSampleRate() const;
   std::string recordingOutputDirectory() const;
+  bool isRecordingEnabled() const;
 
   spdlog::level::level_enum logLevelConsole() const;
   spdlog::level::level_enum logLevelFile() const;
@@ -40,6 +41,9 @@ class Config {
   float transmissionDetectorMean() const;
   float transmissionDetectorStandardDeviation() const;
   uint8_t threads() const;
+  std::string serverAddress() const;
+  int serverPort() const;
+  int serverThreads() const;
 
  private:
   const nlohmann::json m_json;
@@ -47,6 +51,7 @@ class Config {
   const std::vector<FrequencyRange> m_ignoredFrequencies;
   const std::string m_logsDirectory;
   const std::string m_recordingsDirectory;
+  const bool m_isRecordingEnabled;
   const spdlog::level::level_enum m_consoleLogLevel;
   const spdlog::level::level_enum m_fileLogLevel;
   const std::chrono::milliseconds m_rangeScanningTime;
@@ -57,4 +62,7 @@ class Config {
   const uint32_t m_ppm;
   const float m_gain;
   const uint32_t m_maxBandwidth;
+  const std::string m_serverAddress;
+  const int m_serverPort;
+  const int m_serverThreads;
 };

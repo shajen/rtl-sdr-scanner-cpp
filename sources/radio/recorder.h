@@ -4,6 +4,7 @@
 #include <algorithms/fm_demodulator.h>
 #include <algorithms/spectrogram.h>
 #include <mp3_writer.h>
+#include <network/radio_controller.h>
 #include <radio/recorder_worker.h>
 #include <utils.h>
 
@@ -17,7 +18,7 @@
 
 class Recorder {
  public:
-  Recorder(const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize);
+  Recorder(RadioController& radioController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize);
   ~Recorder();
 
   void start(Frequency frequency, FrequencyRange frequencyRange);
@@ -26,8 +27,10 @@ class Recorder {
   bool isFinished() const;
 
  private:
-  const Config& m_config;
   Frequency getBestFrequency() const;
+
+  RadioController& m_radioController;
+  const Config& m_config;
 
   const Frequency m_bandwidth;
   const Frequency m_sampleRate;

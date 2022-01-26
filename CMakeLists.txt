@@ -5,10 +5,12 @@ project(auto-sdr LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(Boost REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(rtlsdr REQUIRED)
 find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(RapidJSON REQUIRED)
 
 find_library(LIQUID_LIB liquid)
 if(NOT LIQUID_LIB)

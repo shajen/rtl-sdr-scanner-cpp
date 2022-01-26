@@ -6,7 +6,8 @@
 
 using StreamCallbackData = std::tuple<RtlSdrScanner*, std::unique_ptr<Recorder>&>;
 
-RtlSdrScanner::RtlSdrScanner(const Config& config, int deviceIndex) : m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
+RtlSdrScanner::RtlSdrScanner(RadioController& radioController, const Config& config, int deviceIndex)
+    : m_radioController(radioController), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
   Logger::debug("rtl_sdr", "init");
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
@@ -64,7 +65,7 @@ RtlSdrScanner::RtlSdrScanner(const Config& config, int deviceIndex) : m_config(c
     }
     const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
     if (m_recorders.count(key) == 0) {
-      m_recorders[key] = std::make_unique<Recorder>(m_config, frequencyRange.bandwidth(), frequencyRange.sampleRate(), frequencyRange.fftSize());
+      m_recorders[key] = std::make_unique<Recorder>(m_radioController, m_config, frequencyRange.bandwidth(), frequencyRange.sampleRate(), frequencyRange.fftSize());
     }
   }
   m_rawBuffer.resize(maxSamples);
@@ -136,9 +137,10 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
     const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
+    m_radioController.pushSignals(signals, frequencyRange, time());
     const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
     const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
-    if (!strongSignals.empty()) {
+    if (m_config.isRecordingEnabled() && !strongSignals.empty()) {
       const auto recordingSignal = strongSignals.front();
       for (const auto& strongSignal : strongSignals) {
         if (strongSignal.frequency.value != recordingSignal.frequency.value) {

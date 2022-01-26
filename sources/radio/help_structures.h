@@ -6,6 +6,8 @@
 struct Frequency {
   std::string toString(const std::string label = "") const;
 
+  bool operator==(const Frequency& frequency) const;
+
   uint32_t value;
 };
 

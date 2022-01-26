@@ -22,12 +22,18 @@
     "max_silence_time_ms": 2000,
     "min_recording_time_ms": 1000,
     "sample_rate": 48000,
-    "threads": 4
+    "threads": 4,
+    "enabled": true
   },
   "output": {
     "recordings": "sdr/recordings",
     "logs": "sdr/logs",
     "file_log_level": "info",
     "console_log_level": "info"
+  },
+  "server": {
+    "address": "0.0.0.0",
+    "port": 9999,
+    "threads": 4
   }
 }

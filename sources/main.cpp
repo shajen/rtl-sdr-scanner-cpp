@@ -1,6 +1,8 @@
 #include <algorithms/spectrogram.h>
 #include <config.h>
 #include <logger.h>
+#include <network/radio_controller.h>
+#include <network/websocket_server.h>
 #include <radio/rtl_sdr_scanner.h>
 #include <signal.h>
 
@@ -28,9 +30,12 @@ int main(int argc, char* argv[]) {
 #endif
 
   try {
+    WebSocketServer server(config->serverAddress(), config->serverPort(), config->serverThreads());
+    RadioController radioController(server);
+
     std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
     for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {
-      scanners.push_back(std::make_unique<RtlSdrScanner>(*config, i));
+      scanners.push_back(std::make_unique<RtlSdrScanner>(radioController, *config, i));
     }
 
     if (scanners.empty()) {

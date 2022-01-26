@@ -3,9 +3,11 @@ build
 build.sh
 rebuild.sh
 docker.sh
+waterfall.sh
 sdr
 *.wav
 todo.txt
 sync.sh
 download*.sh
 .bash_history
+*.png

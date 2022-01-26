@@ -75,6 +75,7 @@ std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, c
     }
   } catch (nlohmann::json::type_error) {
     fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
+    return defaultValue;
   }
   return ranges;
 }
@@ -87,6 +88,7 @@ Config::Config(const std::string &path)
       m_ignoredFrequencies(parseFrequenciesRanges(m_json, "ignored_frequencies_ranges", {})),
       m_logsDirectory(readKey(m_json, {"output", "logs"}, std::string("sdr/logs"))),
       m_recordingsDirectory(readKey(m_json, {"output", "recordings"}, std::string("sdr/recordings"))),
+      m_isRecordingEnabled(readKey(m_json, {"recording", "enabled"}, true)),
       m_consoleLogLevel(parseLogLevel(readKey(m_json, {"output", "console_log_level"}, std::string("info")))),
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
       m_rangeScanningTime(std::chrono::milliseconds(readKey(m_json, {"recording", "range_scanning_time_ms"}, 100))),
@@ -96,7 +98,10 @@ Config::Config(const std::string &path)
       m_threads(readKey(m_json, {"recording", "threads"}, 4)),
       m_gain(readKey(m_json, {"device", "tuner_gain"}, 0.0)),
       m_ppm(readKey(m_json, {"device", "ppm_error"}, 0)),
-      m_maxBandwidth(readKey(m_json, {"device", "bandwidth"}, 2500000)) {}
+      m_maxBandwidth(readKey(m_json, {"device", "bandwidth"}, 2500000)),
+      m_serverAddress(readKey(m_json, {"server", "address"}, std::string("0.0.0.0"))),
+      m_serverPort(readKey(m_json, {"server", "port"}, 9999)),
+      m_serverThreads(readKey(m_json, {"server", "threads"}, 4)) {}
 
 std::chrono::milliseconds Config::rangeScanningTime() const { return m_rangeScanningTime; }
 
@@ -107,6 +112,8 @@ std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordi
 uint32_t Config::recordingSampleRate() const { return m_recordingSampleRate; }
 
 std::string Config::recordingOutputDirectory() const { return m_recordingsDirectory; }
+
+bool Config::isRecordingEnabled() const { return m_isRecordingEnabled; }
 
 spdlog::level::level_enum Config::logLevelConsole() const { return m_consoleLogLevel; }
 
@@ -147,3 +154,9 @@ float Config::transmissionDetectorMean() const { return TRANSMISSION_DETECTOR_ME
 float Config::transmissionDetectorStandardDeviation() const { return TRANSMISSION_DETECTOR_STANDARD_DEVIATION; }
 
 uint8_t Config::threads() const { return m_threads; }
+
+std::string Config::serverAddress() const { return m_serverAddress; }
+
+int Config::serverPort() const { return m_serverPort; }
+
+int Config::serverThreads() const { return m_serverThreads; }

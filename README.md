@@ -1,6 +1,8 @@
 # Introduction
 
-This project contains rtl-sdr tool written in `c++` to scan and record interesting frequencies. See video below for details.
+This project contains rtl-sdr tool written in `c++` to **scan and record multiple interesting frequencies bandwidth in the same time** (eg. 108 MHz, 144 MHz, 440 Mhz,  etc). This is possible by switching quickly between frequencies bandwidth.
+
+[![YouTube video](http://img.youtube.com/vi/TSDbcb7wSjs/0.jpg)](http://www.youtube.com/watch?v=TSDbcb7wSjs "YouTube video")
 
 This project is a new version of [rtl-sdr-scanner](https://github.com/shajen/rtl-sdr-scanner) which was written in `python`.
 
@@ -10,8 +12,6 @@ An improvement over the previous version:
 - faster signals detection
 - save recordings as mp3
 
-[![YouTube video](http://img.youtube.com/vi/TSDbcb7wSjs/0.jpg)](http://www.youtube.com/watch?v=TSDbcb7wSjs "YouTube video")
-
 # Run
 
 ## Prerequisites
@@ -19,7 +19,7 @@ An improvement over the previous version:
 You need `gcc`, `cmake` and some libraries to start the work. Install it before continue. For example on Debian based distribution run follow commands:
 
 ```
-sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev
+sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev libboost-all-dev rapidjson-dev
 ```
 
 ## Build
@@ -50,7 +50,7 @@ docker build -t auto-sdr --build-arg URL="https://github.com/shajen/rtl-sdr-scan
 ## Run image
 
 ```
-docker run --hostname auto-sdr -it -v $(pwd)/sdr:/sdr -v $(pwd)/config.json:/root/config.json auto-sdr
+docker run --hostname auto-sdr -it -v $(pwd)/sdr:/sdr -p 9999:9999 -v $(pwd)/config.json:/root/config.json auto-sdr
 ```
 
 # Example
@@ -94,6 +94,29 @@ shajen@artemida:~/git/auto-sdr-cpp $ ./build/auto-sdr config.json
 ```
 
 Recordings are stored in `sdr/recordings/` directory by default.
+
+# Waterfall
+
+Repository contains additional helpful tools to work with waterfall plot based on data from `rtl-sdr-scanner` module.
+
+## Live waterfall plot
+
+Open [waterfall live/index.html](waterfall%20live/index.html) in your web browser. Based on [https://github.com/jledet/waterfall](https://github.com/jledet/waterfall) sources.
+
+It produces waterfall plot in real time.
+
+![waterfall_live.png](images/waterfall_live.png "waterfall_live.png")
+
+## Image waterfall plot
+
+```
+pip3 install --user -r 'waterfall store/requirements.txt'
+python3 'waterfall store/main.py'
+```
+
+It produces waterfall plot to `sdr/waterfalls` directory every 10 minutes by default.
+
+![waterfall.png](images/waterfall.png "waterfall.png")
 
 # Contributing
 
