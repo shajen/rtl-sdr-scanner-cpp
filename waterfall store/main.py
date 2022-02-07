@@ -30,6 +30,8 @@ def config_logger(verbose, dir):
         filename = "%s/auto-sdr-waterfall %04d-%02d-%02d %02d:%02d:%02d.txt" % (dir, now.year, now.month, now.day, now.hour, now.minute, now.second)
         params["handlers"] = [logging.FileHandler(filename), logging.StreamHandler()]
     logging.basicConfig(**params)
+    logger = logging.getLogger("websockets.client")
+    logger.setLevel(logging.INFO)
 
 
 def format_frequency(frequency, pos=None, separator="."):
@@ -42,7 +44,7 @@ def format_frequency(frequency, pos=None, separator="."):
 def waterfall(graph, output_dir):
     x = graph["frequencies"]
     y = graph["labels"]
-    z = graph["values"]
+    z = np.array(graph["values"])
     start_datetime = graph["start_datetime"]
 
     start = x[0]
@@ -83,7 +85,7 @@ def new_graph(frequencies, dt, min=100.0, max=-100.0):
     return {
         "frequencies": frequencies,
         "labels": [],
-        "values": np.empty((0, len(frequencies)), dtype=np.float16),
+        "values": [],
         "start_datetime": dt,
         "flush_datetime": dt,
         "min": min,
@@ -107,21 +109,22 @@ async def ws_task(url, aggregate_seconds, flush_seconds, graphs, logger, queue):
                 frequencies = message["frequencies"]
                 key = (frequencies[0], frequencies[-1])
                 dt = datetime.datetime.fromtimestamp(message["timestamp_ms"] / 1000.0)
+                data = np.array(message["powers"], dtype=np.float16)
                 logger.debug("received spectrogram datetime: %s", dt)
 
                 if not key in graphs:
                     graphs[key] = new_graph(frequencies, dt)
 
                 graphs[key]["labels"].append(dt)
-                graphs[key]["values"] = np.concatenate((graphs[key]["values"], np.array([message["powers"]], dtype=np.float16)))
-                graphs[key]["min"] = min(graphs[key]["min"], graphs[key]["values"].min() // 10 * 10)
-                graphs[key]["max"] = max(graphs[key]["max"], graphs[key]["values"].max() // 10 * 10 + 10)
+                graphs[key]["values"].append(data)
+                graphs[key]["min"] = min(graphs[key]["min"], data.min() // 10 * 10)
+                graphs[key]["max"] = max(graphs[key]["max"], data.max() // 10 * 10 + 10)
 
                 if seconds_from_midnight(graphs[key]["start_datetime"]) // aggregate_seconds != seconds_from_midnight(dt) // aggregate_seconds:
                     await queue.put(copy.deepcopy(graphs[key]))
                     g = new_graph(frequencies, dt, graphs[key]["min"], graphs[key]["max"])
                     g["labels"].extend(graphs[key]["labels"][-2:])
-                    g["values"] = np.concatenate((g["values"], graphs[key]["values"][-2:]))
+                    g["values"].extend(graphs[key]["values"][-2:])
                     graphs[key] = g
                 elif 0 < flush_seconds and seconds_from_midnight(graphs[key]["flush_datetime"]) // flush_seconds != seconds_from_midnight(dt) // flush_seconds:
                     await queue.put(copy.deepcopy(graphs[key]))
