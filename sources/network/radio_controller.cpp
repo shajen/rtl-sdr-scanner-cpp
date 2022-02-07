@@ -5,6 +5,8 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+constexpr auto QUEUE_MAX_SIZE = 1000;
+
 RadioController::RadioController(WebSocketServer& server)
     : m_server(server), m_isRunning(true), m_thread([this]() {
         while (m_isRunning) {
@@ -31,7 +33,11 @@ RadioController::~RadioController() {
 
 void RadioController::pushSignals(const Signals& signals, const FrequencyRange& frequencyRange, const std::chrono::milliseconds time) {
   std::unique_lock<std::mutex> lock(m_mutex);
-  m_queue.push({signals, frequencyRange, time});
+  if (m_queue.size() < QUEUE_MAX_SIZE) {
+    m_queue.push({signals, frequencyRange, time});
+  } else {
+    Logger::warn("Radio", "queue size: {}, queue is full", m_queue.size());
+  }
   m_cv.notify_one();
 }
 

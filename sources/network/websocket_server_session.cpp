@@ -2,16 +2,29 @@
 
 #include <logger.h>
 
+constexpr auto QUEUE_THRESHOLD_SIZE = 900;
+constexpr auto QUEUE_MAX_SIZE = 1000;
+
 WebSocketServerSession::WebSocketServerSession(const std::string& remoteAddress, boost::asio::ip::tcp::socket&& socket)
-    : m_remoteAddress(remoteAddress), m_isReady(false), m_isAlive(true), m_ws(std::move(socket)), m_isWriting(false) {
+    : m_remoteAddress(remoteAddress), m_isQueueFullWasReported(false), m_isReady(false), m_isAlive(true), m_ws(std::move(socket)), m_isWriting(false) {
   run();
 }
 
 WebSocketServerSession::~WebSocketServerSession() { Logger::info("WsSession", "[{}] connection removed", m_remoteAddress); }
 
 void WebSocketServerSession::send(const std::string& message) {
-  m_messages.push(message);
-  write();
+  if (m_messages.size() < QUEUE_MAX_SIZE) {
+    m_messages.push(message);
+    write();
+    if (m_isQueueFullWasReported) {
+      m_isQueueFullWasReported = m_messages.size() <= QUEUE_THRESHOLD_SIZE;
+    }
+  } else {
+    if (!m_isQueueFullWasReported) {
+      Logger::warn("WsSession", "[{}] queue size: {}, queue is full", m_remoteAddress, m_messages.size());
+    }
+    m_isQueueFullWasReported = true;
+  }
 }
 
 bool WebSocketServerSession::isAlive() const { return m_isAlive; }
@@ -55,7 +68,7 @@ void WebSocketServerSession::onRead(boost::beast::error_code ec, std::size_t byt
 
 void WebSocketServerSession::write() {
   if (m_isReady && m_isAlive && !m_messages.empty() && !m_isWriting.exchange(true)) {
-    Logger::debug("WsSession", "queue size: {}", m_messages.size());
+    Logger::debug("WsSession", "[{}] queue size: {}", m_remoteAddress, m_messages.size());
     const auto message = m_messages.front();
     m_messages.pop();
     m_ws.text(true);

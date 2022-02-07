@@ -26,6 +26,7 @@ class WebSocketServerSession {
   void onWrite(boost::beast::error_code ec, std::size_t bytes_transferred);
 
   const std::string m_remoteAddress;
+  bool m_isQueueFullWasReported;
   bool m_isReady;
   bool m_isAlive;
   boost::beast::websocket::stream<boost::beast::tcp_stream> m_ws;
