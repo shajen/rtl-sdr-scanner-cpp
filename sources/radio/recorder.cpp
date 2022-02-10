@@ -8,7 +8,7 @@
 #include <map>
 
 Recorder::Recorder(RadioController& radioController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
-    : m_radioController(radioController), m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isWorking(true), m_thread([this]() {
+    : m_radioController(radioController), m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isReady(false), m_isWorking(true), m_thread([this]() {
         Logger::debug("recorder", "start thread");
         while (m_isWorking) {
           {
@@ -28,6 +28,10 @@ Recorder::Recorder(RadioController& radioController, const Config& config, const
               outputSamples = std::move(m_outSamples.front());
               m_outSamples.pop_front();
               Logger::debug("recorder", "pop output samples, size: {}", m_outSamples.size());
+            }
+            std::unique_lock<std::mutex> lock(m_threadMutex);
+            if (!m_isReady) {
+              continue;
             }
             m_radioController.pushSignals(outputSamples.signals, m_frequencyRange, outputSamples.time);
             const auto bestFrequency = getBestFrequency();
@@ -79,20 +83,6 @@ Recorder::~Recorder() {
 
 void Recorder::start(Frequency frequency, FrequencyRange frequencyRange) {
   Logger::info("recorder", "start recording {}", frequency.toString());
-  const Frequency mp3SampleRate{m_sampleRate.value / (m_sampleRate.value / m_config.resamplerMinimalOutSampleRate())};
-  m_mp3Writer = std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate);
-
-  m_frequencyRange = frequencyRange;
-
-  const auto t = time();
-  m_startDataTime = t;
-  m_lastActiveDataTime = t;
-  m_lastDataTime = t;
-
-  m_frequency.clear();
-  m_frequency[frequency.value] = 1;
-
-  m_noisedSamples.clear();
   {
     std::unique_lock<std::mutex> lock(m_inMutex);
     m_inSamples.clear();
@@ -101,11 +91,42 @@ void Recorder::start(Frequency frequency, FrequencyRange frequencyRange) {
     std::unique_lock<std::mutex> lock(m_outMutex);
     m_outSamples.clear();
   }
+  {
+    std::unique_lock<std::mutex> lock(m_threadMutex);
+    const Frequency mp3SampleRate{m_sampleRate.value / (m_sampleRate.value / m_config.resamplerMinimalOutSampleRate())};
+    m_mp3Writer = std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate);
+
+    m_frequencyRange = frequencyRange;
+
+    const auto t = time();
+    m_startDataTime = t;
+    m_lastActiveDataTime = t;
+    m_lastDataTime = t;
+
+    m_frequency.clear();
+    m_frequency[frequency.value] = 1;
+
+    m_noisedSamples.clear();
+    m_isReady = true;
+  }
 }
 
 void Recorder::stop() {
   Logger::info("recorder", "stop recording");
-  m_mp3Writer.reset();
+  {
+    std::unique_lock<std::mutex> lock(m_inMutex);
+    m_inSamples.clear();
+  }
+  {
+    std::unique_lock<std::mutex> lock(m_outMutex);
+    m_outSamples.clear();
+  }
+  {
+    std::unique_lock<std::mutex> lock(m_threadMutex);
+    m_noisedSamples.clear();
+    m_mp3Writer.reset();
+    m_isReady = false;
+  }
 }
 
 void Recorder::appendSamples(std::vector<uint8_t> samples) {

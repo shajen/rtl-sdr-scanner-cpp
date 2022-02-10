@@ -41,6 +41,8 @@ class Recorder {
   std::chrono::milliseconds m_lastActiveDataTime;
   std::chrono::milliseconds m_lastDataTime;
 
+  std::atomic_bool m_isReady;
+  std::mutex m_threadMutex;
   std::mutex m_inMutex;
   std::condition_variable m_inCv;
   std::deque<InputSamples> m_inSamples;

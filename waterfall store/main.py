@@ -175,7 +175,9 @@ async def run():
                     raise
     except KeyboardInterrupt:
         pass
-
+    except Exception as e:
+        logger.exception("exception: %s" % e)
+        time.sleep(args["reconnect_seconds"])
 
 def main():
     asyncio.run(run())

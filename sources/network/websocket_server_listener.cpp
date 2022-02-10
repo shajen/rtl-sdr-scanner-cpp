@@ -39,7 +39,11 @@ WebSocketServerListener::~WebSocketServerListener() {
 }
 
 void WebSocketServerListener::send(const std::string& message) {
-  m_sessions.erase(std::remove_if(m_sessions.begin(), m_sessions.end(), [](std::unique_ptr<WebSocketServerSession>& session) { return !session->isAlive(); }), m_sessions.end());
+  const auto it = std::remove_if(m_sessions.begin(), m_sessions.end(), [](std::unique_ptr<WebSocketServerSession>& session) { return !session->isAlive(); });
+  if (it != m_sessions.end()) {
+    m_sessions.erase(it, m_sessions.end());
+    Logger::info("WsListener", "sessions: {}", m_sessions.size());
+  }
   for (auto& session : m_sessions) {
     session->send(message);
   }
@@ -56,6 +60,7 @@ void WebSocketServerListener::onAccept(boost::beast::error_code ec, boost::asio:
   } else {
     Logger::info("WsListener", "[{}] connection success", remoteAddress);
     m_sessions.push_back(std::make_unique<WebSocketServerSession>(remoteAddress, std::move(socket)));
+    Logger::info("WsListener", "sessions: {}", m_sessions.size());
   }
   accept();
 }
