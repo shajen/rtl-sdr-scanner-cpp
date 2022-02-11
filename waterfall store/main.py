@@ -99,10 +99,10 @@ async def graph_task(queue, output_dir, threads):
         executor.submit(waterfall, await queue.get(), output_dir)
 
 
-async def ws_task(url, aggregate_seconds, flush_seconds, graphs, logger, queue):
+async def ws_task(url, key, aggregate_seconds, flush_seconds, graphs, logger, queue):
     async with websockets.connect(url) as websocket:
         logger.info("connection succeeded")
-        await websocket.send("Hello world!")
+        await websocket.send(json.dumps({"command": "authorize", "key": key}))
         while True:
             message = json.loads(await websocket.recv())
             if message["type"] == "spectrogram":
@@ -135,6 +135,7 @@ async def run():
     parser = argparse.ArgumentParser(description="Draw waterfall from rtl-sdr-scanner-cpp")
     parser.add_argument("-s", "--server", help="ws server", type=str, default="localhost", metavar="server")
     parser.add_argument("-p", "--port", help="ws server", type=int, default=9999, metavar="port")
+    parser.add_argument("-k", "--key", help="ws key", type=str)
     parser.add_argument("-rs", "--reconnect_seconds", help="ws reconnect interval in seconds", type=int, default=10)
     parser.add_argument("-as", "--aggregate_seconds", help="aggregate n seconds in single plot", type=int, default=600)
     parser.add_argument("-fs", "--flush_seconds", help="flush plot ever n seconds", type=int, default=0)
@@ -153,7 +154,9 @@ async def run():
             try:
                 await asyncio.gather(
                     graph_task(queue, args["output_dir"], args["threads"]),
-                    ws_task("ws://%s:%d/" % (args["server"], args["port"]), args["aggregate_seconds"], args["flush_seconds"], graphs, logger, queue),
+                    ws_task(
+                        "ws://%s:%d/" % (args["server"], args["port"]), args["key"], args["aggregate_seconds"], args["flush_seconds"], graphs, logger, queue
+                    ),
                 )
             except websockets.exceptions.ConnectionClosedError:
                 logger.warning("connection closed")
@@ -178,6 +181,7 @@ async def run():
     except Exception as e:
         logger.exception("exception: %s" % e)
         time.sleep(args["reconnect_seconds"])
+
 
 def main():
     asyncio.run(run())

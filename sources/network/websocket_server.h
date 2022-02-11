@@ -11,7 +11,7 @@
 
 class WebSocketServer {
  public:
-  WebSocketServer(const std::string& address, const int port, const int threads);
+  WebSocketServer(const std::string& address, const int port, const std::string& key, const int threads);
   ~WebSocketServer();
 
   void send(const std::string& message);

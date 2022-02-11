@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
 #endif
 
   try {
-    WebSocketServer server(config->serverAddress(), config->serverPort(), config->serverThreads());
+    WebSocketServer server(config->serverAddress(), config->serverPort(), config->serverKey(), config->serverThreads());
     RadioController radioController(server);
 
     std::vector<std::unique_ptr<RtlSdrScanner>> scanners;

@@ -43,6 +43,7 @@ class Config {
   uint8_t threads() const;
   std::string serverAddress() const;
   int serverPort() const;
+  std::string serverKey() const;
   int serverThreads() const;
 
  private:
@@ -64,5 +65,6 @@ class Config {
   const uint32_t m_maxBandwidth;
   const std::string m_serverAddress;
   const int m_serverPort;
+  const std::string m_serverKey;
   const int m_serverThreads;
 };

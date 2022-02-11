@@ -101,6 +101,7 @@ Config::Config(const std::string &path)
       m_maxBandwidth(readKey(m_json, {"device", "bandwidth"}, 2500000)),
       m_serverAddress(readKey(m_json, {"server", "address"}, std::string("0.0.0.0"))),
       m_serverPort(readKey(m_json, {"server", "port"}, 9999)),
+      m_serverKey(readKey(m_json, {"server", "key"}, std::string(""))),
       m_serverThreads(readKey(m_json, {"server", "threads"}, 4)) {}
 
 std::chrono::milliseconds Config::rangeScanningTime() const { return m_rangeScanningTime; }
@@ -158,5 +159,7 @@ uint8_t Config::threads() const { return m_threads; }
 std::string Config::serverAddress() const { return m_serverAddress; }
 
 int Config::serverPort() const { return m_serverPort; }
+
+std::string Config::serverKey() const { return m_serverKey; }
 
 int Config::serverThreads() const { return m_serverThreads; }

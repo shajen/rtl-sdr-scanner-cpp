@@ -9,7 +9,7 @@
 
 class WebSocketServerListener {
  public:
-  WebSocketServerListener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint& endpoint);
+  WebSocketServerListener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint& endpoint, const std::string& key);
   ~WebSocketServerListener();
 
   void send(const std::string& message);
@@ -21,5 +21,6 @@ class WebSocketServerListener {
   boost::asio::io_context& m_ioc;
   boost::asio::ip::tcp::endpoint& m_endpoint;
   boost::asio::ip::tcp::acceptor m_acceptor;
+  const std::string m_key;
   std::vector<std::unique_ptr<WebSocketServerSession>> m_sessions;
 };

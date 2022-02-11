@@ -2,7 +2,8 @@
 
 #include <logger.h>
 
-WebSocketServerListener::WebSocketServerListener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint& endpoint) : m_ioc(ioc), m_endpoint(endpoint), m_acceptor(m_ioc) {
+WebSocketServerListener::WebSocketServerListener(boost::asio::io_context& ioc, boost::asio::ip::tcp::endpoint& endpoint, const std::string& key)
+    : m_ioc(ioc), m_endpoint(endpoint), m_acceptor(m_ioc), m_key(key) {
   boost::beast::error_code ec;
 
   m_acceptor.open(endpoint.protocol(), ec);
@@ -59,7 +60,7 @@ void WebSocketServerListener::onAccept(boost::beast::error_code ec, boost::asio:
     Logger::warn("WsListener", "[{}] connection error: {}", remoteAddress, ec.message());
   } else {
     Logger::info("WsListener", "[{}] connection success", remoteAddress);
-    m_sessions.push_back(std::make_unique<WebSocketServerSession>(remoteAddress, std::move(socket)));
+    m_sessions.push_back(std::make_unique<WebSocketServerSession>(m_key, remoteAddress, std::move(socket)));
     Logger::info("WsListener", "sessions: {}", m_sessions.size());
   }
   accept();

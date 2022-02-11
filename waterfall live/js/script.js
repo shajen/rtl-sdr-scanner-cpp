@@ -11,7 +11,7 @@ function main() {
     const socket = new WebSocket('ws://localhost:9999/');
     socket.addEventListener('open', function (event) {
         console.log('ws opened')
-        socket.send('Hello Server!');
+        socket.send({ 'command': 'authorize', 'key': '' });
     });
 
     socket.addEventListener('close', function (event) {
