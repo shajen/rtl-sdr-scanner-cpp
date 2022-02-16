@@ -12,6 +12,7 @@ import time
 import logging
 import concurrent
 import copy
+import gc
 
 
 def config_logger(verbose, dir):
@@ -30,8 +31,9 @@ def config_logger(verbose, dir):
         filename = "%s/auto-sdr-waterfall %04d-%02d-%02d %02d:%02d:%02d.txt" % (dir, now.year, now.month, now.day, now.hour, now.minute, now.second)
         params["handlers"] = [logging.FileHandler(filename), logging.StreamHandler()]
     logging.basicConfig(**params)
-    logger = logging.getLogger("websockets.client")
-    logger.setLevel(logging.INFO)
+    logging.getLogger("websockets.client").setLevel(logging.INFO)
+    logging.getLogger("matplotlib.font_manager").setLevel(logging.INFO)
+    logging.getLogger("matplotlib.colorbar").setLevel(logging.INFO)
 
 
 def format_frequency(frequency, pos=None, separator="."):
@@ -93,10 +95,12 @@ def new_graph(frequencies, dt, min=100.0, max=-100.0):
     }
 
 
-async def graph_task(queue, output_dir, threads):
-    executor = concurrent.futures.ProcessPoolExecutor(threads)
+async def graph_task(queue, output_dir):
+    loop = asyncio.get_running_loop()
     while True:
-        executor.submit(waterfall, await queue.get(), output_dir)
+        data = await queue.get()
+        with concurrent.futures.ProcessPoolExecutor(1) as executor:
+            await loop.run_in_executor(executor, waterfall, data, output_dir)
 
 
 async def ws_task(url, key, aggregate_seconds, flush_seconds, graphs, logger, queue):
@@ -106,6 +110,7 @@ async def ws_task(url, key, aggregate_seconds, flush_seconds, graphs, logger, qu
         while True:
             message = json.loads(await websocket.recv())
             if message["type"] == "spectrogram":
+                gc.collect()
                 frequencies = message["frequencies"]
                 key = (frequencies[0], frequencies[-1])
                 dt = datetime.datetime.fromtimestamp(message["timestamp_ms"] / 1000.0)
@@ -141,46 +146,36 @@ async def run():
     parser.add_argument("-fs", "--flush_seconds", help="flush plot ever n seconds", type=int, default=0)
     parser.add_argument("-od", "--output_dir", help="flush plot ever n seconds", type=str, default="sdr/waterfalls", metavar="dir")
     parser.add_argument("-ld", "--log_directory", help="store output log in directory", type=str, default="sdr/logs", metavar="dir")
-    parser.add_argument("-t", "--threads", help="graphs generator threads", type=int, default=1)
     parser.add_argument("-v", "--verbose", action="count", default=0)
     args = vars(parser.parse_args())
 
     config_logger(args["verbose"], args["log_directory"])
-    try:
-        graphs = {}
-        logger = logging.getLogger("ws")
-        queue = asyncio.Queue()
-        while True:
-            try:
-                await asyncio.gather(
-                    graph_task(queue, args["output_dir"], args["threads"]),
-                    ws_task(
-                        "ws://%s:%d/" % (args["server"], args["port"]), args["key"], args["aggregate_seconds"], args["flush_seconds"], graphs, logger, queue
-                    ),
-                )
-            except websockets.exceptions.ConnectionClosedError:
-                logger.warning("connection closed")
-                time.sleep(args["reconnect_seconds"])
-            except ConnectionRefusedError:
-                logger.warning("connection refused")
-                time.sleep(args["reconnect_seconds"])
-            except asyncio.TimeoutError:
-                logger.warning("connection timeout")
-                time.sleep(args["reconnect_seconds"])
-            except IOError as exception:
-                if exception.errno == 101:
-                    logger.warning("network is unreachable")
-                    time.sleep(args["reconnect_seconds"])
-                elif exception.errno == 113:
-                    logger.warning("connect call failed")
-                    time.sleep(args["reconnect_seconds"])
-                else:
-                    raise
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        logger.exception("exception: %s" % e)
-        time.sleep(args["reconnect_seconds"])
+    graphs = {}
+    logger = logging.getLogger("ws")
+    queue = asyncio.Queue()
+    while True:
+        try:
+            await asyncio.gather(
+                graph_task(queue, args["output_dir"]),
+                ws_task("ws://%s:%d/" % (args["server"], args["port"]), args["key"], args["aggregate_seconds"], args["flush_seconds"], graphs, logger, queue),
+            )
+        except KeyboardInterrupt:
+            break
+        except websockets.exceptions.ConnectionClosedError:
+            logger.warning("connection closed")
+            time.sleep(args["reconnect_seconds"])
+        except ConnectionRefusedError:
+            logger.warning("connection refused")
+            time.sleep(args["reconnect_seconds"])
+        except asyncio.TimeoutError:
+            logger.warning("connection timeout")
+            time.sleep(args["reconnect_seconds"])
+        except IOError as exception:
+            logger.warning("IOError: %d" % exception)
+            time.sleep(args["reconnect_seconds"])
+        except Exception as e:
+            logger.exception("exception: %s" % e)
+            time.sleep(args["reconnect_seconds"])
 
 
 def main():
