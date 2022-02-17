@@ -17,7 +17,7 @@ std::string getPath(const Config& config, const Frequency& frequency) {
   const auto f1 = frequency.value / 1000000;
   const auto f2 = (frequency.value / 1000) % 1000;
   const auto f3 = frequency.value % 1000;
-  sprintf(filename, "%02d:%02d:%02d %3d_%03d_%03d.mp3", tm->tm_hour, tm->tm_min, tm->tm_sec, f1, f2, f3);
+  sprintf(filename, "%02d_%02d_%02d %3d_%03d_%03d.mp3", tm->tm_hour, tm->tm_min, tm->tm_sec, f1, f2, f3);
   return std::string(dir) + std::string(filename);
 }
 
