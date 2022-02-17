@@ -16,7 +16,7 @@ void Logger::Logger::configure(const Config &config) {
   time_t rawtime = time(nullptr);
   struct tm *tm = localtime(&rawtime);
   char logsFilePath[4096];
-  sprintf(logsFilePath, "%s/auto-sdr-scanner %04d-%02d-%02d %02d:%02d:%02d.txt", config.logDir().c_str(), tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+  sprintf(logsFilePath, "%s/auto-sdr-scanner %04d-%02d-%02d %02d_%02d_%02d.txt", config.logDir().c_str(), tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
   if (config.logLevelConsole() == spdlog::level::off) {
     std::initializer_list<spdlog::sink_ptr> loggers{consoleLogger};
