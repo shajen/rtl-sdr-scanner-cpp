@@ -171,7 +171,7 @@ async def run():
             logger.warning("connection timeout")
             time.sleep(args["reconnect_seconds"])
         except IOError as exception:
-            logger.warning("IOError: %d" % exception)
+            logger.warning("IOError: %s" % exception)
             time.sleep(args["reconnect_seconds"])
         except Exception as e:
             logger.exception("exception: %s" % e)
