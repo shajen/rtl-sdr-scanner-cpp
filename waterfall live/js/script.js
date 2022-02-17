@@ -1,17 +1,33 @@
 'use strict';
 
+var spectrums = new Map();
+var socket;
+
 function createWaterfall(start, stop, id) {
     var element = '<div class="col"><p class="text-center fs-3">' + start + " MHz - " + stop + " MHz" + '</p><div><canvas id="' + id + '" style="height: 100%; width: 100%"></canvas></div></div>';
     $("#waterfalls").append(element);
 }
 
 function main() {
-    var spectrums = new Map();
+    var server = $(location).attr('hostname');
+    if (server == "") {
+        server = "localhost";
+    }
+    $("#hostname").val(server);
+    $("#port").val('9999');
+    $("#connect").click(connect);
+}
 
-    const socket = new WebSocket('ws://localhost:9999/');
+function connect() {
+    spectrums.clear();
+    if (socket) {
+        socket.close();
+    }
+    $("#waterfalls").empty();
+    socket = new WebSocket('ws://' + $("#hostname").val() + ':' + $("#port").val() + '/');
     socket.addEventListener('open', function (event) {
         console.log('ws opened')
-        socket.send({ 'command': 'authorize', 'key': '' });
+        socket.send(JSON.stringify({ 'command': 'authorize', 'key': $("#password").val() }));
     });
 
     socket.addEventListener('close', function (event) {
