@@ -4,6 +4,7 @@
 #include <config.h>
 #include <network/radio_controller.h>
 #include <radio/recorder.h>
+#include <radio/recording_controller.h>
 
 #include <map>
 #include <memory>
@@ -14,16 +15,19 @@ typedef struct rtlsdr_dev rtlsdr_dev_t;
 
 class RtlSdrScanner {
  public:
-  RtlSdrScanner(RadioController& radioController, const Config& config, int deviceIndex);
+  RtlSdrScanner(RadioController& radioController, RecordingController& recordingController, const Config& config, int deviceIndex);
   ~RtlSdrScanner();
 
   bool isRunning() const;
   static int devicesCount();
 
  private:
+  void setupDevice(const FrequencyRange& frequencyRange);
+  void startStream(const FrequencyRange& frequencyRange, bool runForever);
   void readSamples(const FrequencyRange& frequencyRange);
 
   RadioController& m_radioController;
+  RecordingController& m_recordingController;
   const Config& m_config;
   const int m_deviceIndex;
   std::atomic_bool m_isRunning;

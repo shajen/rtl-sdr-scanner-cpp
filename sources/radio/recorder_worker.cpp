@@ -2,13 +2,14 @@
 
 #include <logger.h>
 
-RecorderWorker::RecorderWorker(const Config &config, int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv,
-                               std::deque<InputSamples> &inSamples, std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples)
+RecorderWorker::RecorderWorker(const Config &config, int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, SignalsMatcher &signalsMatcher, std::mutex &inMutex,
+                               std::condition_variable &inCv, std::deque<InputSamples> &inSamples, std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples)
     : m_config(config),
       m_id(id),
       m_sampleRate(sampleRate),
       m_bandwidth(bandwidth),
       m_decimateRate(sampleRate.value / config.resamplerMinimalOutSampleRate()),
+      m_signalsMatcher(signalsMatcher),
       m_spectrogram(config, spectrogramSize),
       m_decimator(config, m_decimateRate),
       m_demodulator(config),
@@ -62,17 +63,20 @@ RecorderWorker::~RecorderWorker() {
 }
 
 OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
-  const auto frequency = inputSamples.frequency;
   const auto rawBufferSamples = inputSamples.samples.size() / 2;
   const auto downSamples = rawBufferSamples / m_decimateRate;
   const auto fmSamples = downSamples;
   const auto center = inputSamples.frequencyRange.center();
 
-  Logger::debug("recorder", "thread: {}, processing started, samples: {}, {}", m_id, inputSamples.samples.size(), frequency.toString());
+  Logger::debug("recorder", "thread: {}, processing started, samples: {}", m_id, inputSamples.samples.size());
 
   if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
     Logger::debug("recorder", "thread: {}, raw buffer resized, size: {}", m_id, rawBufferSamples);
+  }
+  if (m_rawBufferTmp.size() < rawBufferSamples) {
+    m_rawBufferTmp.resize(rawBufferSamples);
+    Logger::debug("recorder", "thread: {}, raw buffer tmp resized, size: {}", m_id, rawBufferSamples);
   }
   if (m_decimatorBuffer.size() < downSamples) {
     m_decimatorBuffer.resize(downSamples);
@@ -90,22 +94,32 @@ OutputSamples RecorderWorker::processSamples(const InputSamples &inputSamples) {
   Logger::trace("recorder", "thread: {}, psd finished", m_id);
 
   const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
-  const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, inputSamples.frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
-  Logger::trace("recorder", "thread: {}, best signal finished", m_id);
+  const auto tmpStrongSignals = detectStrongSignals(signals, signalDetectionRange, inputSamples.frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
+  m_signalsMatcher.updateSignals(inputSamples.time, tmpStrongSignals);
+  const auto strongFrequencies = m_signalsMatcher.getStrongFrequencies(inputSamples.time);
+  Logger::trace("recorder", "thread: {}, strong signal finished, count: {}", m_id, strongFrequencies.size());
 
-  shift(m_rawBuffer, center.value - frequency.value, m_sampleRate, rawBufferSamples);
-  Logger::trace("recorder", "thread: {}, shift finished", m_id);
+  std::vector<OutputSamples::Transmision> transmisions;
+  for (const auto &frequency : strongFrequencies) {
+    std::copy(m_rawBuffer.begin(), m_rawBuffer.end(), m_rawBufferTmp.begin());
+    Logger::trace("recorder", "thread: {}, copy finished", m_id);
 
-  m_decimator.decimate(m_rawBuffer.data(), rawBufferSamples / m_decimateRate, m_decimatorBuffer.data());
-  Logger::trace("recorder", "thread: {}, resampling finished , in rate/samples: {}/{}, out rate/samples: {}/{}", m_id, m_sampleRate.value, rawBufferSamples, m_sampleRate.value / m_decimateRate,
-                downSamples);
+    shift(m_rawBufferTmp, center.value - frequency.value, m_sampleRate, rawBufferSamples);
+    Logger::trace("recorder", "thread: {}, shift finished", m_id);
 
-  m_demodulator.demodulate(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
-  Logger::trace("recorder", "thread: {}, fm demodulation finished, in {}, out: {}", m_id, downSamples, fmSamples);
+    m_decimator.decimate(m_rawBufferTmp.data(), rawBufferSamples / m_decimateRate, m_decimatorBuffer.data());
+    Logger::trace("recorder", "thread: {}, resampling finished , in rate/samples: {}/{}, out rate/samples: {}/{}", m_id, m_sampleRate.value, rawBufferSamples, m_sampleRate.value / m_decimateRate,
+                  downSamples);
 
-  const auto isTransmision = m_transmisionDetector.isTransmision(m_fmBuffer);
-  Logger::trace("recorder", "thread: {}, transmision detector finished", m_id);
+    m_demodulator.demodulate(m_decimatorBuffer.data(), downSamples, m_fmBuffer.data());
+    Logger::trace("recorder", "thread: {}, fm demodulation finished, in {}, out: {}", m_id, downSamples, fmSamples);
 
-  Logger::debug("recorder", "thread: {}, processing finished", m_id);
-  return {inputSamples.time, m_fmBuffer, signals, strongSignals, isTransmision};
+    const auto isTransmision = m_transmisionDetector.isTransmision(m_fmBuffer);
+    Logger::trace("recorder", "thread: {}, transmision detector finished", m_id);
+
+    Logger::debug("recorder", "thread: {}, processing finished", m_id);
+    transmisions.push_back({m_fmBuffer, frequency, isTransmision});
+  }
+
+  return {inputSamples.time, signals, transmisions};
 }

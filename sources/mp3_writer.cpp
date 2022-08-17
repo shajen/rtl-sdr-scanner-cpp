@@ -46,10 +46,10 @@ Mp3Writer::~Mp3Writer() {
   sox_close(m_mp3File);
   const auto duration = std::chrono::milliseconds(1000 * m_samples / m_sampleRate.value);
   if (duration < m_config.minRecordingTime()) {
-    Logger::info("mp3", "recording time: {:.2f} s, too short, removing", duration.count() / 1000.0);
+    Logger::info("mp3", "file: {} ,recording time: {:.2f} s, too short, removing", m_path, duration.count() / 1000.0);
     std::filesystem::remove(m_path);
   } else {
-    Logger::info("mp3", "recording time: {:.2f} s", duration.count() / 1000.0);
+    Logger::info("mp3", "file: {}, recording time: {:.2f} s", m_path, duration.count() / 1000.0);
   }
 }
 

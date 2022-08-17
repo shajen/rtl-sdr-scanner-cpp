@@ -4,6 +4,7 @@
 #include <algorithms/fm_demodulator.h>
 #include <algorithms/spectrogram.h>
 #include <algorithms/transmision_detector.h>
+#include <radio/signals_matcher.h>
 #include <utils.h>
 
 #include <condition_variable>
@@ -16,22 +17,25 @@
 struct InputSamples {
   std::chrono::milliseconds time;
   std::vector<uint8_t> samples;
-  Frequency frequency;
   FrequencyRange frequencyRange;
 };
 
 struct OutputSamples {
+  struct Transmision {
+    std::vector<float> samples;
+    Frequency frequency;
+    bool isTransmision;
+  };
+
   std::chrono::milliseconds time;
-  std::vector<float> samples;
   std::vector<Signal> signals;
-  std::vector<Signal> strongSignals;
-  bool isTransmision;
+  std::vector<Transmision> transmisions;
 };
 
 class RecorderWorker {
  public:
-  RecorderWorker(const Config &config, int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, std::mutex &inMutex, std::condition_variable &inCv,
-                 std::deque<InputSamples> &inSamples, std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples);
+  RecorderWorker(const Config &config, int id, const Frequency &bandwidth, const Frequency &sampleRate, uint32_t spectrogramSize, SignalsMatcher &signalsMatcher, std::mutex &inMutex,
+                 std::condition_variable &inCv, std::deque<InputSamples> &inSamples, std::mutex &outMutex, std::condition_variable &outCv, std::deque<OutputSamples> &outSamples);
   ~RecorderWorker();
 
  private:
@@ -42,8 +46,10 @@ class RecorderWorker {
   const Frequency m_bandwidth;
   const Frequency m_sampleRate;
   const uint32_t m_decimateRate;
+  SignalsMatcher &m_signalsMatcher;
 
   std::vector<std::complex<float>> m_rawBuffer;
+  std::vector<std::complex<float>> m_rawBufferTmp;
   std::vector<std::complex<float>> m_decimatorBuffer;
   std::vector<float> m_fmBuffer;
 

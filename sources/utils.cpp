@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <thread>
 
+bool chceckOverlapped(const Frequency &f1, const Frequency &f2, uint32_t margin) { return std::abs(static_cast<int>(f1.value) - static_cast<int>(f2.value)) <= margin; }
+
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
     if (time.count() * sampleRate.value % 1000 != 0) {

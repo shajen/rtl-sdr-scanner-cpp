@@ -7,8 +7,16 @@
 
 #include <map>
 
-Recorder::Recorder(RadioController& radioController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
-    : m_radioController(radioController), m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isReady(false), m_isWorking(true), m_thread([this]() {
+Recorder::Recorder(RadioController& radioController, RecordingController& recordingController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
+    : m_radioController(radioController),
+      m_recordingController(recordingController),
+      m_signalsMatcher(config),
+      m_config(config),
+      m_bandwidth(bandwidth),
+      m_sampleRate(sampleRate),
+      m_isReady(false),
+      m_isWorking(true),
+      m_thread([this]() {
         Logger::debug("recorder", "start thread");
         while (m_isWorking) {
           {
@@ -34,42 +42,25 @@ Recorder::Recorder(RadioController& radioController, const Config& config, const
               continue;
             }
             m_radioController.pushSignals(outputSamples.signals, m_frequencyRange, outputSamples.time);
-            const auto bestFrequency = getBestFrequency();
-            const auto f = [this, bestFrequency](const Signal& s) { return std::abs(static_cast<int>(bestFrequency.value) - static_cast<int>(s.frequency.value)) < m_config.signalMargin(); };
-            const auto recordingSignal = std::find_if(outputSamples.strongSignals.begin(), outputSamples.strongSignals.end(), f);
-            for (const auto& strongSignal : outputSamples.strongSignals) {
-              if (strongSignal.frequency.value != recordingSignal->frequency.value) {
-                Logger::info("recorder", "strong signal, {}", strongSignal.toString());
-              }
+            if (outputSamples.transmisions.empty()) {
+              Logger::debug("recorder", "no signal");
             }
-            if (recordingSignal != outputSamples.strongSignals.end()) {
-              Logger::info("recorder", "recording signal, {}", recordingSignal->toString());
-              if (outputSamples.isTransmision) {
-                m_frequency[recordingSignal->frequency.value]++;
-                m_lastDataTime = outputSamples.time;
+            for (const auto& transmision : outputSamples.transmisions) {
+              if (transmision.isTransmision) {
                 m_lastActiveDataTime = outputSamples.time;
-                for (const auto& noisedSamples : m_noisedSamples) {
-                  m_mp3Writer->appendSamples(noisedSamples.samples);
-                }
-                m_noisedSamples.clear();
-                m_noisedSamples.push_back(std::move(outputSamples));
-              } else {
-                Logger::info("recorder", "no transmission");
-                m_lastDataTime = outputSamples.time;
-                m_noisedSamples.push_back(std::move(outputSamples));
               }
-            } else {
-              Logger::info("recorder", "no signal");
-              m_lastDataTime = outputSamples.time;
-              m_noisedSamples.push_back(std::move(outputSamples));
+              if (m_config.isRecordingEnabled()) {
+                m_recordingController.pushRecording(outputSamples.time, transmision.samples, m_sampleRate, transmision.frequency, transmision.isTransmision);
+              }
             }
+            m_recordingController.flushRecordings(outputSamples.time);
           }
         }
         Logger::debug("recorder", "stop thread");
       }) {
   Logger::debug("recorder", "init");
   for (int i = 0; i < config.threads(); ++i) {
-    auto worker = std::make_unique<RecorderWorker>(m_config, i, bandwidth, sampleRate, spectrogramSize, m_inMutex, m_inCv, m_inSamples, m_outMutex, m_outCv, m_outSamples);
+    auto worker = std::make_unique<RecorderWorker>(m_config, i, bandwidth, sampleRate, spectrogramSize, m_signalsMatcher, m_inMutex, m_inCv, m_inSamples, m_outMutex, m_outCv, m_outSamples);
     m_workers.push_back(std::move(worker));
   }
 }
@@ -81,8 +72,8 @@ Recorder::~Recorder() {
   m_thread.join();
 }
 
-void Recorder::start(Frequency frequency, FrequencyRange frequencyRange) {
-  Logger::info("recorder", "start recording {}", frequency.toString());
+void Recorder::start(FrequencyRange frequencyRange) {
+  Logger::info("recorder", "start recording {}", frequencyRange.toString());
   {
     std::unique_lock<std::mutex> lock(m_inMutex);
     m_inSamples.clear();
@@ -93,20 +84,8 @@ void Recorder::start(Frequency frequency, FrequencyRange frequencyRange) {
   }
   {
     std::unique_lock<std::mutex> lock(m_threadMutex);
-    const Frequency mp3SampleRate{m_sampleRate.value / (m_sampleRate.value / m_config.resamplerMinimalOutSampleRate())};
-    m_mp3Writer = std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate);
-
     m_frequencyRange = frequencyRange;
-
-    const auto t = time();
-    m_startDataTime = t;
-    m_lastActiveDataTime = t;
-    m_lastDataTime = t;
-
-    m_frequency.clear();
-    m_frequency[frequency.value] = 1;
-
-    m_noisedSamples.clear();
+    m_lastActiveDataTime = time();
     m_isReady = true;
   }
 }
@@ -123,24 +102,16 @@ void Recorder::stop() {
   }
   {
     std::unique_lock<std::mutex> lock(m_threadMutex);
-    m_noisedSamples.clear();
-    m_mp3Writer.reset();
     m_isReady = false;
   }
 }
 
 void Recorder::appendSamples(std::vector<uint8_t> samples) {
-  m_lastDataTime = time();
   std::unique_lock<std::mutex> lock(m_inMutex);
-  m_inSamples.push_back({time(), std::move(samples), getBestFrequency(), m_frequencyRange});
+  m_inSamples.push_back({time(), std::move(samples), m_frequencyRange});
   Logger::debug("recorder", "push input samples, size: {}", m_inSamples.size());
   lock.unlock();
   m_inCv.notify_one();
 }
 
 bool Recorder::isFinished() const { return m_lastActiveDataTime + m_config.maxSilenceTime() < time(); }
-
-Frequency Recorder::getBestFrequency() const {
-  auto max = std::max_element(m_frequency.begin(), m_frequency.end(), [](const auto& x, const auto& y) { return x.second < y.second; });
-  return {max->first};
-}
