@@ -19,7 +19,7 @@ An improvement over the previous version:
 You need `gcc`, `cmake` and some libraries to start the work. Install it before continue. For example on Debian based distribution run follow commands:
 
 ```
-sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev libboost-all-dev rapidjson-dev
+sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev rapidjson-dev libmosquitto-dev
 ```
 
 ## Build
@@ -50,7 +50,7 @@ docker build -t auto-sdr --build-arg URL="https://github.com/shajen/rtl-sdr-scan
 ## Run image
 
 ```
-docker run --hostname auto-sdr -it -v $(pwd)/sdr:/sdr -p 9999:9999 -v $(pwd)/config.json:/root/config.json auto-sdr
+docker run --hostname auto-sdr -it -v $(pwd)/sdr:/sdr -v $(pwd)/config.json:/root/config.json auto-sdr
 ```
 
 # Example

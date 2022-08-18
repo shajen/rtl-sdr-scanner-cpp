@@ -2,7 +2,7 @@
 
 #include <logger.h>
 
-RecordingController::RecordingController(const Config& config) : m_config(config) {}
+RecordingController::RecordingController(const Config& config, RadioController& radioController) : m_config(config), m_radioController(radioController) {}
 RecordingController::~RecordingController() = default;
 
 void RecordingController::pushRecording(const std::chrono::milliseconds time, const std::vector<float>& samples, const Frequency& sampleRate, const Frequency& frequency, const bool isTransmision) {
@@ -14,6 +14,7 @@ void RecordingController::pushRecording(const std::chrono::milliseconds time, co
     if (isTransmision) {
       while (m_config.threads() * 2 <= it->samples.size()) {
         it->mp3Writer->appendSamples(it->samples.top().samples);
+        m_radioController.pushRecording(it->samples.top().time, it->frequency, it->sampleRate, it->samples.top().samples);
         it->samples.pop();
       }
       it->lastTransmisionTime = time;
@@ -22,7 +23,7 @@ void RecordingController::pushRecording(const std::chrono::milliseconds time, co
     Logger::info("RcrdCtrl", "new recording, time: {}, {}, isTransmision: {}", time.count(), frequency.toString(), isTransmision);
     const Frequency mp3SampleRate{sampleRate.value / (sampleRate.value / m_config.resamplerMinimalOutSampleRate())};
     std::priority_queue<Recording::Samples> q{{}, {{time, samples, isTransmision}}};
-    m_recordings.push_back({time, frequency, q, std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate)});
+    m_recordings.push_back({time, frequency, mp3SampleRate, q, std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate)});
   }
 }
 
@@ -31,20 +32,23 @@ void RecordingController::flushRecordings(const std::chrono::milliseconds time) 
     const auto size = m_recordings.size();
     for (auto it = m_recordings.begin(); it != m_recordings.end();) {
       if (it->lastTransmisionTime + m_config.maxSilenceTime() < time) {
-        std::vector<std::vector<float>> samples;
+        std::vector<std::tuple<std::chrono::milliseconds, std::vector<float>>> samples;
         while (!it->samples.empty()) {
           auto data = it->samples.top();
           it->samples.pop();
           if (data.isTransmision) {
-            for (const auto& s : samples) {
+            for (const auto& [t, s] : samples) {
               it->mp3Writer->appendSamples(s);
+              m_radioController.pushRecording(t, it->frequency, it->sampleRate, s);
             }
             samples.clear();
             it->mp3Writer->appendSamples(data.samples);
+            m_radioController.pushRecording(data.time, it->frequency, it->sampleRate, data.samples);
           } else {
-            samples.push_back(data.samples);
+            samples.push_back({data.time, data.samples});
           }
         }
+        m_radioController.finishRecording(it->frequency);
         it = m_recordings.erase(it);
       } else {
         it++;

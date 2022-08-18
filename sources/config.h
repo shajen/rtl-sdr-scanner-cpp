@@ -41,10 +41,10 @@ class Config {
   float transmissionDetectorMean() const;
   float transmissionDetectorStandardDeviation() const;
   uint8_t threads() const;
-  std::string serverAddress() const;
-  int serverPort() const;
-  std::string serverKey() const;
-  int serverThreads() const;
+  std::string mqttHostname() const;
+  int mqttPort() const;
+  std::string mqttUsername() const;
+  std::string mqttPassword() const;
 
  private:
   const nlohmann::json m_json;
@@ -63,8 +63,8 @@ class Config {
   const uint32_t m_ppm;
   const float m_gain;
   const uint32_t m_maxBandwidth;
-  const std::string m_serverAddress;
-  const int m_serverPort;
-  const std::string m_serverKey;
-  const int m_serverThreads;
+  const std::string m_mqttHostname;
+  const int m_mqttPort;
+  const std::string m_mqttUsername;
+  const std::string m_mqttPassword;
 };

@@ -5,7 +5,6 @@ project(auto-sdr LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Boost REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(rtlsdr REQUIRED)
 find_package(Threads REQUIRED)
@@ -27,6 +26,11 @@ if(NOT SOXR_LIB)
   message(FATAL_ERROR "soxr library not found")
 endif()
 
+find_library(MOSQUITTO_LIB mosquitto)
+if(NOT MOSQUITTO_LIB)
+  message(FATAL_ERROR "mosquitto library not found")
+endif()
+
 file(GLOB_RECURSE SRC
     "${PROJECT_SOURCE_DIR}/sources/*.h"
     "${PROJECT_SOURCE_DIR}/sources/*.cpp"
@@ -43,6 +47,7 @@ TARGET_LINK_LIBRARIES(auto-sdr
     liquid
     sox
     soxr
+    mosquitto
     stdc++fs
     nlohmann_json::nlohmann_json
 )

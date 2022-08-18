@@ -3,12 +3,11 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as tick
 import numpy as np
 import asyncio
-import websockets
-import json
+import asyncio_mqtt
 import datetime
 import argparse
 import os
-import time
+import struct
 import logging
 import concurrent
 import copy
@@ -103,44 +102,49 @@ async def graph_task(queue, output_dir):
             await loop.run_in_executor(executor, waterfall, data, output_dir)
 
 
-async def ws_task(url, key, aggregate_seconds, flush_seconds, graphs, logger, queue):
-    async with websockets.connect(url) as websocket:
+async def mqtt_task(hostname, port, username, password, aggregate_seconds, flush_seconds, graphs, logger, queue):
+    async with asyncio_mqtt.Client(hostname, port, username=username, password=password) as client:
         logger.info("connection succeeded")
-        await websocket.send(json.dumps({"command": "authorize", "key": key}))
-        while True:
-            message = json.loads(await websocket.recv())
-            if message["type"] == "spectrogram":
-                gc.collect()
-                frequencies = message["frequencies"]
-                key = (frequencies[0], frequencies[-1])
-                dt = datetime.datetime.fromtimestamp(message["timestamp_ms"] / 1000.0)
-                data = np.array(message["powers"], dtype=np.float16)
-                logger.debug("received spectrogram datetime: %s", dt)
+        async with client.unfiltered_messages() as messages:
+            await client.subscribe("sdr/spectrogram")
+            async for message in messages:
+                if message.topic == "sdr/spectrogram":
+                    gc.collect()
+                    (timestamp, samples_count) = struct.unpack("<QL", message.payload[:12])
+                    dt = datetime.datetime.fromtimestamp(timestamp / 1000.0)
+                    frequencies = list(struct.unpack("<%dL" % samples_count, message.payload[12 : 12 + 4 * samples_count]))
+                    data = np.array(struct.unpack("<%df" % samples_count, message.payload[12 + 4 * samples_count :]))
+                    key = (frequencies[0], frequencies[-1])
+                    logger.debug("received spectrogram datetime: %s", dt)
 
-                if not key in graphs:
-                    graphs[key] = new_graph(frequencies, dt)
+                    if not key in graphs:
+                        graphs[key] = new_graph(frequencies, dt)
 
-                graphs[key]["labels"].append(dt)
-                graphs[key]["values"].append(data)
-                graphs[key]["min"] = min(graphs[key]["min"], data.min() // 10 * 10)
-                graphs[key]["max"] = max(graphs[key]["max"], data.max() // 10 * 10 + 10)
+                    graphs[key]["labels"].append(dt)
+                    graphs[key]["values"].append(data)
+                    graphs[key]["min"] = min(graphs[key]["min"], data.min() // 10 * 10)
+                    graphs[key]["max"] = max(graphs[key]["max"], data.max() // 10 * 10 + 10)
 
-                if seconds_from_midnight(graphs[key]["start_datetime"]) // aggregate_seconds != seconds_from_midnight(dt) // aggregate_seconds:
-                    await queue.put(copy.deepcopy(graphs[key]))
-                    g = new_graph(frequencies, dt, graphs[key]["min"], graphs[key]["max"])
-                    g["labels"].extend(graphs[key]["labels"][-2:])
-                    g["values"].extend(graphs[key]["values"][-2:])
-                    graphs[key] = g
-                elif 0 < flush_seconds and seconds_from_midnight(graphs[key]["flush_datetime"]) // flush_seconds != seconds_from_midnight(dt) // flush_seconds:
-                    await queue.put(copy.deepcopy(graphs[key]))
-                    graphs[key]["flush_datetime"] = dt
+                    if seconds_from_midnight(graphs[key]["start_datetime"]) // aggregate_seconds != seconds_from_midnight(dt) // aggregate_seconds:
+                        await queue.put(copy.deepcopy(graphs[key]))
+                        g = new_graph(frequencies, dt, graphs[key]["min"], graphs[key]["max"])
+                        g["labels"].extend(graphs[key]["labels"][-2:])
+                        g["values"].extend(graphs[key]["values"][-2:])
+                        graphs[key] = g
+                    elif (
+                        0 < flush_seconds
+                        and seconds_from_midnight(graphs[key]["flush_datetime"]) // flush_seconds != seconds_from_midnight(dt) // flush_seconds
+                    ):
+                        await queue.put(copy.deepcopy(graphs[key]))
+                        graphs[key]["flush_datetime"] = dt
 
 
 async def run():
     parser = argparse.ArgumentParser(description="Draw waterfall from rtl-sdr-scanner-cpp")
-    parser.add_argument("-s", "--server", help="ws server", type=str, default="localhost", metavar="server")
-    parser.add_argument("-p", "--port", help="ws server", type=int, default=9999, metavar="port")
-    parser.add_argument("-k", "--key", help="ws key", type=str)
+    parser.add_argument("--hostname", help="mqtt hostname", type=str, default="test.mosquitto.org", metavar="server")
+    parser.add_argument("--port", help="mqtt port", type=int, default=1883, metavar="port")
+    parser.add_argument("--username", help="mqtt username", type=str, default="")
+    parser.add_argument("--password", help="mqtt password", type=str, default="")
     parser.add_argument("-rs", "--reconnect_seconds", help="ws reconnect interval in seconds", type=int, default=10)
     parser.add_argument("-as", "--aggregate_seconds", help="aggregate n seconds in single plot", type=int, default=600)
     parser.add_argument("-fs", "--flush_seconds", help="flush plot ever n seconds", type=int, default=0)
@@ -151,31 +155,18 @@ async def run():
 
     config_logger(args["verbose"], args["log_directory"])
     graphs = {}
-    logger = logging.getLogger("ws")
+    logger = logging.getLogger("mqtt_task")
     queue = asyncio.Queue()
     while True:
         try:
             await asyncio.gather(
                 graph_task(queue, args["output_dir"]),
-                ws_task("ws://%s:%d/" % (args["server"], args["port"]), args["key"], args["aggregate_seconds"], args["flush_seconds"], graphs, logger, queue),
+                mqtt_task(
+                    args["hostname"], args["port"], args["username"], args["password"], args["aggregate_seconds"], args["flush_seconds"], graphs, logger, queue
+                ),
             )
         except KeyboardInterrupt:
             break
-        except websockets.exceptions.ConnectionClosedError:
-            logger.warning("connection closed")
-            time.sleep(args["reconnect_seconds"])
-        except ConnectionRefusedError:
-            logger.warning("connection refused")
-            time.sleep(args["reconnect_seconds"])
-        except asyncio.TimeoutError:
-            logger.warning("connection timeout")
-            time.sleep(args["reconnect_seconds"])
-        except IOError as exception:
-            logger.warning("IOError: %s" % exception)
-            time.sleep(args["reconnect_seconds"])
-        except Exception as e:
-            logger.exception("exception: %s" % e)
-            time.sleep(args["reconnect_seconds"])
 
 
 def main():

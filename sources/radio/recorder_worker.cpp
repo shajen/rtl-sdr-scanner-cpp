@@ -40,12 +40,12 @@ RecorderWorker::RecorderWorker(const Config &config, int id, const Frequency &ba
               }
               inputSamples = std::move(m_inSamples.front());
               m_inSamples.pop_front();
-              Logger::debug("recorder", "thread: {}, pop input samples, size: {}", m_id, m_inSamples.size());
+              Logger::debug("recorder", "thread: {}, pop input samples, queue size: {}", m_id, m_inSamples.size());
             }
             auto outputSamples = processSamples(inputSamples);
             std::unique_lock<std::mutex> lock(m_outMutex);
             m_outSamples.push_back(std::move(outputSamples));
-            Logger::debug("recorder", "thread: {}, push output samples, size: {}", m_id, m_outSamples.size());
+            Logger::debug("recorder", "thread: {}, push output samples, queue size: {}", m_id, m_outSamples.size());
             lock.unlock();
             m_outCv.notify_one();
           }

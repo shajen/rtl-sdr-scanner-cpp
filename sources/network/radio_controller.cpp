@@ -5,10 +5,27 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
+#include <cstdlib>
+#include <memory>
+
 constexpr auto QUEUE_MAX_SIZE = 1000;
 
-RadioController::RadioController(WebSocketServer& server)
-    : m_server(server), m_isRunning(true), m_thread([this]() {
+template <typename T>
+void add(uint8_t* p, uint64_t& offset, const T& value) {
+  auto tmp = reinterpret_cast<T*>(p + offset);
+  *tmp = value;
+  offset += sizeof(T);
+}
+
+template <typename T>
+void add(uint8_t* p, uint64_t& offset, const T* value, int size) {
+  auto tmp = reinterpret_cast<void*>(p + offset);
+  memcpy(tmp, value, sizeof(T) * size);
+  offset += sizeof(T) * size;
+}
+
+RadioController::RadioController(Mqtt& mqtt)
+    : m_mqtt(mqtt), m_isRunning(true), m_thread([this]() {
         while (m_isRunning) {
           {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -41,6 +58,24 @@ void RadioController::pushSignals(const Signals& signals, const FrequencyRange& 
   m_cv.notify_one();
 }
 
+void RadioController::pushRecording(const std::chrono::milliseconds& time, const Frequency& frequency, Frequency sampleRate, const std::vector<float>& samples) {
+  std::vector<uint8_t> data(sizeof(uint64_t) + 3 * sizeof(uint32_t) + sizeof(float) * samples.size());
+  uint64_t offset = 0;
+  add(data.data(), offset, static_cast<uint64_t>(time.count()));
+  add(data.data(), offset, static_cast<uint32_t>(frequency.value));
+  add(data.data(), offset, static_cast<uint32_t>(sampleRate.value));
+  add(data.data(), offset, static_cast<uint32_t>(samples.size()));
+  add(data.data(), offset, samples.data(), samples.size());
+  m_mqtt.publish("sdr/recording/continue", std::move(data));
+}
+
+void RadioController::finishRecording(const Frequency& frequency) {
+  std::vector<uint8_t> data(sizeof(uint32_t));
+  uint64_t offset = 0;
+  add(data.data(), offset, static_cast<u_int32_t>(frequency.value));
+  m_mqtt.publish("sdr/recording/finish", std::move(data));
+}
+
 void RadioController::processSignals(const SignalsWithData& signalsWithRange) {
   const Signals& signals = std::get<0>(signalsWithRange);
   const FrequencyRange& frequencyRange = std::get<1>(signalsWithRange);
@@ -71,29 +106,17 @@ void RadioController::processSignals(const SignalsWithData& signalsWithRange) {
 }
 
 void RadioController::sendSignals(const Signals& signals, const std::chrono::milliseconds time) {
-  rapidjson::Document document;
-  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
-
-  rapidjson::Value frequencies(rapidjson::kArrayType);
-  rapidjson::Value powers(rapidjson::kArrayType);
-  frequencies.Reserve(signals.size(), allocator);
-  powers.Reserve(signals.size(), allocator);
+  std::vector<uint8_t> data(sizeof(uint64_t) + sizeof(uint32_t)+ (sizeof(uint32_t) + sizeof(float)) * signals.size());
+  uint64_t offset = 0;
+  add(data.data(), offset, static_cast<uint64_t>(time.count()));
+  add(data.data(), offset, static_cast<uint32_t>(signals.size()));
   for (const auto& signal : signals) {
-    frequencies.PushBack(rapidjson::Value(signal.frequency.value), allocator);
-    powers.PushBack(rapidjson::Value(signal.power.value), allocator);
+    add(data.data(), offset, static_cast<uint32_t>(signal.frequency.value));
   }
-  document.SetObject();
-  document.AddMember("type", "spectrogram", allocator);
-  document.AddMember("frequencies", frequencies, allocator);
-  document.AddMember("powers", powers, allocator);
-  document.AddMember("timestamp_ms", time.count(), allocator);
-
-  rapidjson::StringBuffer buffer;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-  writer.SetMaxDecimalPlaces(2);
-  document.Accept(writer);
-  const std::string message(buffer.GetString());
-  m_server.send(message);
+  for (const auto& signal : signals) {
+    add(data.data(), offset, signal.power.value);
+  }
+  m_mqtt.publish("sdr/spectrogram", std::move(data));
 }
 
 void RadioController::sendSignalsAndClear() {

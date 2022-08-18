@@ -1,7 +1,7 @@
 'use strict';
 
 var spectrums = new Map();
-var socket;
+var client;
 
 function createWaterfall(start, stop, id) {
     var element = '<div class="col"><p class="text-center fs-3">' + start + " MHz - " + stop + " MHz" + '</p><div><canvas id="' + id + '" style="height: 100%; width: 100%"></canvas></div></div>';
@@ -9,42 +9,50 @@ function createWaterfall(start, stop, id) {
 }
 
 function main() {
-    var server = $(location).attr('hostname');
-    if (server == "") {
-        server = "localhost";
-    }
-    $("#hostname").val(server);
-    $("#port").val('9999');
     $("#connect").click(connect);
+    $("#hostname").val('test.mosquitto.org');
+    $("#port").val('8080');
+    $("#username").val('');
+    $("#password").val('');
 }
 
 function connect() {
     spectrums.clear();
-    if (socket) {
-        socket.close();
+    if (client) {
+        client.end();
     }
     $("#waterfalls").empty();
-    socket = new WebSocket('ws://' + $("#hostname").val() + ':' + $("#port").val() + '/');
-    socket.addEventListener('open', function (event) {
-        console.log('ws opened')
-        socket.send(JSON.stringify({ 'command': 'authorize', 'key': $("#password").val() }));
-    });
 
-    socket.addEventListener('close', function (event) {
-        console.log('ws closed')
-    });
+    if ($("#username").val() != '' && $("#password").val() != '') {
+        client = mqtt.connect("mqtt://" + $("#hostname").val() + ":" + $("#port").val(), { username: $("#username").val(), password: $("#password").val(), rejectUnauthorized: false, clean: true, });
+    }
+    else {
+        client = mqtt.connect("mqtt://" + $("#hostname").val() + ":" + $("#port").val(), { rejectUnauthorized: false, clean: true, });
+    }
 
-    socket.addEventListener('message', function (event) {
-        var data = JSON.parse(event.data);
 
-        if (data.type == 'spectrogram') {
-            var powers = data.powers;
-            var frequencies = data.frequencies;
+    client.subscribe("sdr/spectrogram");
+    client.on('connect', function (event) {
+        console.log('mqtt connected');
+    })
+    client.on('close', function (event) {
+        console.log('mqtt disconnected');
+    })
+    client.on('message', function (topic, payload) {
+        if (topic == 'sdr/spectrogram') {
+            var timestamp = new BigUint64Array(payload.buffer.slice(0, 8));
+            var timestamp = Number(timestamp[0]);
+            var dt = new Date(timestamp)
+            var samples = new Uint32Array(payload.buffer.slice(8, 12));
+            var samples = Number(samples[0]);
+            var frequencies = new Uint32Array(payload.buffer.slice(12, 12 + samples * 4));
+            var powers = new Float32Array(payload.buffer.slice(12 + samples * 4, 12 + samples * 4 + samples * 4));
             var bandwidth = frequencies[frequencies.length - 1] - frequencies[0];
             var center = (frequencies[0] + Math.round(bandwidth / 2));
-            var id = 'waterfall_' + frequencies[0].toString() + "_" + frequencies[frequencies.length - 1].toString();
+            var id = 'waterfall_' + frequencies[0].toString() + "_" + frequencies[frequencies.length - 1].toString() + "samples: " + frequencies.length;
             var spectrum;
 
+            console.log(dt.toLocaleString('en-GB'));
             console.log('spectrogram', frequencies[0], frequencies[frequencies.length - 1], id);
 
             if (spectrums.has(id)) {
@@ -57,18 +65,17 @@ function connect() {
                     id, {
                     spectrumPercent: 40
                 });
-                window.addEventListener("keydown", function (e) {
-                    spectrum.onKeypress(e);
-                });
+                // window.addEventListener("keydown", function (e) {
+                //     spectrum.onKeypress(e);
+                // });
+                spectrum.setCenterHz(center);
+                spectrum.setSpanHz(bandwidth);
+                spectrum.setRange(-60, 40);
                 spectrums.set(id, spectrum);
             }
-
             spectrum.addData(powers);
-            spectrum.setCenterHz(center);
-            spectrum.setSpanHz(bandwidth);
-            spectrum.setRange(-60, 40);
         }
-    });
+    })
 }
 
 window.onload = main;

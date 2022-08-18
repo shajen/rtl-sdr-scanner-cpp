@@ -109,7 +109,7 @@ void Recorder::stop() {
 void Recorder::appendSamples(std::vector<uint8_t> samples) {
   std::unique_lock<std::mutex> lock(m_inMutex);
   m_inSamples.push_back({time(), std::move(samples), m_frequencyRange});
-  Logger::debug("recorder", "push input samples, size: {}", m_inSamples.size());
+  Logger::debug("recorder", "push input samples, queue size: {}", m_inSamples.size());
   lock.unlock();
   m_inCv.notify_one();
 }

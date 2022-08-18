@@ -1,6 +1,6 @@
 #pragma once
 
-#include <network/websocket_server.h>
+#include <network/mqtt.h>
 #include <radio/help_structures.h>
 
 #include <condition_variable>
@@ -14,17 +14,19 @@ class RadioController {
   using SignalsWithTime = std::pair<Signals, std::chrono::milliseconds>;
 
  public:
-  RadioController(WebSocketServer& server);
+  RadioController(Mqtt& mqtt);
   ~RadioController();
 
   void pushSignals(const Signals& signals, const FrequencyRange& frequencyRange, const std::chrono::milliseconds time);
+  void pushRecording(const std::chrono::milliseconds& time, const Frequency& frequency, Frequency sampleRate, const std::vector<float>& samples);
+  void finishRecording(const Frequency& frequency);
 
  private:
   void processSignals(const SignalsWithData& signals);
   void sendSignals(const Signals& signals, const std::chrono::milliseconds time);
   void sendSignalsAndClear();
 
-  WebSocketServer& m_server;
+  Mqtt& m_mqtt;
   std::queue<SignalsWithData> m_queue;
   std::vector<SignalsWithTime> m_signals;
 
