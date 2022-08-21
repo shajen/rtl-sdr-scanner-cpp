@@ -87,7 +87,7 @@ Config::Config(const std::string &path)
       m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125}, {430000000, 440000000, 125}})),
       m_ignoredFrequencies(parseFrequenciesRanges(m_json, "ignored_frequencies_ranges", {})),
       m_logsDirectory(readKey(m_json, {"output", "logs"}, std::string("sdr/logs"))),
-      m_recordingsDirectory(readKey(m_json, {"output", "recordings"}, std::string("sdr/recordings"))),
+      m_recordingsDirectory(readKey(m_json, {"output", "recordings"}, std::string(""))),
       m_isRecordingEnabled(readKey(m_json, {"recording", "enabled"}, true)),
       m_consoleLogLevel(parseLogLevel(readKey(m_json, {"output", "console_log_level"}, std::string("info")))),
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),

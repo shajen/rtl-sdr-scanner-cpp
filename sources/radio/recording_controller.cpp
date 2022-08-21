@@ -13,7 +13,9 @@ void RecordingController::pushRecording(const std::chrono::milliseconds time, co
     it->samples.push({time, samples, isTransmision});
     if (isTransmision) {
       while (m_config.threads() * 2 <= it->samples.size()) {
-        it->mp3Writer->appendSamples(it->samples.top().samples);
+        if (it->mp3Writer) {
+          it->mp3Writer->appendSamples(it->samples.top().samples);
+        }
         m_radioController.pushRecording(it->samples.top().time, it->frequency, it->sampleRate, it->samples.top().samples);
         it->samples.pop();
       }
@@ -23,7 +25,8 @@ void RecordingController::pushRecording(const std::chrono::milliseconds time, co
     Logger::info("RcrdCtrl", "new recording, time: {}, {}, isTransmision: {}", time.count(), frequency.toString(), isTransmision);
     const Frequency mp3SampleRate{sampleRate.value / (sampleRate.value / m_config.resamplerMinimalOutSampleRate())};
     std::priority_queue<Recording::Samples> q{{}, {{time, samples, isTransmision}}};
-    m_recordings.push_back({time, frequency, mp3SampleRate, q, std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate)});
+    auto mp3 = m_config.recordingOutputDirectory().empty() ? nullptr : std::make_unique<Mp3Writer>(m_config, frequency, mp3SampleRate);
+    m_recordings.push_back({time, frequency, mp3SampleRate, q, std::move(mp3)});
   }
 }
 
@@ -38,11 +41,15 @@ void RecordingController::flushRecordings(const std::chrono::milliseconds time) 
           it->samples.pop();
           if (data.isTransmision) {
             for (const auto& [t, s] : samples) {
-              it->mp3Writer->appendSamples(s);
+              if (it->mp3Writer) {
+                it->mp3Writer->appendSamples(s);
+              }
               m_radioController.pushRecording(t, it->frequency, it->sampleRate, s);
             }
             samples.clear();
-            it->mp3Writer->appendSamples(data.samples);
+            if (it->mp3Writer) {
+              it->mp3Writer->appendSamples(data.samples);
+            }
             m_radioController.pushRecording(data.time, it->frequency, it->sampleRate, data.samples);
           } else {
             samples.push_back({data.time, data.samples});
