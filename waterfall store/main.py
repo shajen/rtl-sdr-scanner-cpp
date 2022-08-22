@@ -7,11 +7,13 @@ import asyncio_mqtt
 import datetime
 import argparse
 import os
+import math
 import struct
 import logging
 import concurrent
 import copy
 import gc
+import skimage.measure
 
 
 def config_logger(verbose, dir):
@@ -42,10 +44,20 @@ def format_frequency(frequency, pos=None, separator="."):
     return "%d%s%03d%s%03d" % (f1, separator, f2, separator, f3)
 
 
-def waterfall(graph, output_dir):
-    x = graph["frequencies"]
-    y = graph["labels"]
-    z = np.array(graph["values"])
+def waterfall(graph, output_dir, x_max_size=2000, y_max_size=2000):
+    x_org = graph["frequencies"]
+    y_org = graph["labels"]
+    z_org = np.array(graph["values"])
+    x_merge_size = math.ceil((len(x_org) - 1) / x_max_size)
+    y_merge_size = math.ceil(len(y_org) / y_max_size)
+    x_size = len(x_org) // x_merge_size * x_merge_size
+    y_size = len(y_org) // y_merge_size * y_merge_size
+    x = x_org[:x_size][::x_merge_size]
+    y = y_org[:y_size][::y_merge_size]
+    z = skimage.measure.block_reduce(z_org[:y_size, :x_size], block_size=(y_merge_size, x_merge_size), func=np.mean)
+    if x_size != len(x_org):
+        x = x + x_org[-1:]
+        z = np.concatenate((z, z_org[:y_size][::y_merge_size, -1:]), axis=1)
     start_datetime = graph["start_datetime"]
 
     start = x[0]
@@ -72,7 +84,7 @@ def waterfall(graph, output_dir):
 
     output_dir = "%s/%s %s/%s" % (output_dir, format_frequency(start, None, "_"), format_frequency(stop, None, "_"), start_datetime.strftime("%Y-%m-%d"))
     os.makedirs(output_dir, exist_ok=True)
-    fig.savefig("%s/%s.png" % (output_dir, start_datetime.strftime("%H:%M:%S")), dpi=100, bbox_inches="tight")
+    fig.savefig("%s/%s.jpg" % (output_dir, start_datetime.strftime("%H:%M:%S")), dpi=100, bbox_inches="tight")
     fig.clear()
     plt.close(fig)
     logger.info("finish")
@@ -113,7 +125,7 @@ async def mqtt_task(hostname, port, username, password, aggregate_seconds, flush
                     (timestamp, samples_count) = struct.unpack("<QL", message.payload[:12])
                     dt = datetime.datetime.fromtimestamp(timestamp / 1000.0)
                     frequencies = list(struct.unpack("<%dL" % samples_count, message.payload[12 : 12 + 4 * samples_count]))
-                    data = np.array(struct.unpack("<%df" % samples_count, message.payload[12 + 4 * samples_count :]))
+                    data = np.array(struct.unpack("<%df" % samples_count, message.payload[12 + 4 * samples_count :])).astype(np.int8)
                     key = (frequencies[0], frequencies[-1])
                     logger.debug("received spectrogram datetime: %s", dt)
 
