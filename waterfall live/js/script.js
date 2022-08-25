@@ -43,24 +43,27 @@ function connect() {
             var timestamp = new BigUint64Array(payload.buffer.slice(0, 8));
             var timestamp = Number(timestamp[0]);
             var dt = new Date(timestamp)
-            var samples = new Uint32Array(payload.buffer.slice(8, 12));
-            var samples = Number(samples[0]);
-            var frequencies = new Uint32Array(payload.buffer.slice(12, 12 + samples * 4));
-            var powers = new Float32Array(payload.buffer.slice(12 + samples * 4, 12 + samples * 4 + samples * 4));
-            var bandwidth = frequencies[frequencies.length - 1] - frequencies[0];
-            var center = (frequencies[0] + Math.round(bandwidth / 2));
-            var id = 'waterfall_' + frequencies[0].toString() + "_" + frequencies[frequencies.length - 1].toString() + "samples: " + frequencies.length;
+            var tmp = new Uint32Array(payload.buffer.slice(8, 24));
+            var begin_frequency = Number(tmp[0]);
+            var end_frequency = Number(tmp[1]);
+            var step_frequency = Number(tmp[2]);
+            var samples = Number(tmp[3]);
+
+            var powers = new Int8Array(payload.buffer.slice(24, 24 + samples));
+            var bandwidth = end_frequency - begin_frequency;
+            var center = (begin_frequency + Math.round(bandwidth / 2));
+            var id = 'waterfall_' + begin_frequency.toString() + "_" + end_frequency.toString() + "samples: " + powers.length;
             var spectrum;
 
             console.log(dt.toLocaleString('en-GB'));
-            console.log('spectrogram', frequencies[0], frequencies[frequencies.length - 1], id);
+            console.log('spectrogram', begin_frequency, end_frequency, id);
 
             if (spectrums.has(id)) {
                 spectrum = spectrums.get(id);
             }
             else {
                 console.log('create new');
-                createWaterfall(frequencies[0], frequencies[frequencies.length - 1], id);
+                createWaterfall(begin_frequency, end_frequency, id);
                 spectrum = new Spectrum(
                     id, {
                     spectrumPercent: 40

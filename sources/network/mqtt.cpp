@@ -4,7 +4,7 @@
 
 constexpr auto KEEP_ALIVE = 60;
 constexpr auto LOOP_TIMEOUT_MS = 1;
-constexpr auto QOS = 2;
+constexpr auto QOS = 0;
 constexpr auto TOPIC = "sdr/config";
 constexpr auto RECONNECT_INTERVAL = std::chrono::seconds(1);
 constexpr auto QUEUE_MAX_SIZE = 1000;

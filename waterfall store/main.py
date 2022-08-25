@@ -122,10 +122,10 @@ async def mqtt_task(hostname, port, username, password, aggregate_seconds, flush
             async for message in messages:
                 if message.topic == "sdr/spectrogram":
                     gc.collect()
-                    (timestamp, samples_count) = struct.unpack("<QL", message.payload[:12])
+                    (timestamp, begin_frequency, end_frequency, step_frequency, samples_count) = struct.unpack("<QLLLL", message.payload[:24])
                     dt = datetime.datetime.fromtimestamp(timestamp / 1000.0)
-                    frequencies = list(struct.unpack("<%dL" % samples_count, message.payload[12 : 12 + 4 * samples_count]))
-                    data = np.array(struct.unpack("<%df" % samples_count, message.payload[12 + 4 * samples_count :])).astype(np.int8)
+                    frequencies = list(range(begin_frequency, end_frequency + step_frequency, step_frequency))
+                    data = np.array(struct.unpack("<%db" % samples_count, message.payload[24:])).astype(np.int8)
                     key = (frequencies[0], frequencies[-1])
                     logger.debug("received spectrogram datetime: %s", dt)
 

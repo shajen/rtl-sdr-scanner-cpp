@@ -106,15 +106,15 @@ void RadioController::processSignals(const SignalsWithData& signalsWithRange) {
 }
 
 void RadioController::sendSignals(const Signals& signals, const std::chrono::milliseconds time) {
-  std::vector<uint8_t> data(sizeof(uint64_t) + sizeof(uint32_t)+ (sizeof(uint32_t) + sizeof(float)) * signals.size());
+  std::vector<uint8_t> data(sizeof(uint64_t) + 4 * sizeof(uint32_t)+ sizeof(int8_t) * signals.size());
   uint64_t offset = 0;
   add(data.data(), offset, static_cast<uint64_t>(time.count()));
+  add(data.data(), offset, static_cast<uint32_t>(signals.front().frequency.value));
+  add(data.data(), offset, static_cast<uint32_t>(signals.back().frequency.value));
+  add(data.data(), offset, static_cast<uint32_t>((++signals.begin())->frequency.value - signals.begin()->frequency.value));
   add(data.data(), offset, static_cast<uint32_t>(signals.size()));
   for (const auto& signal : signals) {
-    add(data.data(), offset, static_cast<uint32_t>(signal.frequency.value));
-  }
-  for (const auto& signal : signals) {
-    add(data.data(), offset, signal.power.value);
+    add(data.data(), offset, static_cast<int8_t>(signal.power.value));
   }
   m_mqtt.publish("sdr/spectrogram", std::move(data));
 }
