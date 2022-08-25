@@ -6,8 +6,8 @@
 
 using StreamCallbackData = std::tuple<RtlSdrScanner*, std::unique_ptr<Recorder>&, bool>;
 
-RtlSdrScanner::RtlSdrScanner(RadioController& radioController, RecordingController& recordingController, const Config& config, int deviceIndex)
-    : m_radioController(radioController), m_recordingController(recordingController), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
+RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& config, int deviceIndex)
+    : m_dataController(dataController), m_signalsMatcher(config), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
   Logger::debug("rtl_sdr", "init");
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
@@ -65,7 +65,7 @@ RtlSdrScanner::RtlSdrScanner(RadioController& radioController, RecordingControll
     }
     const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
     if (m_recorders.count(key) == 0) {
-      m_recorders[key] = std::make_unique<Recorder>(m_radioController, m_recordingController, m_config, frequencyRange.bandwidth(), frequencyRange.sampleRate(), frequencyRange.fftSize());
+      m_recorders[key] = std::make_unique<Recorder>(m_dataController, m_signalsMatcher, m_config, frequencyRange.bandwidth(), frequencyRange.sampleRate(), frequencyRange.fftSize());
     }
   }
   m_rawBuffer.resize(maxSamples);
@@ -140,7 +140,7 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
     RtlSdrScanner* scanner = std::get<0>(*data);
     std::unique_ptr<Recorder>& recorder = std::get<1>(*data);
     bool runForever = std::get<2>(*data);
-    recorder->appendSamples(std::move(std::vector<uint8_t>({buf, buf + len})));
+    recorder->appendSamples(std::vector<uint8_t>({buf, buf + len}));
     if (!scanner->m_isRunning || (!runForever && recorder->isFinished())) {
       rtlsdr_cancel_async(scanner->m_device);
       Logger::info("rtl_sdr", "cancel stream");
@@ -168,17 +168,17 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   const auto status = rtlsdr_read_sync(m_device, m_rawBuffer.data(), samples, &read);
   if (status != 0) {
     throw std::runtime_error("read samples error");
-  } else if (read != samples) {
+  } else if (read != static_cast<int>(samples)) {
     throw std::runtime_error("read samples error, dropped samples");
   } else {
+    const auto now = time();
     Logger::debug("rtl_sdr", "read bytes: {}", samples);
     toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
     const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
-    m_radioController.pushSignals(signals, frequencyRange, time());
-    const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
-    const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
-    if (m_config.isRecordingEnabled() && !strongSignals.empty()) {
+    m_dataController.sendSignals(signals, frequencyRange, now);
+    m_signalsMatcher.updateSignals(now, frequencyRange, signals);
+    if (!m_signalsMatcher.getActiveFrequencies(now).empty()) {
       Logger::info("rtl_sdr", "start recording");
       startStream(frequencyRange, false);
     }

@@ -7,6 +7,7 @@ struct Frequency {
   std::string toString(const std::string label = "") const;
 
   bool operator==(const Frequency& frequency) const;
+  bool operator<(const Frequency& frequency) const;
 
   uint32_t value;
 };
@@ -35,5 +36,5 @@ struct FrequencyRange {
   Frequency start;
   Frequency stop;
   Frequency step;
-  Frequency maxBandwidth;
+  Frequency maxBandwidth{0};
 };

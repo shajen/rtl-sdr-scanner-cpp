@@ -7,58 +7,42 @@ SignalsMatcher::SignalsMatcher(const Config& config) : m_config(config) {}
 
 SignalsMatcher::~SignalsMatcher() = default;
 
-void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const std::vector<Signal>& signals) {
-  for (const auto& signal : signals) {
-    Logger::info("SigMatcher", "signal: {}", signal.toString());
-  }
+void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
+  const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
+  const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
 
   std::unique_lock lock(m_mutex);
-  for (const auto& signal : signals) {
-    bool processed = false;
-    for (auto& group : m_frequencyGroups) {
-      if (group.contains(signal.frequency)) {
-        group.push(time, signal.frequency);
-        processed = true;
-        break;
-      }
-    }
-    if (!processed) {
-      m_frequencyGroups.push_back({m_config});
-      m_frequencyGroups.back().push(time, signal.frequency);
+  for (const auto& signal : strongSignals) {
+    Logger::info("SigMatcher", "time: {}, strong {}", time.count(), signal.toString());
+    const auto frequencyGroup = getFrequencyGroup(signal.frequency);
+    if (m_frequencyLastSignalTime.count(frequencyGroup)) {
+      m_frequencyLastSignalTime[frequencyGroup] = std::max(time, m_frequencyLastSignalTime[signal.frequency]);
+    } else {
+      m_frequencyLastSignalTime[frequencyGroup] = time;
     }
   }
 }
 
-std::vector<Frequency> SignalsMatcher::getStrongFrequencies(const std::chrono::milliseconds& time) const {
-  std::shared_lock lock(m_mutex);
+std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::milliseconds& time) {
+  std::unique_lock lock(m_mutex);
   std::vector<Frequency> frequencies;
-  for (const auto& group : m_frequencyGroups) {
-    if (time < group.getLastSignalTime() + m_config.maxSilenceTime()) {
-      frequencies.push_back(group.getBestFrequency());
+  for (auto it = m_frequencyLastSignalTime.begin(); it != m_frequencyLastSignalTime.end();) {
+    if (time <= it->second + m_config.maxSilenceTime()) {
+      Logger::info("SigMatcher", "time: {}, active {}", time.count(), it->first.toString());
+      frequencies.push_back(it->first);
+      it++;
+    } else {
+      m_frequencyLastSignalTime.erase(it++);
     }
   }
   return frequencies;
 }
 
-SignalsMatcher::FrequencyGroup::FrequencyGroup(const Config& config) : m_config(config) {}
-
-Frequency SignalsMatcher::FrequencyGroup::getBestFrequency() const {
-  auto max = std::max_element(m_frequencyCounter.begin(), m_frequencyCounter.end(), [](const auto& x, const auto& y) { return x.second < y.second; });
-  return {max->first};
-}
-
-void SignalsMatcher::FrequencyGroup::push(const std::chrono::milliseconds& time, const Frequency& frequency) {
-  m_lastSignalTime = time;
-  m_frequencies.push_back({time, frequency.value});
-  m_frequencyCounter[frequency.value]++;
-
-  while (!m_frequencies.empty() && m_frequencies.front().first + m_config.maxSilenceTime() < time) {
-    const auto value = m_frequencies.front();
-    m_frequencyCounter[value.second]--;
-    m_frequencies.pop_front();
+Frequency SignalsMatcher::getFrequencyGroup(const Frequency& frequency) {
+  const auto groupSize = m_config.recordingFrequencyGroupSize();
+  if (frequency.value % groupSize <= groupSize / 2) {
+    return {frequency.value - (frequency.value % groupSize)};
+  } else {
+    return {frequency.value - (frequency.value % groupSize) + groupSize};
   }
 }
-
-bool SignalsMatcher::FrequencyGroup::contains(const Frequency& frequency) const { return chceckOverlapped(getBestFrequency(), frequency, m_config.signalMargin()); }
-
-std::chrono::milliseconds SignalsMatcher::FrequencyGroup::getLastSignalTime() const { return m_lastSignalTime; }

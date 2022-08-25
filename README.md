@@ -19,7 +19,7 @@ An improvement over the previous version:
 You need `gcc`, `cmake` and some libraries to start the work. Install it before continue. For example on Debian based distribution run follow commands:
 
 ```
-sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev rapidjson-dev libmosquitto-dev
+sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev
 ```
 
 ## Build

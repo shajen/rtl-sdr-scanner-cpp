@@ -8,8 +8,6 @@
 #include <optional>
 #include <vector>
 
-bool chceckOverlapped(const Frequency& f1, const Frequency& f2, uint32_t margin);
-
 uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time);
 
 void toComplex(const uint8_t* rawBuffer, std::vector<std::complex<float>>& buffer, const uint32_t samples);

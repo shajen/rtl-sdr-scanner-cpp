@@ -7,22 +7,14 @@
 
 #include <map>
 
-Recorder::Recorder(RadioController& radioController, RecordingController& recordingController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
-    : m_radioController(radioController),
-      m_recordingController(recordingController),
-      m_signalsMatcher(config),
-      m_config(config),
-      m_bandwidth(bandwidth),
-      m_sampleRate(sampleRate),
-      m_isReady(false),
-      m_isWorking(true),
-      m_thread([this]() {
+Recorder::Recorder(DataController& dataController, SignalsMatcher& signalsMatcher, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize)
+    : m_dataController(dataController), m_signalsMatcher(signalsMatcher), m_config(config), m_bandwidth(bandwidth), m_sampleRate(sampleRate), m_isReady(false), m_isWorking(true), m_thread([this]() {
         Logger::debug("recorder", "start thread");
         while (m_isWorking) {
           {
             std::unique_lock<std::mutex> lock(m_outMutex);
             m_outCv.wait(lock);
-            if (m_outSamples.empty()) {
+            if (m_outSamples.size() < m_config.threads() * 2) {
               continue;
             }
           }
@@ -30,30 +22,25 @@ Recorder::Recorder(RadioController& radioController, RecordingController& record
             OutputSamples outputSamples;
             {
               std::unique_lock<std::mutex> lock(m_outMutex);
-              if (m_outSamples.empty()) {
+              if (m_outSamples.size() < m_config.threads() * 2) {
                 break;
               }
-              outputSamples = std::move(m_outSamples.front());
-              m_outSamples.pop_front();
+              outputSamples = std::move(m_outSamples.top());
+              m_outSamples.pop();
               Logger::debug("recorder", "pop output samples, size: {}", m_outSamples.size());
             }
             std::unique_lock<std::mutex> lock(m_threadMutex);
             if (!m_isReady) {
               continue;
             }
-            m_radioController.pushSignals(outputSamples.signals, m_frequencyRange, outputSamples.time);
+            m_dataController.sendSignals(outputSamples.signals, m_frequencyRange, outputSamples.time);
             if (outputSamples.transmisions.empty()) {
               Logger::debug("recorder", "no signal");
             }
             for (const auto& transmision : outputSamples.transmisions) {
-              if (transmision.isTransmision) {
-                m_lastActiveDataTime = outputSamples.time;
-              }
-              if (m_config.isRecordingEnabled()) {
-                m_recordingController.pushRecording(outputSamples.time, transmision.samples, m_sampleRate, transmision.frequency, transmision.isTransmision);
-              }
+              m_lastActiveDataTime = outputSamples.time;
+              m_dataController.sendTransmission(outputSamples.time, transmision.frequencyRange, transmision.samples);
             }
-            m_recordingController.flushRecordings(outputSamples.time);
           }
         }
         Logger::debug("recorder", "stop thread");
@@ -80,7 +67,9 @@ void Recorder::start(FrequencyRange frequencyRange) {
   }
   {
     std::unique_lock<std::mutex> lock(m_outMutex);
-    m_outSamples.clear();
+    while (!m_outSamples.empty()) {
+      m_outSamples.pop();
+    }
   }
   {
     std::unique_lock<std::mutex> lock(m_threadMutex);
@@ -98,7 +87,9 @@ void Recorder::stop() {
   }
   {
     std::unique_lock<std::mutex> lock(m_outMutex);
-    m_outSamples.clear();
+    while (!m_outSamples.empty()) {
+      m_outSamples.pop();
+    }
   }
   {
     std::unique_lock<std::mutex> lock(m_threadMutex);

@@ -17,8 +17,8 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: sudo apt-get install libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev libboost-all-dev rapidjson-dev
-      
+      run: sudo apt-get install libspdlog-dev librtlsdr-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 

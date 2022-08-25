@@ -21,9 +21,9 @@
     "range_scanning_time_ms": 100,
     "max_silence_time_ms": 2000,
     "min_recording_time_ms": 1000,
-    "sample_rate": 48000,
-    "threads": 4,
-    "enabled": true
+    "min_sample_rate": 64000,
+    "frequency_group_size": 10000,
+    "threads": 4
   },
   "output": {
     "recordings": "sdr/recordings",

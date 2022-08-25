@@ -8,8 +8,6 @@
 #include <stdexcept>
 #include <thread>
 
-bool chceckOverlapped(const Frequency &f1, const Frequency &f2, uint32_t margin) { return std::abs(static_cast<int>(f1.value) - static_cast<int>(f2.value)) <= margin; }
-
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
     if (time.count() * sampleRate.value % 1000 != 0) {
@@ -30,7 +28,7 @@ void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffe
     throw std::runtime_error("buffer size to small");
   }
   const auto count = std::min(samples, static_cast<uint32_t>(buffer.size()));
-  for (int i = 0; i < count; ++i) {
+  for (uint32_t i = 0; i < count; ++i) {
     buffer[i] = std::complex<float>((rawBuffer[2 * i] - 127.5) / 127.5, (rawBuffer[2 * i + 1] - 127.5) / 127.5);
   }
 }
@@ -71,8 +69,8 @@ std::vector<Signal> detectStrongSignals(const std::vector<Signal> &signals, cons
   }
 
   std::vector<std::tuple<uint32_t, uint32_t, uint32_t>> topSignals;
-  auto debugSignals = [&signals, &possibleSignals, &topSignals, &isSignalOk, signalsLimit, signalDetectionRange]() {
-    int processedSignals = 0;
+  auto debugSignals = [&signals, &possibleSignals, &topSignals, &isSignalOk, signalsLimit]() {
+    uint32_t processedSignals = 0;
     for (const auto &[start, index, stop] : possibleSignals) {
       if (isSignalOk(signals[index])) {
         if (++processedSignals <= signalsLimit) {
@@ -85,7 +83,7 @@ std::vector<Signal> detectStrongSignals(const std::vector<Signal> &signals, cons
   };
   std::sort(possibleSignals.begin(), possibleSignals.end(), [&signals](const auto &s1, const auto &s2) { return signals[std::get<1>(s1)].power.value > signals[std::get<1>(s2)].power.value; });
   debugSignals();
-  std::sort(possibleSignals.begin(), possibleSignals.end(), [&signals](const auto &s1, const auto &s2) { return std::get<2>(s1) - std::get<0>(s1) > std::get<2>(s2) - std::get<0>(s2); });
+  std::sort(possibleSignals.begin(), possibleSignals.end(), [](const auto &s1, const auto &s2) { return std::get<2>(s1) - std::get<0>(s1) > std::get<2>(s2) - std::get<0>(s2); });
   debugSignals();
 
   std::sort(topSignals.begin(), topSignals.end(), [&signals](const auto &s1, const auto &s2) { return signals[std::get<1>(s1)].power.value > signals[std::get<1>(s2)].power.value; });
@@ -115,7 +113,7 @@ std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono
 
 void shift(std::vector<std::complex<float>> &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
   const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
-  for (int i = 0; i < samplesCount; ++i) {
+  for (uint32_t i = 0; i < samplesCount; ++i) {
     samples[i] *= std::exp(f * static_cast<float>(i));
   }
 }

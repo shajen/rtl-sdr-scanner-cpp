@@ -1,12 +1,9 @@
 #pragma once
 
 #include <algorithms/decimator.h>
-#include <algorithms/fm_demodulator.h>
 #include <algorithms/spectrogram.h>
-#include <mp3_writer.h>
-#include <network/radio_controller.h>
+#include <network/data_controller.h>
 #include <radio/recorder_worker.h>
-#include <radio/recording_controller.h>
 #include <radio/signals_matcher.h>
 #include <utils.h>
 
@@ -15,12 +12,13 @@
 #include <deque>
 #include <map>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include <vector>
 
 class Recorder {
  public:
-  Recorder(RadioController& radioController, RecordingController& recordingController, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize);
+  Recorder(DataController& dataController, SignalsMatcher& signalsMatcher, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize);
   ~Recorder();
 
   void start(FrequencyRange frequencyRange);
@@ -29,9 +27,8 @@ class Recorder {
   bool isFinished() const;
 
  private:
-  RadioController& m_radioController;
-  RecordingController& m_recordingController;
-  SignalsMatcher m_signalsMatcher;
+  DataController& m_dataController;
+  SignalsMatcher& m_signalsMatcher;
   const Config& m_config;
 
   const Frequency m_bandwidth;
@@ -49,7 +46,7 @@ class Recorder {
 
   std::mutex m_outMutex;
   std::condition_variable m_outCv;
-  std::deque<OutputSamples> m_outSamples;
+  std::priority_queue<OutputSamples> m_outSamples;
 
   std::vector<std::unique_ptr<RecorderWorker>> m_workers;
   std::atomic_bool m_isWorking;

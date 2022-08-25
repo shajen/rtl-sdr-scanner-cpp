@@ -2,7 +2,7 @@ FROM debian:latest
 
 RUN apt-get update
 RUN	apt-get install -y curl zip
-RUN apt-get install -y build-essential cmake libspdlog-dev librtlsdr-dev libsox-dev libsoxr-dev libliquid-dev nlohmann-json3-dev rapidjson-dev libmosquitto-dev
+RUN apt-get install -y build-essential cmake libspdlog-dev librtlsdr-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev
 
 ARG URL
 RUN curl -L -s $URL -o /root/auto-sdr.zip && \

@@ -5,25 +5,16 @@ project(auto-sdr LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic -Wno-missing-braces]")
+
 find_package(spdlog REQUIRED)
 find_package(rtlsdr REQUIRED)
 find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(RapidJSON REQUIRED)
 
 find_library(LIQUID_LIB liquid)
 if(NOT LIQUID_LIB)
   message(FATAL_ERROR "liquid library not found")
-endif()
-
-find_library(SOX_LIB sox)
-if(NOT SOX_LIB)
-  message(FATAL_ERROR "sox library not found")
-endif()
-
-find_library(SOXR_LIB soxr)
-if(NOT SOXR_LIB)
-  message(FATAL_ERROR "soxr library not found")
 endif()
 
 find_library(MOSQUITTO_LIB mosquitto)
@@ -45,8 +36,6 @@ TARGET_LINK_LIBRARIES(auto-sdr
     rtlsdr
     Threads::Threads
     liquid
-    sox
-    soxr
     mosquitto
     stdc++fs
     nlohmann_json::nlohmann_json

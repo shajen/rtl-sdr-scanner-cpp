@@ -18,7 +18,7 @@ std::vector<Signal> Spectrogram::psd(Frequency centerFrequency, Frequency bandwi
   spgramcf_get_psd(m_spectrogram, m_buffer.data());
 
   std::vector<Signal> signals(m_size);
-  for (int i = 0; i < m_size; ++i) {
+  for (uint32_t i = 0; i < m_size; ++i) {
     signals[i].power.value = m_buffer[i];
     signals[i].frequency.value = (centerFrequency.value - bandwidth.value / 2) + static_cast<uint64_t>(i) * bandwidth.value / m_size;
   }
