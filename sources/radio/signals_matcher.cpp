@@ -16,7 +16,7 @@ void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const 
     Logger::info("SigMatcher", "time: {}, strong {}", time.count(), signal.toString());
     const auto frequencyGroup = getFrequencyGroup(signal.frequency);
     if (m_frequencyLastSignalTime.count(frequencyGroup)) {
-      m_frequencyLastSignalTime[frequencyGroup] = std::max(time, m_frequencyLastSignalTime[signal.frequency]);
+      m_frequencyLastSignalTime[frequencyGroup] = std::max(time, m_frequencyLastSignalTime[frequencyGroup]);
     } else {
       m_frequencyLastSignalTime[frequencyGroup] = time;
     }
