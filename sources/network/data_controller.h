@@ -15,7 +15,7 @@ class DataController {
 
   void sendTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples);
   void sendTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<uint8_t>& samples);
-  void sendSignals(const std::vector<Signal>& signals, const FrequencyRange& frequencyRange, const std::chrono::milliseconds time);
+  void sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
 
  private:
   Mqtt& m_mqtt;

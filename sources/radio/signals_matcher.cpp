@@ -3,16 +3,49 @@
 #include <logger.h>
 #include <utils.h>
 
-SignalsMatcher::SignalsMatcher(const Config& config) : m_config(config) {}
+#include <algorithm>
+#include <set>
+
+SignalsMatcher::SignalsMatcher(const Config& config) : m_config(config), m_learningNoiseFinished(false), m_frequencyGroupTransmissionsLastUpdate(time()) {}
+
+void SignalsMatcher::learnNoise(const std::vector<std::vector<Signal> >& noiseSignals) {
+  Logger::info("SigMatcher", "learn noise: {} - {}, samples: {}", noiseSignals.front().front().frequency.toString(), noiseSignals.front().back().frequency.toString(), noiseSignals.size());
+  std::vector<float> means(noiseSignals.front().size());
+  std::vector<float> maxs(noiseSignals.front().size(), -100.0);
+  for (const auto& signals : noiseSignals) {
+    for (uint32_t i = 0; i < signals.size(); ++i) {
+      means[i] += signals[i].power.value;
+      maxs[i] = std::max(maxs[i], signals[i].power.value);
+    }
+  }
+  for (auto& mean : means) {
+    mean = mean / noiseSignals.size();
+  }
+
+  std::vector<float> sds(noiseSignals.front().size());
+  for (const auto& signals : noiseSignals) {
+    for (uint32_t i = 0; i < signals.size(); ++i) {
+      sds[i] += std::pow(means[i] - signals[i].power.value, 2);
+    }
+  }
+  for (auto& sd : sds) {
+    sd = std::sqrt(sd) / noiseSignals.size();
+  }
+
+  for (uint32_t i = 0; i < noiseSignals.front().size(); ++i) {
+    const auto frequency = noiseSignals.front()[i].frequency;
+    m_frequencyNoiseLevel[frequency] = maxs[i] + sds[i] * m_config.noiseDetectionMargin();
+    Logger::debug("SigMatcher", "{}, mean: {}, sd: {}, max: {}", frequency.toString(), means[i], sds[i], maxs[i]);
+  }
+}
 
 SignalsMatcher::~SignalsMatcher() = default;
 
 void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
-  const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
-  const auto strongSignals = detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
-
   std::unique_lock lock(m_mutex);
-  for (const auto& signal : strongSignals) {
+  
+  // update frequencies last signal time
+  for (const auto& signal : getStrongSignals(frequencyRange, signals)) {
     Logger::info("SigMatcher", "time: {}, strong {}", time.count(), signal.toString());
     const auto frequencyGroup = getFrequencyGroup(signal.frequency);
     if (m_frequencyLastSignalTime.count(frequencyGroup)) {
@@ -24,7 +57,21 @@ void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const 
 }
 
 std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::milliseconds& time) {
+  const auto groupSize = m_config.recordingFrequencyGroupSize();
   std::unique_lock lock(m_mutex);
+
+  // update frequency group transmissions count
+  if (m_frequencyGroupTransmissionsLastUpdate + m_config.tornSignalsLearningTime() <= time) {
+    std::swap(m_frequencyGroupTransmissionsCount, m_tmpFrequencyGroupTransmissionsCount);
+    m_tmpFrequencyGroupTransmissionsCount.clear();
+    m_frequencyGroupTransmissionsLastUpdate = time;
+    m_learningNoiseFinished = true;
+    for (const auto& [frequencyGroup, count] : m_frequencyGroupTransmissionsCount) {
+      Logger::info("SigMatcher", "time: {}, group {}, changes: {}", time.count(), frequencyGroup.toString(), count);
+    }
+  }
+
+  // get active frequencies by last signal time
   std::vector<Frequency> frequencies;
   for (auto it = m_frequencyLastSignalTime.begin(); it != m_frequencyLastSignalTime.end();) {
     if (time <= it->second + m_config.maxSilenceTime()) {
@@ -32,10 +79,77 @@ std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::m
       frequencies.push_back(it->first);
       it++;
     } else {
-      m_frequencyLastSignalTime.erase(it++);
+      m_tmpFrequencyGroupTransmissionsCount[it->first]++;
+      it = m_frequencyLastSignalTime.erase(it);
     }
   }
-  return frequencies;
+
+  const auto tornSignalsDetectionEnabled = 0 < m_config.tornSignalsLearningTime().count() && 0 < m_config.tornSignalsMaxAllowedTransmissionsCount();
+  if (!m_learningNoiseFinished && tornSignalsDetectionEnabled) {
+    return {};
+  }
+
+  // group adjacent frequencies into group
+  std::vector<Frequency> superFrequencies;
+  for (auto it = frequencies.begin(); it != frequencies.end();) {
+    auto start = it;
+    auto stop = start;
+    // TODO group by minRecordingSampleRate
+    while (stop + 1 != frequencies.end() && (stop + 1)->value - stop->value == groupSize) {
+      stop++;
+    }
+    auto f = start->value + (stop->value - start->value) / 2;
+    Frequency frequency{f - f % groupSize};
+    const auto changes = m_frequencyGroupTransmissionsCount[frequency];
+    if (!tornSignalsDetectionEnabled || changes <= m_config.tornSignalsMaxAllowedTransmissionsCount()) {
+      superFrequencies.push_back(frequency);
+      Logger::info("SigMatcher", "time: {}, active group {}, {} - {}, changes: {}", time.count(), frequency.toString(), start->toString(""), stop->toString(""), changes);
+    } else {
+      Logger::info("SigMatcher", "time: {}, ignore group {}. {} - {}, changes: {}", time.count(), frequency.toString(), start->toString(""), stop->toString(""), changes);
+    }
+    it = stop + 1;
+  }
+
+  auto contains = [this](const uint32_t& value, const Frequency& f) { return f.value - m_config.minRecordingSampleRate() <= value && value <= f.value + m_config.minRecordingSampleRate(); };
+
+  // erase previously active groups that now is not active
+  for (auto it = m_frequencyGroupActiveTransmissions.begin(); it != m_frequencyGroupActiveTransmissions.end();) {
+    auto isActive = [contains, groupSize, it](const Frequency& frequency) { return contains(frequency.value - groupSize, *it) && contains(frequency.value + groupSize, *it); };
+    const auto stillActive = std::any_of(superFrequencies.begin(), superFrequencies.end(), isActive);
+    if (stillActive) {
+      it++;
+    } else {
+      Logger::info("SigMatcher", "time: {}, erase super group {}", time.count(), it->toString());
+      it = m_frequencyGroupActiveTransmissions.erase(it);
+    }
+  }
+
+  // create new active group if needed
+  for (const auto& frequency : superFrequencies) {
+    auto isCovered = [contains, groupSize, frequency](const Frequency& groupFrequency) {
+      return contains(frequency.value - groupSize, groupFrequency) && contains(frequency.value + groupSize, groupFrequency);
+    };
+    if (!std::any_of(m_frequencyGroupActiveTransmissions.begin(), m_frequencyGroupActiveTransmissions.end(), isCovered)) {
+      m_frequencyGroupActiveTransmissions.push_back(frequency);
+      Logger::info("SigMatcher", "time: {}, create super group {}", time.count(), frequency.toString());
+    }
+  }
+
+  for (const auto& frequency : m_frequencyGroupActiveTransmissions) {
+    Logger::info("SigMatcher", "time: {}, active super group {}", time.count(), frequency.toString());
+  }
+  return m_frequencyGroupActiveTransmissions;
+}
+
+std::vector<Signal> SignalsMatcher::getStrongSignals(const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
+  if (m_frequencyNoiseLevel.empty()) {
+    const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
+    return detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
+  } else {
+    std::vector<Signal> strongSignals;
+    std::copy_if(signals.begin(), signals.end(), std::back_inserter(strongSignals), [this](const Signal& signal) { return m_frequencyNoiseLevel[signal.frequency] <= signal.power.value; });
+    return strongSignals;
+  }
 }
 
 Frequency SignalsMatcher::getFrequencyGroup(const Frequency& frequency) {

@@ -33,7 +33,7 @@ Recorder::Recorder(DataController& dataController, SignalsMatcher& signalsMatche
             if (!m_isReady) {
               continue;
             }
-            m_dataController.sendSignals(outputSamples.signals, m_frequencyRange, outputSamples.time);
+            m_dataController.sendSignals(outputSamples.time, m_frequencyRange, outputSamples.signals);
             if (outputSamples.transmisions.empty()) {
               Logger::debug("recorder", "no signal");
             }

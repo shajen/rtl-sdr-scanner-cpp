@@ -52,7 +52,7 @@ void DataController::sendTransmission(const std::chrono::milliseconds time, cons
   m_mqtt.publish("sdr/transmission", std::move(data));
 }
 
-void DataController::sendSignals(const std::vector<Signal>& signals, const FrequencyRange& frequencyRange, const std::chrono::milliseconds time) {
+void DataController::sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
   const auto samplesSize = (frequencyRange.stop.value - frequencyRange.start.value) / frequencyRange.step.value + 1;
   std::vector<uint8_t> data(sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(int8_t) * samplesSize);
   uint64_t offset = 0;

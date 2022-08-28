@@ -23,6 +23,7 @@ class RtlSdrScanner {
  private:
   void setupDevice(const FrequencyRange& frequencyRange);
   void startStream(const FrequencyRange& frequencyRange, bool runForever);
+  void learnNoise(const FrequencyRange& frequencyRange);
   void readSamples(const FrequencyRange& frequencyRange);
 
   DataController& m_dataController;

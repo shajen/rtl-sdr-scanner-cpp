@@ -73,6 +73,11 @@ RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& confi
 
   m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
     try {
+      if (0 <= m_config.noiseLearningTime().count()) {
+        for (const auto& frequencyRange : splittedFrequencyRanges) {
+          learnNoise(frequencyRange);
+        }
+      }
       if (splittedFrequencyRanges.size() == 1) {
         setupDevice(splittedFrequencyRanges.front());
         startStream(splittedFrequencyRanges.front(), true);
@@ -156,6 +161,33 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
   recorder->stop();
 }
 
+void RtlSdrScanner::learnNoise(const FrequencyRange& frequencyRange) {
+  const auto start = time();
+  std::vector<std::vector<Signal>> noiseSignals;
+  while (time() <= start + m_config.noiseLearningTime() && m_isRunning) {
+    const auto centerFrequency = frequencyRange.center();
+    const auto bandwidth = frequencyRange.bandwidth();
+    const auto sampleRate = frequencyRange.sampleRate();
+    const auto samples = getSamplesCount(sampleRate, m_config.rangeScanningTime());
+    const auto spectrogramSize = frequencyRange.fftSize();
+
+    setupDevice(frequencyRange);
+    int read{0};
+    const auto status = rtlsdr_read_sync(m_device, m_rawBuffer.data(), samples, &read);
+    if (status != 0) {
+      throw std::runtime_error("read samples error");
+    } else if (read != static_cast<int>(samples)) {
+      throw std::runtime_error("read samples error, dropped samples");
+    } else {
+      toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
+      const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
+      noiseSignals.push_back(signals);
+      m_dataController.sendSignals(time(), frequencyRange, signals);
+    }
+  }
+  m_signalsMatcher.learnNoise(noiseSignals);
+}
+
 void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   const auto centerFrequency = frequencyRange.center();
   const auto bandwidth = frequencyRange.bandwidth();
@@ -176,7 +208,7 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
     const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
-    m_dataController.sendSignals(signals, frequencyRange, now);
+    m_dataController.sendSignals(now, frequencyRange, signals);
     m_signalsMatcher.updateSignals(now, frequencyRange, signals);
     if (!m_signalsMatcher.getActiveFrequencies(now).empty()) {
       Logger::info("rtl_sdr", "start recording");

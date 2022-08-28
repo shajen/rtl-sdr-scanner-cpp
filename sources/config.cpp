@@ -84,8 +84,12 @@ Config::Config(const std::string &path)
       m_maxSilenceTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_silence_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_recording_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
-      m_recordingFrequencyGroupSize(readKey(m_json, {"recording", "frequency_group_size"}, 10000)),
       m_threads(readKey(m_json, {"recording", "threads"}, 4)),
+      m_recordingFrequencyGroupSize(readKey(m_json, {"detection", "frequency_group_size"}, 10000)),
+      m_noiseLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "noise_learning_time_seconds"}, 3))),
+      m_noiseDetectionMargin(readKey(m_json, {"detection", "noise_detection_margin"}, 10)),
+      m_tornSignalsLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "torn_signals_learning_time_seconds"}, 60))),
+      m_tornSignalsMaxAllowedTransmissionsCount(readKey(m_json, {"detection", "torn_signals_max_allowed_transmissions_count"}, 10)),
       m_logsDirectory(readKey(m_json, {"output", "logs"}, std::string("sdr/logs"))),
       m_consoleLogLevel(parseLogLevel(readKey(m_json, {"output", "console_log_level"}, std::string("info")))),
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
@@ -104,9 +108,14 @@ std::chrono::milliseconds Config::rangeScanningTime() const { return m_rangeScan
 std::chrono::milliseconds Config::maxSilenceTime() const { return m_maxSilenceTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }
 uint32_t Config::minRecordingSampleRate() const { return m_minRecordingSampleRate; }
-uint32_t Config::recordingFrequencyGroupSize() const { return m_recordingFrequencyGroupSize; }
-
 uint8_t Config::threads() const { return m_threads; }
+
+uint32_t Config::recordingFrequencyGroupSize() const { return m_recordingFrequencyGroupSize; }
+std::chrono::seconds Config::noiseLearningTime() const { return m_noiseLearningTime; }
+uint32_t Config::noiseDetectionMargin() const { return m_noiseDetectionMargin; }
+std::chrono::seconds Config::tornSignalsLearningTime() const { return m_tornSignalsLearningTime; }
+uint32_t Config::tornSignalsMaxAllowedTransmissionsCount() const { return m_tornSignalsMaxAllowedTransmissionsCount; }
+
 
 spdlog::level::level_enum Config::logLevelFile() const { return m_fileLogLevel; }
 spdlog::level::level_enum Config::logLevelConsole() const { return m_consoleLogLevel; }

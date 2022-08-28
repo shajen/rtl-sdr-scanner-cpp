@@ -22,8 +22,14 @@
     "max_silence_time_ms": 2000,
     "min_recording_time_ms": 1000,
     "min_sample_rate": 64000,
-    "frequency_group_size": 10000,
     "threads": 4
+  },
+  "detection": {
+    "frequency_group_size": 10000,
+    "noise_learning_time_seconds": 5,
+    "noise_detection_margin": 50,
+    "torn_signals_learning_time_seconds": 60,
+    "torn_signals_max_allowed_transmissions_count": 10
   },
   "output": {
     "recordings": "sdr/recordings",
