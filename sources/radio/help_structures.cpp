@@ -8,7 +8,7 @@ std::string Frequency::toString(const std::string label) const {
   const auto f2 = (value / 1000) % 1000;
   const auto f3 = value % 1000;
   if (label.empty()) {
-    sprintf(buf, "frequency: %3d.%03d.%03d Hz", f1, f2, f3);
+    sprintf(buf, "%3d.%03d.%03d Hz", f1, f2, f3);
   } else {
     sprintf(buf, "%s: %3d.%03d.%03d Hz", label.c_str(), f1, f2, f3);
   }

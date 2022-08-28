@@ -4,7 +4,7 @@
 #include <string>
 
 struct Frequency {
-  std::string toString(const std::string label = "") const;
+  std::string toString(const std::string label = "frequency") const;
 
   bool operator==(const Frequency& frequency) const;
   bool operator<(const Frequency& frequency) const;
