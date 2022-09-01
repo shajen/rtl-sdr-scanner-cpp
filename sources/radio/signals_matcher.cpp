@@ -34,16 +34,17 @@ void SignalsMatcher::learnNoise(const std::vector<std::vector<Signal> >& noiseSi
 
   for (uint32_t i = 0; i < noiseSignals.front().size(); ++i) {
     const auto frequency = noiseSignals.front()[i].frequency;
-    m_frequencyNoiseLevel[frequency] = maxs[i] + sds[i] * m_config.noiseDetectionMargin();
+    m_frequencyNoiseLevel[frequency] = means[i] + m_config.noiseDetectionMargin();
     Logger::debug("SigMatcher", "{}, mean: {}, sd: {}, max: {}", frequency.toString(), means[i], sds[i], maxs[i]);
   }
 }
 
 SignalsMatcher::~SignalsMatcher() = default;
 
-void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const std::vector<Signal>& signals) {
-  std::unique_lock lock(m_mutex);
+std::vector<std::pair<Frequency, bool>> SignalsMatcher::getFrequencies(const std::chrono::milliseconds& time, const std::vector<Signal>& signals) {
+  const auto groupSize = m_config.recordingFrequencyGroupSize();
   
+  std::unique_lock lock(m_mutex);
   // update frequencies last signal time
   for (const auto& signal : getStrongSignals(signals)) {
     Logger::debug("SigMatcher", "strong {}", signal.toString());
@@ -54,11 +55,6 @@ void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const 
       m_frequencyLastSignalTime[frequencyGroup] = time;
     }
   }
-}
-
-std::vector<std::pair<Frequency, bool>> SignalsMatcher::getFrequencies(const std::chrono::milliseconds& time) {
-  const auto groupSize = m_config.recordingFrequencyGroupSize();
-  std::unique_lock lock(m_mutex);
 
   // update frequency group transmissions count
   if (m_frequencyGroupTransmissionsLastUpdate + m_config.tornSignalsLearningTime() <= time) {

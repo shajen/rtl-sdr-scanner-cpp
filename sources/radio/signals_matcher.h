@@ -14,8 +14,7 @@ class SignalsMatcher {
   ~SignalsMatcher();
 
   void learnNoise(const std::vector<std::vector<Signal>>& noiseSignals);
-  void updateSignals(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
-  std::vector<std::pair<Frequency, bool>> getFrequencies(const std::chrono::milliseconds& time);
+  std::vector<std::pair<Frequency, bool>> getFrequencies(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
 
  private:
   std::vector<Signal> getStrongSignals(const std::vector<Signal>& signals);
