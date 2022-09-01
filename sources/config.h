@@ -41,9 +41,6 @@ class Config {
   // experts only
   uint32_t resamplerFilterLength() const;
   float spectrogramFactor() const;
-  float signalDetectionFactor() const;
-  uint32_t debugSignalsLimit() const;
-  uint32_t signalMargin() const;
 
  private:
   const nlohmann::json m_json;

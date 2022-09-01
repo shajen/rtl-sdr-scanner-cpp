@@ -14,11 +14,11 @@ class SignalsMatcher {
   ~SignalsMatcher();
 
   void learnNoise(const std::vector<std::vector<Signal>>& noiseSignals);
-  void updateSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
+  void updateSignals(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
   std::vector<std::pair<Frequency, bool>> getFrequencies(const std::chrono::milliseconds& time);
 
  private:
-  std::vector<Signal> getStrongSignals(const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
+  std::vector<Signal> getStrongSignals(const std::vector<Signal>& signals);
   Frequency getFrequencyGroup(const Frequency& frequency);
 
   mutable std::shared_mutex m_mutex;

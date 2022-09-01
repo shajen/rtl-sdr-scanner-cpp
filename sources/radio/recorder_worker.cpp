@@ -86,7 +86,7 @@ OutputSamples RecorderWorker::processSamples(InputSamples &&inputSamples) {
   const auto signals = m_spectrogram.psd(center, m_bandwidth, m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, psd finished", m_id);
 
-  m_signalsMatcher.updateSignals(inputSamples.time, inputSamples.frequencyRange, signals);
+  m_signalsMatcher.updateSignals(inputSamples.time, signals);
   const auto activeFrequencies = m_signalsMatcher.getFrequencies(inputSamples.time);
   Logger::trace("recorder", "thread: {}, active frequencies finished, count: {}", m_id, activeFrequencies.size());
 

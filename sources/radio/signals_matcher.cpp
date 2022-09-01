@@ -41,11 +41,11 @@ void SignalsMatcher::learnNoise(const std::vector<std::vector<Signal> >& noiseSi
 
 SignalsMatcher::~SignalsMatcher() = default;
 
-void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
+void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const std::vector<Signal>& signals) {
   std::unique_lock lock(m_mutex);
   
   // update frequencies last signal time
-  for (const auto& signal : getStrongSignals(frequencyRange, signals)) {
+  for (const auto& signal : getStrongSignals(signals)) {
     Logger::debug("SigMatcher", "strong {}", signal.toString());
     const auto frequencyGroup = getFrequencyGroup(signal.frequency);
     if (m_frequencyLastSignalTime.count(frequencyGroup)) {
@@ -152,15 +152,10 @@ std::vector<std::pair<Frequency, bool>> SignalsMatcher::getFrequencies(const std
   return frequencyGroupActiveTransmissionsWithActiveFlag;
 }
 
-std::vector<Signal> SignalsMatcher::getStrongSignals(const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
-  if (m_frequencyNoiseLevel.empty()) {
-    const auto signalDetectionRange = static_cast<int32_t>(signals.size() * m_config.signalDetectionFactor());
-    return detectStrongSignals(signals, signalDetectionRange, frequencyRange, m_config.ignoredFrequencies(), m_config.debugSignalsLimit());
-  } else {
-    std::vector<Signal> strongSignals;
-    std::copy_if(signals.begin(), signals.end(), std::back_inserter(strongSignals), [this](const Signal& signal) { return m_frequencyNoiseLevel[signal.frequency] <= signal.power.value; });
-    return strongSignals;
-  }
+std::vector<Signal> SignalsMatcher::getStrongSignals(const std::vector<Signal>& signals) {
+  std::vector<Signal> strongSignals;
+  std::copy_if(signals.begin(), signals.end(), std::back_inserter(strongSignals), [this](const Signal& signal) { return m_frequencyNoiseLevel[signal.frequency] <= signal.power.value; });
+  return strongSignals;
 }
 
 Frequency SignalsMatcher::getFrequencyGroup(const Frequency& frequency) {

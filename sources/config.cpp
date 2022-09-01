@@ -3,9 +3,6 @@
 // experts only
 constexpr auto RESAMPLER_FILTER_LENGTH = 10;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
-constexpr auto SIGNAL_DETECTION_FACTOR = 0.003f;
-constexpr auto DEBUG_SIGNALS_LIMIT = 2;
-constexpr auto SIGNAL_MARGIN = 25000;
 
 nlohmann::json readJson(const std::string &path) {
   constexpr auto BUFFER_SIZE = 1024 * 1024;
@@ -132,6 +129,3 @@ std::string Config::mqttPassword() const { return m_mqttPassword; }
 
 uint32_t Config::resamplerFilterLength() const { return RESAMPLER_FILTER_LENGTH; }
 float Config::spectrogramFactor() const { return SPECTROGAM_FACTOR; }
-float Config::signalDetectionFactor() const { return SIGNAL_DETECTION_FACTOR; }
-uint32_t Config::debugSignalsLimit() const { return DEBUG_SIGNALS_LIMIT; }
-uint32_t Config::signalMargin() const { return SIGNAL_MARGIN; }
