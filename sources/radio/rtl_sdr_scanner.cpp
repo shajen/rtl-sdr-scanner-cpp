@@ -180,6 +180,7 @@ void RtlSdrScanner::learnNoise(const FrequencyRange& frequencyRange) {
       throw std::runtime_error("read samples error, dropped samples");
     } else {
       toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
+      shift(m_buffer, m_config.radioOffset(), frequencyRange.sampleRate(), samples / 2);
       const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
       noiseSignals.push_back(signals);
       m_dataController.sendSignals(time(), frequencyRange, signals);
@@ -206,6 +207,7 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     const auto now = time();
     Logger::debug("rtl_sdr", "read bytes: {}", samples);
     toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
+    shift(m_buffer, m_config.radioOffset(), frequencyRange.sampleRate(), samples / 2);
     Logger::trace("rtl_sdr", "convert to complex finished");
     const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
     m_dataController.sendSignals(now, frequencyRange, signals);

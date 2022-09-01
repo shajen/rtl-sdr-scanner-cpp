@@ -15,7 +15,8 @@
   "device": {
     "ppm_error": 0,
     "tuner_gain": 0.0,
-    "bandwidth": 2000000
+    "max_bandwidth": 2500000,
+    "offset": 0
   },
   "recording": {
     "range_scanning_time_ms": 100,

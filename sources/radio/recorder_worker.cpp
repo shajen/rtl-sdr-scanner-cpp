@@ -82,6 +82,8 @@ OutputSamples RecorderWorker::processSamples(InputSamples &&inputSamples) {
 
   toComplex(inputSamples.samples.data(), m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, uint8 to complex finished", m_id);
+  shift(m_rawBuffer, m_config.radioOffset(), m_sampleRate, rawBufferSamples);
+  Logger::trace("recorder", "thread: {}, shift finished", m_id);
 
   const auto signals = m_spectrogram.psd(center, m_bandwidth, m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "thread: {}, psd finished", m_id);

@@ -32,6 +32,7 @@ class Config {
   uint32_t rtlSdrPpm() const;
   float rtlSdrGain() const;
   uint32_t rtlSdrMaxBandwidth() const;
+  int32_t radioOffset() const;
 
   std::string mqttHostname() const;
   int mqttPort() const;
@@ -67,6 +68,7 @@ class Config {
   const uint32_t m_ppm;
   const float m_gain;
   const uint32_t m_maxBandwidth;
+  const int32_t m_radioOffset;
 
   const std::string m_mqttHostname;
   const int m_mqttPort;

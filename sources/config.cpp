@@ -92,7 +92,8 @@ Config::Config(const std::string &path)
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
       m_ppm(readKey(m_json, {"device", "ppm_error"}, 0)),
       m_gain(readKey(m_json, {"device", "tuner_gain"}, 0.0)),
-      m_maxBandwidth(readKey(m_json, {"device", "bandwidth"}, 2500000)),
+      m_maxBandwidth(readKey(m_json, {"device", "max_bandwidth"}, 2500000)),
+      m_radioOffset(readKey(m_json, {"device", "offset"}, 0)),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
@@ -121,6 +122,7 @@ std::string Config::logDir() const { return m_logsDirectory; }
 uint32_t Config::rtlSdrPpm() const { return m_ppm; }
 float Config::rtlSdrGain() const { return m_gain; }
 uint32_t Config::rtlSdrMaxBandwidth() const { return m_maxBandwidth; }
+int32_t Config::radioOffset() const { return m_radioOffset; }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }
 int Config::mqttPort() const { return m_mqttPort; }
