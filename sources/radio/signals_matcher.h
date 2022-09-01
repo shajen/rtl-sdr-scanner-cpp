@@ -17,8 +17,16 @@ class SignalsMatcher {
   std::vector<std::pair<Frequency, bool>> getFrequencies(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
 
  private:
-  std::vector<Signal> getStrongSignals(const std::vector<Signal>& signals);
-  Frequency getFrequencyGroup(const Frequency& frequency);
+  void updateFrequencyGroupTransmissionsCount(const std::chrono::milliseconds& time);
+  std::vector<Signal> getStrongSignals(const std::vector<Signal>& signals) const;
+  void updateFrequencyLastSignalTime(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
+  std::vector<Frequency> getActiveAndEraseInactiveFrequenciesByLastSignalTime(const std::chrono::milliseconds& time);
+  std::vector<Frequency> groupAdjacentFrequenciesIntoGroup(const std::vector<Frequency>& frequencies) const;
+  void erasePreviouslyActiveGroupsThatNowIsNotActive(const std::vector<Frequency>& frequencies);
+  void createNewActiveGroupIfNeeded(const std::vector<Frequency>& frequencies);
+  std::vector<std::pair<Frequency, bool>> getFrequenciesWithActiveFlag(const std::chrono::milliseconds& time) const;
+  
+  Frequency getFrequencyGroup(const Frequency& frequency) const;
 
   mutable std::shared_mutex m_mutex;
   const Config& m_config;
