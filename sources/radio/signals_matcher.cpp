@@ -46,7 +46,7 @@ void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const 
   
   // update frequencies last signal time
   for (const auto& signal : getStrongSignals(frequencyRange, signals)) {
-    Logger::info("SigMatcher", "time: {}, strong {}", time.count(), signal.toString());
+    Logger::debug("SigMatcher", "strong {}", signal.toString());
     const auto frequencyGroup = getFrequencyGroup(signal.frequency);
     if (m_frequencyLastSignalTime.count(frequencyGroup)) {
       m_frequencyLastSignalTime[frequencyGroup] = std::max(time, m_frequencyLastSignalTime[frequencyGroup]);
@@ -56,7 +56,7 @@ void SignalsMatcher::updateSignals(const std::chrono::milliseconds& time, const 
   }
 }
 
-std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::milliseconds& time) {
+std::vector<std::pair<Frequency, bool>> SignalsMatcher::getFrequencies(const std::chrono::milliseconds& time) {
   const auto groupSize = m_config.recordingFrequencyGroupSize();
   std::unique_lock lock(m_mutex);
 
@@ -67,7 +67,7 @@ std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::m
     m_frequencyGroupTransmissionsLastUpdate = time;
     m_learningNoiseFinished = true;
     for (const auto& [frequencyGroup, count] : m_frequencyGroupTransmissionsCount) {
-      Logger::info("SigMatcher", "time: {}, group {}, changes: {}", time.count(), frequencyGroup.toString(), count);
+      Logger::debug("SigMatcher", "group {}, changes: {}", frequencyGroup.toString(), count);
     }
   }
 
@@ -75,7 +75,7 @@ std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::m
   std::vector<Frequency> frequencies;
   for (auto it = m_frequencyLastSignalTime.begin(); it != m_frequencyLastSignalTime.end();) {
     if (time <= it->second + m_config.maxSilenceTime()) {
-      Logger::info("SigMatcher", "time: {}, active {}", time.count(), it->first.toString());
+      Logger::debug("SigMatcher", "active {}", it->first.toString());
       frequencies.push_back(it->first);
       it++;
     } else {
@@ -103,9 +103,9 @@ std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::m
     const auto changes = m_frequencyGroupTransmissionsCount[frequency];
     if (!tornSignalsDetectionEnabled || changes <= m_config.tornSignalsMaxAllowedTransmissionsCount()) {
       superFrequencies.push_back(frequency);
-      Logger::info("SigMatcher", "time: {}, active group {}, {} - {}, changes: {}", time.count(), frequency.toString(), start->toString(""), stop->toString(""), changes);
+      Logger::debug("SigMatcher", "active group {}, {} - {}, changes: {}", frequency.toString(), start->toString(""), stop->toString(""), changes);
     } else {
-      Logger::info("SigMatcher", "time: {}, ignore group {}. {} - {}, changes: {}", time.count(), frequency.toString(), start->toString(""), stop->toString(""), changes);
+      Logger::debug("SigMatcher", "ignore group {}. {} - {}, changes: {}", frequency.toString(), start->toString(""), stop->toString(""), changes);
     }
     it = stop + 1;
   }
@@ -119,7 +119,7 @@ std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::m
     if (stillActive) {
       it++;
     } else {
-      Logger::info("SigMatcher", "time: {}, erase super group {}", time.count(), it->toString());
+      Logger::debug("SigMatcher", "erase super group {}", it->toString());
       it = m_frequencyGroupActiveTransmissions.erase(it);
     }
   }
@@ -131,14 +131,25 @@ std::vector<Frequency> SignalsMatcher::getActiveFrequencies(const std::chrono::m
     };
     if (!std::any_of(m_frequencyGroupActiveTransmissions.begin(), m_frequencyGroupActiveTransmissions.end(), isCovered)) {
       m_frequencyGroupActiveTransmissions.push_back(frequency);
-      Logger::info("SigMatcher", "time: {}, create super group {}", time.count(), frequency.toString());
+      Logger::debug("SigMatcher", "create super group {}", frequency.toString());
     }
   }
 
+  std::map<Frequency, std::chrono::milliseconds> onlyActiveFrequency;
+  auto filter = [time](const std::pair<Frequency, std::chrono::milliseconds>& data) { return data.second == time; };
+  std::copy_if(m_frequencyLastSignalTime.begin(), m_frequencyLastSignalTime.end(), std::inserter(onlyActiveFrequency, onlyActiveFrequency.end()), filter);
+
+  std::vector<std::pair<Frequency, bool>> frequencyGroupActiveTransmissionsWithActiveFlag;
   for (const auto& frequency : m_frequencyGroupActiveTransmissions) {
-    Logger::info("SigMatcher", "time: {}, active super group {}", time.count(), frequency.toString());
+    const Frequency begin{frequency.value - m_config.minRecordingSampleRate()};
+    const Frequency end{frequency.value + m_config.minRecordingSampleRate()};
+    const auto it = onlyActiveFrequency.lower_bound(begin);
+    const auto isActive = it != onlyActiveFrequency.end() && it->first.value <= end.value;
+    Logger::info("SigMatcher", "active super group {}, active: {}", frequency.toString(), isActive);
+    frequencyGroupActiveTransmissionsWithActiveFlag.emplace_back(frequency, isActive);
   }
-  return m_frequencyGroupActiveTransmissions;
+
+  return frequencyGroupActiveTransmissionsWithActiveFlag;
 }
 
 std::vector<Signal> SignalsMatcher::getStrongSignals(const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {

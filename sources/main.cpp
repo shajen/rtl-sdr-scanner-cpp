@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
   try {
     Mqtt mqtt(*config);
-    DataController dataController(mqtt);
+    DataController dataController(*config, mqtt);
 
     std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
     for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {

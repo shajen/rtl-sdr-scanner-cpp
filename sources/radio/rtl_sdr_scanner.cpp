@@ -210,7 +210,7 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
     m_dataController.sendSignals(now, frequencyRange, signals);
     m_signalsMatcher.updateSignals(now, frequencyRange, signals);
-    if (!m_signalsMatcher.getActiveFrequencies(now).empty()) {
+    if (!m_signalsMatcher.getFrequencies(now).empty()) {
       Logger::info("rtl_sdr", "start recording");
       startStream(frequencyRange, false);
     }

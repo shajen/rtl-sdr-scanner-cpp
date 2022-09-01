@@ -87,11 +87,11 @@ OutputSamples RecorderWorker::processSamples(InputSamples &&inputSamples) {
   Logger::trace("recorder", "thread: {}, psd finished", m_id);
 
   m_signalsMatcher.updateSignals(inputSamples.time, inputSamples.frequencyRange, signals);
-  const auto activeFrequencies = m_signalsMatcher.getActiveFrequencies(inputSamples.time);
+  const auto activeFrequencies = m_signalsMatcher.getFrequencies(inputSamples.time);
   Logger::trace("recorder", "thread: {}, active frequencies finished, count: {}", m_id, activeFrequencies.size());
 
   std::vector<OutputSamples::Transmision> transmisions;
-  for (const auto &frequency : activeFrequencies) {
+  for (const auto &[frequency, isActive] : activeFrequencies) {
     std::copy(m_rawBuffer.begin(), m_rawBuffer.end(), m_rawBufferTmp.begin());
     Logger::trace("recorder", "thread: {}, copy finished", m_id);
 
@@ -105,7 +105,7 @@ OutputSamples RecorderWorker::processSamples(InputSamples &&inputSamples) {
     Logger::debug("recorder", "thread: {}, processing finished", m_id);
     const auto bandwidth = inputSamples.frequencyRange.bandwidth().value / m_decimateRate;
     const auto frequencyCenter = static_cast<uint32_t>(std::lround(frequency.value / 10000.0) * 10000);
-    transmisions.push_back({m_decimatorBuffer, {frequencyCenter - bandwidth / 2, frequencyCenter + bandwidth / 2, inputSamples.frequencyRange.step.value}});
+    transmisions.push_back({m_decimatorBuffer, {frequencyCenter - bandwidth / 2, frequencyCenter + bandwidth / 2, inputSamples.frequencyRange.step.value}, isActive});
   }
 
   return {inputSamples.time, signals, transmisions};

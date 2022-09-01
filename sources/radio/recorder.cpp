@@ -39,8 +39,9 @@ Recorder::Recorder(DataController& dataController, SignalsMatcher& signalsMatche
             }
             for (const auto& transmision : outputSamples.transmisions) {
               m_lastActiveDataTime = outputSamples.time;
-              m_dataController.sendTransmission(outputSamples.time, transmision.frequencyRange, transmision.samples);
+              m_dataController.pushTransmission(outputSamples.time, transmision.frequencyRange, transmision.samples, transmision.isActive);
             }
+            m_dataController.flushTransmissions(outputSamples.time);
           }
         }
         Logger::debug("recorder", "stop thread");

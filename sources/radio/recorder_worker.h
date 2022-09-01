@@ -23,6 +23,7 @@ struct OutputSamples {
   struct Transmision {
     std::vector<std::complex<float>> samples;
     FrequencyRange frequencyRange;
+    bool isActive;
   };
 
   std::chrono::milliseconds time;
