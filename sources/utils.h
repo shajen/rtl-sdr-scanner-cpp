@@ -14,6 +14,7 @@ void toComplex(const uint8_t* rawBuffer, std::vector<std::complex<float>>& buffe
 
 std::chrono::milliseconds time();
 
+std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount);
 void shift(std::vector<std::complex<float>>& samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount);
 
 liquid_float_complex* toLiquidComplex(std::complex<float>* ptr);

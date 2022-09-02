@@ -4,7 +4,7 @@
 #include <rtl-sdr.h>
 #include <utils.h>
 
-using StreamCallbackData = std::tuple<RtlSdrScanner*, std::unique_ptr<Recorder>&, bool>;
+using StreamCallbackData = std::tuple<RtlSdrScanner*, std::unique_ptr<Recorder>&, FrequencyRange, bool>;
 
 RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& config, int deviceIndex)
     : m_dataController(dataController), m_signalsMatcher(config), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
@@ -65,7 +65,7 @@ RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& confi
     }
     const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
     if (m_recorders.count(key) == 0) {
-      m_recorders[key] = std::make_unique<Recorder>(m_dataController, m_signalsMatcher, m_config, frequencyRange.bandwidth(), frequencyRange.sampleRate(), frequencyRange.fftSize());
+      m_recorders[key] = std::make_unique<Recorder>(m_config, m_dataController, m_signalsMatcher, frequencyRange.fftSize());
     }
   }
   m_rawBuffer.resize(maxSamples);
@@ -141,8 +141,9 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
     StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
     RtlSdrScanner* scanner = std::get<0>(*data);
     std::unique_ptr<Recorder>& recorder = std::get<1>(*data);
-    bool runForever = std::get<2>(*data);
-    recorder->appendSamples(std::vector<uint8_t>({buf, buf + len}));
+    FrequencyRange frequencyRange = std::get<2>(*data);
+    bool runForever = std::get<3>(*data);
+    recorder->appendSamples(frequencyRange, std::vector<uint8_t>({buf, buf + len}));
     if (!scanner->m_isRunning || (!runForever && recorder->isFinished())) {
       rtlsdr_cancel_async(scanner->m_device);
       Logger::info("rtl_sdr", "cancel stream");
@@ -150,8 +151,8 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
   };
   const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
   auto& recorder = m_recorders[key];
-  recorder->start(frequencyRange);
-  StreamCallbackData data(this, recorder, runForever);
+  recorder->start();
+  StreamCallbackData data(this, recorder, frequencyRange, runForever);
   Logger::info("rtl_sdr", "start stream");
   rtlsdr_read_async(m_device, f, &data, 0, 0);
   Logger::info("rtl_sdr", "stop stream");

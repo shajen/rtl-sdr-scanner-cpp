@@ -18,37 +18,48 @@
 
 class Recorder {
  public:
-  Recorder(DataController& dataController, SignalsMatcher& signalsMatcher, const Config& config, const Frequency& bandwidth, const Frequency& sampleRate, uint32_t spectrogramSize);
+  Recorder(const Config& config, DataController& dataController, SignalsMatcher& signalsMatcher, uint32_t spectrogramSize);
   ~Recorder();
 
-  void start(FrequencyRange frequencyRange);
+  void start();
   void stop();
-  void appendSamples(std::vector<uint8_t>&& samples);
+  void appendSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
   bool isFinished() const;
 
  private:
+  void clear();
+  void processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
+
+  const Config& m_config;
   DataController& m_dataController;
   SignalsMatcher& m_signalsMatcher;
-  const Config& m_config;
-
-  const Frequency m_bandwidth;
-  const Frequency m_sampleRate;
-
-  FrequencyRange m_frequencyRange;
-
+  Spectrogram m_spectrogram;
+  std::vector<std::complex<float>> m_rawBuffer;
+  std::vector<std::complex<float>> m_shiftData;
   std::chrono::milliseconds m_lastActiveDataTime;
+  uint64_t m_workerLastId;
 
-  std::atomic_bool m_isReady;
-  std::mutex m_threadMutex;
-  std::mutex m_inMutex;
-  std::condition_variable m_inCv;
-  std::deque<InputSamples> m_inSamples;
-
-  std::mutex m_outMutex;
-  std::condition_variable m_outCv;
-  std::priority_queue<OutputSamples> m_outSamples;
-
-  std::vector<std::unique_ptr<RecorderWorker>> m_workers;
   std::atomic_bool m_isWorking;
+  std::atomic_bool m_isReady;
   std::thread m_thread;
+
+  struct RecorderInputSamples {
+    std::chrono::milliseconds time;
+    std::vector<uint8_t> samples;
+    FrequencyRange frequencyRange;
+  };
+
+  struct RecorderWorkerStruct {
+    std::deque<WorkerInputSamples> samples;
+    std::condition_variable cv;
+    std::mutex mutex;
+    std::unique_ptr<RecorderWorker> worker;
+  };
+
+  std::mutex m_threadMutex;
+  std::mutex m_mutex;
+  std::condition_variable m_cv;
+  std::deque<RecorderInputSamples> m_inSamples;
+  std::deque<WorkerOutputSamples> m_outSamples;
+  std::map<Frequency, std::unique_ptr<RecorderWorkerStruct>> m_workers;
 };
