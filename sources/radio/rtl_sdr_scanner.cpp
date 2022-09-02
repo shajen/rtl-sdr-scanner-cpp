@@ -136,9 +136,6 @@ void RtlSdrScanner::setupDevice(const FrequencyRange& frequencyRange) {
 }
 
 void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForever) {
-  const auto sampleRate = frequencyRange.sampleRate();
-  const auto samples = getSamplesCount(sampleRate, m_config.rangeScanningTime());
-
   auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
     Logger::debug("rtl_sdr", "read bytes: {}", len);
     StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
@@ -156,7 +153,7 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
   recorder->start(frequencyRange);
   StreamCallbackData data(this, recorder, runForever);
   Logger::info("rtl_sdr", "start stream");
-  rtlsdr_read_async(m_device, f, &data, 0, samples);
+  rtlsdr_read_async(m_device, f, &data, 0, 0);
   Logger::info("rtl_sdr", "stop stream");
   recorder->stop();
 }

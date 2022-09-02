@@ -23,7 +23,7 @@ class Recorder {
 
   void start(FrequencyRange frequencyRange);
   void stop();
-  void appendSamples(std::vector<uint8_t> samples);
+  void appendSamples(std::vector<uint8_t>&& samples);
   bool isFinished() const;
 
  private:
