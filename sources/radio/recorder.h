@@ -58,5 +58,5 @@ class Recorder {
   std::mutex m_dataMutex;
   std::condition_variable m_cv;
   std::deque<RecorderInputSamples> m_samples;
-  std::map<Frequency, std::unique_ptr<RecorderWorkerStruct>> m_workers;
+  std::map<FrequencyRange, std::unique_ptr<RecorderWorkerStruct>> m_workers;
 };

@@ -23,8 +23,8 @@ struct WorkerInputSamples {
 
 class RecorderWorker {
  public:
-  RecorderWorker(const Config &config, DataController &dataController, int id, const Frequency &frequency, const FrequencyRange &frequencyRange, std::mutex &inMutex, std::condition_variable &inCv,
-                 std::deque<WorkerInputSamples> &inSamples);
+  RecorderWorker(const Config &config, DataController &dataController, int id, const FrequencyRange &inputFrequencyRange, const FrequencyRange &outputFrequency, std::mutex &inMutex,
+                 std::condition_variable &inCv, std::deque<WorkerInputSamples> &inSamples);
   ~RecorderWorker();
 
  private:
@@ -32,8 +32,8 @@ class RecorderWorker {
 
   const Config &m_config;
   const int m_id;
-  const Frequency m_frequency;
-  const FrequencyRange m_frequencyRange;
+  const FrequencyRange m_inputFrequencyRange;
+  const FrequencyRange m_outputFrequencyRange;
   DataController &m_dataController;
 
   std::vector<std::complex<float>> m_shiftData;

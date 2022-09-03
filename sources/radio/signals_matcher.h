@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithms/noise_learner.h>
 #include <config.h>
 #include <radio/help_structures.h>
 
@@ -13,28 +14,20 @@ class SignalsMatcher {
   SignalsMatcher(const Config& config);
   ~SignalsMatcher();
 
-  void learnNoise(const std::vector<std::vector<Signal>>& noiseSignals);
-  std::vector<std::pair<Frequency, bool>> getFrequencies(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
+  std::vector<std::pair<FrequencyRange, bool>> getFrequencies(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
 
  private:
-  void updateFrequencyGroupTransmissionsCount(const std::chrono::milliseconds& time);
-  std::vector<Signal> getStrongSignals(const std::vector<Signal>& signals) const;
-  void updateFrequencyLastSignalTime(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
-  std::vector<Frequency> getActiveAndEraseInactiveFrequenciesByLastSignalTime(const std::chrono::milliseconds& time);
-  std::vector<Frequency> groupAdjacentFrequenciesIntoGroup(const std::vector<Frequency>& frequencies) const;
-  void erasePreviouslyActiveGroupsThatNowIsNotActive(const std::vector<Frequency>& frequencies);
-  void createNewActiveGroupIfNeeded(const std::vector<Frequency>& frequencies);
-  std::vector<std::pair<Frequency, bool>> getFrequenciesWithActiveFlag(const std::chrono::milliseconds& time) const;
-  
-  Frequency getFrequencyGroup(const Frequency& frequency) const;
+  void updateFrequencyRangeTransmissionsCount(const std::chrono::milliseconds& time);
+  void updateFrequencyRangeLastSignalTime(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
+  std::vector<std::pair<FrequencyRange, bool>> getFrequencyRangesWithActiveFlag(const std::chrono::milliseconds& time, const FrequencyRange& start, const FrequencyRange& stop) const;
+
+  FrequencyRange getFrequencyRange(const Frequency& frequency) const;
 
   mutable std::shared_mutex m_mutex;
   const Config& m_config;
-  bool m_learningNoiseFinished;
-  std::map<Frequency, std::chrono::milliseconds> m_frequencyLastSignalTime;
-  std::map<Frequency, float> m_frequencyNoiseLevel;
-  std::chrono::milliseconds m_frequencyGroupTransmissionsLastUpdate;
-  std::map<Frequency, uint32_t> m_tmpFrequencyGroupTransmissionsCount;
-  std::map<Frequency, uint32_t> m_frequencyGroupTransmissionsCount;
-  std::vector<Frequency> m_frequencyGroupActiveTransmissions;
+  NoiseLearner m_noiseLearner;
+  std::map<FrequencyRange, std::chrono::milliseconds> m_frequencyRangeLastSignalTime;
+  std::chrono::milliseconds m_frequencyRangeTransmissionsLastUpdate;
+  std::map<FrequencyRange, uint32_t> m_tmpFrequencyRangeTransmissionsCount;
+  std::map<FrequencyRange, uint32_t> m_frequencyRangeTransmissionsCount;
 };

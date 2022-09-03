@@ -2,19 +2,19 @@
 
 #include <logger.h>
 
-RecorderWorker::RecorderWorker(const Config &config, DataController &dataController, int id, const Frequency &frequency, const FrequencyRange &frequencyRange, std::mutex &inMutex,
+RecorderWorker::RecorderWorker(const Config &config, DataController &dataController, int id, const FrequencyRange &inputFrequencyRange, const FrequencyRange &outputFrequency, std::mutex &inMutex,
                                std::condition_variable &inCv, std::deque<WorkerInputSamples> &inSamples)
     : m_config(config),
       m_id(id),
-      m_frequency(frequency),
-      m_frequencyRange(frequencyRange),
+      m_inputFrequencyRange(inputFrequencyRange),
+      m_outputFrequencyRange(outputFrequency),
       m_dataController(dataController),
       m_mutex(inMutex),
       m_cv(inCv),
       m_samples(inSamples),
       m_isWorking(true),
       m_thread([this]() {
-        Logger::info("recorder", "thread: {}, start, {}", m_id, m_frequency.toString());
+        Logger::info("recorder", "thread: {}, start, {}", m_id, m_outputFrequencyRange.center().toString());
         while (m_isWorking) {
           {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -29,14 +29,14 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
             m_samples.pop_front();
             const auto size = m_samples.size();
             lock.unlock();
-            Logger::debug("recorder", "thread: {}, processing {} started, queue size: {}", m_id, m_frequency.toString(), size);
+            Logger::debug("recorder", "thread: {}, processing {} started, queue size: {}", m_id, m_outputFrequencyRange.center().toString(), size);
             processSamples(std::move(inputSamples));
-            Logger::debug("recorder", "thread: {}, processing {} finished", m_id, m_frequency.toString());
+            Logger::debug("recorder", "thread: {}, processing {} finished", m_id, m_outputFrequencyRange.center().toString());
           }
         }
-        m_dataController.finishTransmission(m_frequency);
+        m_dataController.finishTransmission(m_outputFrequencyRange);
         std::unique_lock lock(m_mutex);
-        Logger::info("recorder", "thread: {}, stop, {}, queue size: {}", m_id, m_frequency.toString(), m_samples.size());
+        Logger::info("recorder", "thread: {}, stop, {}, queue size: {}", m_id, m_outputFrequencyRange.center().toString(), m_samples.size());
       }) {}
 
 RecorderWorker::~RecorderWorker() {
@@ -48,14 +48,13 @@ RecorderWorker::~RecorderWorker() {
 void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
   Logger::debug("recorder", "thread: {}, processing started, samples: {}", m_id, inputSamples.samples.size());
   const auto sampleRate = inputSamples.frequencyRange.sampleRate();
-  const auto decimateRate(sampleRate.value / m_config.minRecordingSampleRate());
+  const auto decimateRate(sampleRate.value / (m_outputFrequencyRange.stop.value - m_outputFrequencyRange.start.value));
   const auto rawBufferSamples = inputSamples.samples.size();
   const auto downSamples = rawBufferSamples / decimateRate;
   const auto center = inputSamples.frequencyRange.center();
-  const auto bandwidth = inputSamples.frequencyRange.bandwidth().value / decimateRate;
 
   if (m_shiftData.size() < rawBufferSamples) {
-    m_shiftData = getShiftData(center.value - m_frequency.value, sampleRate, rawBufferSamples);
+    m_shiftData = getShiftData(center.value - m_outputFrequencyRange.center().value, sampleRate, rawBufferSamples);
     Logger::debug("recorder", "thread: {}, shift data resized, size: {}", m_id, m_shiftData.size());
   }
   if (m_decimatorBuffer.size() < downSamples) {
@@ -71,8 +70,7 @@ void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
   m_decimator->decimate(inputSamples.samples.data(), downSamples, m_decimatorBuffer.data());
   Logger::trace("recorder", "thread: {}, decimate finished", m_id);
 
-  FrequencyRange outputFrequencyRange{m_frequency.value - bandwidth / 2, m_frequency.value + bandwidth / 2, inputSamples.frequencyRange.step.value};
-  m_dataController.pushTransmission(inputSamples.time, outputFrequencyRange, m_decimatorBuffer, inputSamples.isActive);
+  m_dataController.pushTransmission(inputSamples.time, m_outputFrequencyRange, m_decimatorBuffer, inputSamples.isActive);
   Logger::trace("recorder", "thread: {}, push transmission finished", m_id);
 
   Logger::debug("recorder", "thread: {}, processing finished", m_id);

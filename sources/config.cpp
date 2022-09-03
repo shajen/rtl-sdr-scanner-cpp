@@ -83,7 +83,7 @@ Config::Config(const std::string &path)
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
       m_maxConcurrentTransmissions(readKey(m_json, {"recording", "max_concurrent_transmissions"}, 10)),
       m_recordingFrequencyGroupSize(readKey(m_json, {"detection", "frequency_group_size"}, 10000)),
-      m_noiseLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "noise_learning_time_seconds"}, 3))),
+      m_noiseLearningSamplesCount(readKey(m_json, {"detection", "noise_learning_samples_count"}, 20)),
       m_noiseDetectionMargin(readKey(m_json, {"detection", "noise_detection_margin"}, 10)),
       m_tornSignalsLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "torn_signals_learning_time_seconds"}, 60))),
       m_tornSignalsMaxAllowedTransmissionsCount(readKey(m_json, {"detection", "torn_signals_max_allowed_transmissions_count"}, 10)),
@@ -109,7 +109,7 @@ uint32_t Config::minRecordingSampleRate() const { return m_minRecordingSampleRat
 uint8_t Config::maxConcurrentTransmissions() const { return m_maxConcurrentTransmissions; }
 
 uint32_t Config::recordingFrequencyGroupSize() const { return m_recordingFrequencyGroupSize; }
-std::chrono::seconds Config::noiseLearningTime() const { return m_noiseLearningTime; }
+uint32_t Config::noiseLearningSamplesCount() const { return m_noiseLearningSamplesCount; }
 uint32_t Config::noiseDetectionMargin() const { return m_noiseDetectionMargin; }
 std::chrono::seconds Config::tornSignalsLearningTime() const { return m_tornSignalsLearningTime; }
 uint32_t Config::tornSignalsMaxAllowedTransmissionsCount() const { return m_tornSignalsMaxAllowedTransmissionsCount; }

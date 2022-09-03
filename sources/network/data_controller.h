@@ -16,11 +16,11 @@ class DataController {
   ~DataController();
 
   void pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive);
-  void finishTransmission(const Frequency& frequency);
-  void sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequency, const std::vector<Signal>& signals);
+  void finishTransmission(const FrequencyRange& frequencyRange);
+  void sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
 
  private:
-  void flushTransmission(const Frequency& frequency);
+  void flushTransmission(const FrequencyRange& frequencyRange);
 
   struct Transmission {
     const std::chrono::milliseconds time;
@@ -31,14 +31,13 @@ class DataController {
   struct TransmissionsContainer {
     std::chrono::milliseconds firstActive;
     std::chrono::milliseconds lastActive;
-    FrequencyRange frequencyRange;
     std::queue<Transmission> queue;
   };
 
   void sendTransmission(const FrequencyRange& frequencyRange, const Transmission& transmission);
 
   Config& m_config;
-  std::map<Frequency, TransmissionsContainer> m_transmissions;
+  std::map<FrequencyRange, TransmissionsContainer> m_transmissions;
   Mqtt& m_mqtt;
   std::mutex m_mutex;
 };

@@ -8,6 +8,7 @@ struct Frequency {
 
   bool operator==(const Frequency& frequency) const;
   bool operator<(const Frequency& frequency) const;
+  bool operator<=(const Frequency& frequency) const;
 
   uint32_t value;
 };
@@ -33,8 +34,11 @@ struct FrequencyRange {
   Frequency sampleRate() const;
   uint32_t fftSize() const;
 
+  bool operator==(const FrequencyRange& rhs) const;
+  bool operator<(const FrequencyRange& rhs) const;
+
   Frequency start;
   Frequency stop;
-  Frequency step;
+  Frequency step{0};
   Frequency maxBandwidth{0};
 };

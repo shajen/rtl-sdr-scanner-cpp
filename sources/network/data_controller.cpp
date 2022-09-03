@@ -28,50 +28,49 @@ DataController::~DataController() = default;
 
 void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive) {
   std::unique_lock lock(m_mutex);
-  const Frequency frequency = frequencyRange.center();
-  if (m_transmissions.count(frequency) == 0) {
+  if (m_transmissions.count(frequencyRange) == 0) {
     if (isActive) {
-      Logger::info("DataCtrl", "start transmission {}", frequency.toString());
-      m_transmissions.insert({frequency, {time, time, frequencyRange, {}}});
+      Logger::info("DataCtrl", "start transmission {}", frequencyRange.toString());
+      m_transmissions.insert({frequencyRange, {time, time, {}}});
     } else {
-      Logger::warn("DataCtrl", "start transmission not active {}", frequency.toString());
+      Logger::warn("DataCtrl", "start transmission not active {}", frequencyRange.toString());
       return;
     }
   }
-  auto& container = m_transmissions[frequency];
+  auto& container = m_transmissions[frequencyRange];
   if (isActive) {
     container.lastActive = std::max(container.lastActive, time);
   }
   container.queue.push({time, samples, isActive});
-  flushTransmission(frequency);
+  flushTransmission(frequencyRange);
 }
 
-void DataController::finishTransmission(const Frequency& frequency) {
+void DataController::finishTransmission(const FrequencyRange& frequencyRange) {
   std::unique_lock lock(m_mutex);
-  if (m_transmissions.count(frequency) == 0) {
-    Logger::warn("DataCtrl", "finish transmission not found {}", frequency.toString());
+  if (m_transmissions.count(frequencyRange) == 0) {
+    Logger::warn("DataCtrl", "finish transmission not found {}", frequencyRange.toString());
     return;
   }
 
-  flushTransmission(frequency);
-  auto& container = m_transmissions[frequency];
+  flushTransmission(frequencyRange);
+  auto& container = m_transmissions[frequencyRange];
   const auto isMinimalTime = m_config.minRecordingTime() <= container.lastActive - container.firstActive;
   const auto duration = (container.lastActive - container.firstActive).count() / 1000.0;
-  Logger::info("DataCtrl", "finish transmission {}, duration: {:.2f} seconds, reach minimum: {}", frequency.toString(), duration, isMinimalTime);
-  m_transmissions.erase(frequency);
+  Logger::info("DataCtrl", "finish transmission {}, duration: {:.2f} seconds, reach minimum: {}", frequencyRange.toString(), duration, isMinimalTime);
+  m_transmissions.erase(frequencyRange);
 }
 
-void DataController::flushTransmission(const Frequency& frequency) {
-  if (m_transmissions.count(frequency) == 0) {
-    Logger::warn("DataCtrl", "flush transmission not found {}", frequency.toString());
+void DataController::flushTransmission(const FrequencyRange& frequencyRange) {
+  if (m_transmissions.count(frequencyRange) == 0) {
+    Logger::warn("DataCtrl", "flush transmission not found {}", frequencyRange.toString());
     return;
   }
 
-  auto& container = m_transmissions[frequency];
+  auto& container = m_transmissions[frequencyRange];
   const auto isMinimalTime = m_config.minRecordingTime() <= container.lastActive - container.firstActive;
   if (isMinimalTime) {
     while (!container.queue.empty() && container.queue.front().time <= container.lastActive) {
-      sendTransmission(container.frequencyRange, container.queue.front());
+      sendTransmission(frequencyRange, container.queue.front());
       container.queue.pop();
     }
   }

@@ -73,11 +73,6 @@ RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& confi
 
   m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
     try {
-      if (0 <= m_config.noiseLearningTime().count()) {
-        for (const auto& frequencyRange : splittedFrequencyRanges) {
-          learnNoise(frequencyRange);
-        }
-      }
       if (splittedFrequencyRanges.size() == 1) {
         setupDevice(splittedFrequencyRanges.front());
         startStream(splittedFrequencyRanges.front(), true);
@@ -157,37 +152,6 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
   rtlsdr_read_async(m_device, f, &data, 0, 0);
   Logger::info("rtl_sdr", "stop stream");
   recorder->clear();
-}
-
-void RtlSdrScanner::learnNoise(const FrequencyRange& frequencyRange) {
-  const auto start = time();
-  const auto centerFrequency = frequencyRange.center();
-  const auto bandwidth = frequencyRange.bandwidth();
-  const auto sampleRate = frequencyRange.sampleRate();
-  const auto samples = getSamplesCount(sampleRate, m_config.rangeScanningTime());
-  const auto spectrogramSize = frequencyRange.fftSize();
-  std::vector<std::vector<Signal>> noiseSignals;
-  if (m_shiftData.size() < samples / 2) {
-    m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), samples / 2);
-  }
-
-  while (time() <= start + m_config.noiseLearningTime() && m_isRunning) {
-    setupDevice(frequencyRange);
-    int read{0};
-    const auto status = rtlsdr_read_sync(m_device, m_rawBuffer.data(), samples, &read);
-    if (status != 0) {
-      throw std::runtime_error("read samples error");
-    } else if (read != static_cast<int>(samples)) {
-      throw std::runtime_error("read samples error, dropped samples");
-    } else {
-      toComplex(m_rawBuffer.data(), m_buffer, samples / 2);
-      shift(m_buffer, m_shiftData);
-      const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
-      noiseSignals.push_back(signals);
-      m_dataController.sendSignals(time(), frequencyRange, signals);
-    }
-  }
-  m_signalsMatcher.learnNoise(noiseSignals);
 }
 
 void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {

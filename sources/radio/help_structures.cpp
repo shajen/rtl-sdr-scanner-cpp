@@ -7,10 +7,19 @@ std::string Frequency::toString(const std::string label) const {
   const auto f1 = value / 1000000;
   const auto f2 = (value / 1000) % 1000;
   const auto f3 = value % 1000;
-  if (label.empty()) {
-    sprintf(buf, "%3d.%03d.%03d Hz", f1, f2, f3);
+
+  u_int32_t offset = 0;
+  if (!label.empty()) {
+    offset += sprintf(buf + offset, "%s: ", label.c_str());
+  }
+  if (f1 == 0 && f2 == 0) {
+    offset += sprintf(buf + offset, "%03d Hz", f3);
+  } else if (f1 == 0) {
+    offset += sprintf(buf + offset, "%03d.%03d Hz", f2, f3);
+  } else if (f3 == 0) {
+    offset += sprintf(buf + offset, "%03d.%03d kHz", f1, f2);
   } else {
-    sprintf(buf, "%s: %3d.%03d.%03d Hz", label.c_str(), f1, f2, f3);
+    offset += sprintf(buf + offset, "%03d.%03d.%03d Hz", f1, f2, f3);
   }
   return std::string(buf);
 }
@@ -18,6 +27,8 @@ std::string Frequency::toString(const std::string label) const {
 bool Frequency::operator==(const Frequency &frequency) const { return value == frequency.value; }
 
 bool Frequency::operator<(const Frequency &frequency) const { return value < frequency.value; }
+
+bool Frequency::operator<=(const Frequency &frequency) const { return value <= frequency.value; }
 
 std::string Power::toString() const {
   constexpr auto MIN_POWER = -30.0f;
@@ -35,7 +46,13 @@ std::string Signal::toString() const { return frequency.toString() + ", " + powe
 std::string FrequencyRange::toString() const {
   char buf[1024];
   Frequency b({bandwidth()});
-  sprintf(buf, "%s, %s, %s, %s", start.toString("start").c_str(), stop.toString("stop").c_str(), step.toString("step").c_str(), b.toString("bandwidth").c_str());
+  auto offset = sprintf(buf, "%s, %s", start.toString("start").c_str(), stop.toString("stop").c_str());
+  if (step.value != 0) {
+    offset += sprintf(buf + offset, ", %s", step.toString("step").c_str());
+  }
+  if (maxBandwidth.value != 0) {
+    offset += sprintf(buf + offset, ", %s", b.toString("bandwidth").c_str());
+  }
   return std::string(buf);
 }
 
@@ -61,3 +78,7 @@ Frequency FrequencyRange::bandwidth() const {
 Frequency FrequencyRange::sampleRate() const { return bandwidth(); }
 
 uint32_t FrequencyRange::fftSize() const { return bandwidth().value / step.value; }
+
+bool FrequencyRange::operator==(const FrequencyRange &rhs) const { return start == rhs.start && stop == rhs.stop && step == rhs.step && maxBandwidth == rhs.maxBandwidth; }
+
+bool FrequencyRange::operator<(const FrequencyRange &rhs) const { return start < rhs.start || stop < rhs.stop || step < rhs.step || maxBandwidth < rhs.maxBandwidth; }
