@@ -8,8 +8,7 @@
 
 class Config {
  public:
-  Config();
-  Config(const std::string& path);
+  Config(const std::string& path, const std::string& config);
 
   std::vector<FrequencyRange> scannerFrequencies() const;
   std::vector<FrequencyRange> ignoredFrequencies() const;

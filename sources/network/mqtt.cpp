@@ -58,6 +58,8 @@ void Mqtt::publish(const std::string &topic, const std::vector<uint8_t> &&data) 
   }
 }
 
+void Mqtt::setMessageCallback(std::function<void(const std::string &, const std::string &)> callback) { m_callbacks.push_back(callback); }
+
 void Mqtt::onConnect() {
   Logger::info("mqtt", "connected");
   mosquitto_subscribe(m_client, nullptr, TOPIC, QOS);
@@ -79,4 +81,11 @@ void Mqtt::onDisconnect() {
   }
 }
 
-void Mqtt::onMessage(const mosquitto_message *message) { Logger::info("mqtt", "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload)); }
+void Mqtt::onMessage(const mosquitto_message *message) {
+  Logger::info("mqtt", "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload));
+  const std::string topic(message->topic);
+  const std::string data(static_cast<char *>(message->payload), message->payloadlen);
+  for (auto &callback : m_callbacks) {
+    callback(topic, data);
+  }
+}

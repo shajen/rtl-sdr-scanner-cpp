@@ -18,6 +18,7 @@ class Mqtt {
   void publish(const std::string& topic, const std::string& data);
   void publish(const std::string& topic, const std::vector<uint8_t>& data);
   void publish(const std::string& topic, const std::vector<uint8_t>&& data);
+  void setMessageCallback(std::function<void(const std::string&, const std::string&)> callback);
 
  private:
   void onConnect();
@@ -29,4 +30,5 @@ class Mqtt {
   std::thread m_thread;
   std::mutex m_mutex;
   std::queue<std::tuple<std::string, std::vector<uint8_t>>> m_messages;
+  std::vector<std::function<void(const std::string&, const std::string&)>> m_callbacks;
 };

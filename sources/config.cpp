@@ -4,7 +4,7 @@
 constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
 
-nlohmann::json readJson(const std::string &path) {
+nlohmann::json readJsonFromFile(const std::string &path) {
   constexpr auto BUFFER_SIZE = 1024 * 1024;
   FILE *file = fopen(path.c_str(), "r");
 
@@ -19,6 +19,15 @@ nlohmann::json readJson(const std::string &path) {
     }
   }
   return {};
+}
+
+nlohmann::json readJsonFromFileAndMerge(const std::string &path, const std::string &data) {
+  nlohmann::json json = readJsonFromFile(path);
+  try {
+    json.update(nlohmann::json::parse(data));
+  } catch (const nlohmann::json::parse_error &) {
+  }
+  return json;
 }
 
 template <typename T>
@@ -71,10 +80,8 @@ std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, c
   return ranges;
 }
 
-Config::Config() : Config("") {}
-
-Config::Config(const std::string &path)
-    : m_json(readJson(path)),
+Config::Config(const std::string &path, const std::string &config)
+    : m_json(readJsonFromFileAndMerge(path, config)),
       m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125}, {430000000, 440000000, 125}})),
       m_ignoredFrequencies(parseFrequenciesRanges(m_json, "ignored_frequencies_ranges", {})),
       m_rangeScanningTime(std::chrono::milliseconds(readKey(m_json, {"recording", "range_scanning_time_ms"}, 100))),
