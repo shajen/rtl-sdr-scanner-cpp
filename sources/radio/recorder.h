@@ -21,13 +21,11 @@ class Recorder {
   Recorder(const Config& config, DataController& dataController, SignalsMatcher& signalsMatcher, uint32_t spectrogramSize);
   ~Recorder();
 
-  void start();
-  void stop();
+  void clear();
   void appendSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
   bool isFinished() const;
 
  private:
-  void clear();
   void processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
 
   const Config& m_config;
@@ -56,10 +54,9 @@ class Recorder {
     std::unique_ptr<RecorderWorker> worker;
   };
 
-  std::mutex m_threadMutex;
-  std::mutex m_mutex;
+  std::mutex m_processingMutex;
+  std::mutex m_dataMutex;
   std::condition_variable m_cv;
-  std::deque<RecorderInputSamples> m_inSamples;
-  std::deque<WorkerOutputSamples> m_outSamples;
+  std::deque<RecorderInputSamples> m_samples;
   std::map<Frequency, std::unique_ptr<RecorderWorkerStruct>> m_workers;
 };

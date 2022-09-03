@@ -2,6 +2,7 @@
 
 #include <algorithms/decimator.h>
 #include <algorithms/spectrogram.h>
+#include <network/data_controller.h>
 #include <radio/signals_matcher.h>
 #include <utils.h>
 
@@ -20,37 +21,28 @@ struct WorkerInputSamples {
   bool isActive;
 };
 
-struct WorkerOutputSamples {
-  std::chrono::milliseconds time;
-  std::vector<std::complex<float>> samples;
-  FrequencyRange frequencyRange;
-  bool isActive;
-};
-
 class RecorderWorker {
  public:
-  RecorderWorker(const Config &config, int id, const Frequency &frequency, std::mutex &inMutex, std::condition_variable &inCv, std::deque<WorkerInputSamples> &inSamples, std::mutex &outMutex,
-                 std::condition_variable &outCv, std::deque<WorkerOutputSamples> &outSamples);
+  RecorderWorker(const Config &config, DataController &dataController, int id, const Frequency &frequency, const FrequencyRange &frequencyRange, std::mutex &inMutex, std::condition_variable &inCv,
+                 std::deque<WorkerInputSamples> &inSamples);
   ~RecorderWorker();
 
  private:
-  WorkerOutputSamples processSamples(WorkerInputSamples &&inputSamples);
+  void processSamples(WorkerInputSamples &&inputSamples);
 
   const Config &m_config;
   const int m_id;
   const Frequency m_frequency;
+  const FrequencyRange m_frequencyRange;
+  DataController &m_dataController;
 
   std::vector<std::complex<float>> m_shiftData;
   std::vector<std::complex<float>> m_decimatorBuffer;
   std::unique_ptr<Decimator> m_decimator;
 
-  std::mutex &m_inMutex;
-  std::condition_variable &m_inCv;
-  std::deque<WorkerInputSamples> &m_inSamples;
-
-  std::mutex &m_outMutex;
-  std::condition_variable &m_outCv;
-  std::deque<WorkerOutputSamples> &m_outSamples;
+  std::mutex &m_mutex;
+  std::condition_variable &m_cv;
+  std::deque<WorkerInputSamples> &m_samples;
 
   std::atomic_bool m_isWorking;
   std::thread m_thread;

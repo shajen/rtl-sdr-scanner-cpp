@@ -169,7 +169,7 @@ std::vector<std::pair<Frequency, bool>> SignalsMatcher::getFrequenciesWithActive
     const Frequency end{frequency.value + m_config.minRecordingSampleRate()};
     const auto it = onlyActiveFrequency.lower_bound(begin);
     const auto isActive = it != onlyActiveFrequency.end() && it->first.value <= end.value;
-    Logger::info("SigMatcher", "active super group {}, active: {}", frequency.toString(), isActive);
+    Logger::debug("SigMatcher", "active super group {}, active: {}", frequency.toString(), isActive);
     frequencyGroupActiveTransmissionsWithActiveFlag.emplace_back(frequency, isActive);
   }
   return frequencyGroupActiveTransmissionsWithActiveFlag;

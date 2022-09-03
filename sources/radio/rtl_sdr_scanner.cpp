@@ -151,12 +151,12 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
   };
   const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
   auto& recorder = m_recorders[key];
-  recorder->start();
+  recorder->clear();
   StreamCallbackData data(this, recorder, frequencyRange, runForever);
   Logger::info("rtl_sdr", "start stream");
   rtlsdr_read_async(m_device, f, &data, 0, 0);
   Logger::info("rtl_sdr", "stop stream");
-  recorder->stop();
+  recorder->clear();
 }
 
 void RtlSdrScanner::learnNoise(const FrequencyRange& frequencyRange) {

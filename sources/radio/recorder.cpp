@@ -16,89 +16,50 @@ Recorder::Recorder(const Config& config, DataController& dataController, Signals
       m_isWorking(true),
       m_isReady(false),
       m_thread([this]() {
-        Logger::debug("recorder", "start thread");
+        Logger::info("recorder", "start thread");
         while (m_isWorking) {
           {
-            std::unique_lock<std::mutex> lock(m_mutex);
+            std::unique_lock<std::mutex> lock(m_dataMutex);
             m_cv.wait(lock);
           }
           while (m_isWorking) {
-            RecorderInputSamples inputSamples;
-            {
-              std::unique_lock<std::mutex> lock(m_mutex);
-              if (m_inSamples.empty()) {
-                break;
-              }
-              inputSamples = std::move(m_inSamples.front());
-              m_inSamples.pop_front();
-              Logger::debug("recorder", "pop input samples, size: {}", m_inSamples.size());
-            }
-            processSamples(inputSamples.time, inputSamples.frequencyRange, std::move(inputSamples.samples));
-          }
-          while (m_isWorking) {
-            WorkerOutputSamples outputSamples;
-            {
-              std::unique_lock<std::mutex> lock(m_mutex);
-              if (m_outSamples.empty()) {
-                break;
-              }
-              outputSamples = std::move(m_outSamples.front());
-              m_outSamples.pop_front();
-              Logger::debug("recorder", "pop output samples, size: {}", m_outSamples.size());
-            }
-            std::unique_lock<std::mutex> lock(m_threadMutex);
-            if (!m_isReady) {
+            std::unique_lock<std::mutex> lock(m_dataMutex);
+            if (m_samples.empty()) {
               continue;
             }
-            if (outputSamples.isActive) {
-              m_lastActiveDataTime = outputSamples.time;
-            }
-            m_dataController.pushTransmission(outputSamples.time, outputSamples.frequencyRange, outputSamples.samples, outputSamples.isActive);
-            m_dataController.flushTransmissions(outputSamples.time);
+            RecorderInputSamples inputSamples = std::move(m_samples.front());
+            m_samples.pop_front();
+            lock.unlock();
+            Logger::debug("recorder", "pop input samples, size: {}", m_samples.size());
+            processSamples(inputSamples.time, inputSamples.frequencyRange, std::move(inputSamples.samples));
           }
         }
-        Logger::debug("recorder", "stop thread");
-      }) {
-  Logger::debug("recorder", "init");
-}
+        Logger::info("recorder", "stop thread");
+      }) {}
 
 Recorder::~Recorder() {
-  Logger::debug("recorder", "deinit");
   m_isWorking = false;
   m_cv.notify_all();
   m_thread.join();
 }
 
-void Recorder::start() {
-  Logger::info("recorder", "start recording");
-  clear();
-  std::unique_lock<std::mutex> lock(m_threadMutex);
-  m_lastActiveDataTime = time();
-  m_isReady = true;
-}
-
-void Recorder::stop() {
-  Logger::info("recorder", "stop recording");
-  clear();
-  std::unique_lock<std::mutex> lock(m_threadMutex);
-  m_isReady = false;
-}
-
 void Recorder::clear() {
-  std::unique_lock<std::mutex> lock(m_mutex);
-  m_inSamples.clear();
-  m_outSamples.clear();
+  std::unique_lock<std::mutex> lock1(m_dataMutex);
+  std::unique_lock<std::mutex> lock2(m_processingMutex);
+  m_workers.clear();
+  m_samples.clear();
 }
 
 void Recorder::appendSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
-  std::unique_lock lock(m_mutex);
-  m_inSamples.push_back({time(), std::move(samples), frequencyRange});
+  std::unique_lock lock(m_dataMutex);
+  m_samples.push_back({time(), std::move(samples), frequencyRange});
   m_cv.notify_one();
-  Logger::debug("recorder", "push input samples, size: {}", m_inSamples.size());
+  Logger::debug("recorder", "push input samples, size: {}", m_samples.size());
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
   Logger::debug("recorder", "samples processing started, workers: {}", m_workers.size());
+  std::unique_lock lock(m_processingMutex);
   const auto rawBufferSamples = samples.size() / 2;
   const auto center = frequencyRange.center();
 
@@ -128,21 +89,31 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     if (transmisionInProgress) {
       it++;
     } else {
+      const auto frequency = it->first;
       it = m_workers.erase(it);
+      std::unique_lock lock(m_dataMutex);
+      Logger::info("recorder", "erase worker {}, total workers: {}, queue size: {}", frequency.toString(), m_workers.size(), m_samples.size());
     }
   }
   for (const auto& [frequency, isActive] : activeFrequencies) {
+    if (isActive) {
+      m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
+    }
     if (m_workers.count(frequency) == 0) {
       if (m_config.maxConcurrentTransmissions() <= m_workers.size()) {
         Logger::warn("recorder", "reached concurrent transmissions limit, skip {}", frequency.toString());
         continue;
       }
+      {
+        std::unique_lock lock(m_dataMutex);
+        Logger::info("recorder", "create worker {}, total workers: {}, queue size: {}", frequency.toString(), m_workers.size() + 1, m_samples.size());
+      }
       auto rws = std::make_unique<RecorderWorkerStruct>();
-      auto worker = std::make_unique<RecorderWorker>(m_config, m_workerLastId++, frequency, rws->mutex, rws->cv, rws->samples, m_mutex, m_cv, m_outSamples);
+      auto worker = std::make_unique<RecorderWorker>(m_config, m_dataController, m_workerLastId++, frequency, frequencyRange, rws->mutex, rws->cv, rws->samples);
       rws->worker = std::move(worker);
       m_workers.insert({frequency, std::move(rws)});
     }
-    auto& rws = m_workers[frequency];
+    auto& rws = m_workers.at(frequency);
     std::unique_lock<std::mutex> lock(rws->mutex);
     rws->samples.push_back({time, m_rawBuffer, frequencyRange, isActive});
     rws->cv.notify_one();

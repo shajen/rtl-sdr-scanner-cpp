@@ -1,6 +1,7 @@
 #include "data_controller.h"
 
 #include <logger.h>
+#include <utils.h>
 
 #include <cstdlib>
 #include <memory>
@@ -26,38 +27,52 @@ DataController::DataController(Config& config, Mqtt& mqtt) : m_config(config), m
 DataController::~DataController() = default;
 
 void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive) {
-  const auto key = frequencyRange.center();
-  if (m_transmissions.count(key) == 0) {
+  std::unique_lock lock(m_mutex);
+  const Frequency frequency = frequencyRange.center();
+  if (m_transmissions.count(frequency) == 0) {
     if (isActive) {
-      m_transmissions.insert({key, {time, time, frequencyRange, {}}});
+      Logger::info("DataCtrl", "start transmission {}", frequency.toString());
+      m_transmissions.insert({frequency, {time, time, frequencyRange, {}}});
     } else {
+      Logger::warn("DataCtrl", "start transmission not active {}", frequency.toString());
       return;
     }
   }
-  auto& container = m_transmissions[key];
+  auto& container = m_transmissions[frequency];
   if (isActive) {
     container.lastActive = std::max(container.lastActive, time);
   }
   container.queue.push({time, samples, isActive});
+  flushTransmission(frequency);
 }
 
-void DataController::flushTransmissions(const std::chrono::milliseconds time) {
-  for (auto it = m_transmissions.begin(); it != m_transmissions.end();) {
-    auto& container = it->second;
-    const auto isTimeout = m_config.maxSilenceTime() <= time - container.lastActive;
-    const auto isMinimalTime = m_config.minRecordingTime() <= container.lastActive - container.firstActive;
-    if (isMinimalTime) {
-      while (!container.queue.empty() && container.queue.front().time <= container.lastActive) {
-        sendTransmission(container.frequencyRange, container.queue.front());
-        container.queue.pop();
-      }
-    }
-    if (isTimeout) {
-      const auto duration = (container.lastActive - container.firstActive).count() / 1000.0;
-      Logger::info("DataCtrl","finish transmission {}, duration: {:.2f} seconds", container.frequencyRange.center().toString(), duration);
-      it = m_transmissions.erase(it);
-    } else {
-      it++;
+void DataController::finishTransmission(const Frequency& frequency) {
+  std::unique_lock lock(m_mutex);
+  if (m_transmissions.count(frequency) == 0) {
+    Logger::warn("DataCtrl", "finish transmission not found {}", frequency.toString());
+    return;
+  }
+
+  flushTransmission(frequency);
+  auto& container = m_transmissions[frequency];
+  const auto isMinimalTime = m_config.minRecordingTime() <= container.lastActive - container.firstActive;
+  const auto duration = (container.lastActive - container.firstActive).count() / 1000.0;
+  Logger::info("DataCtrl", "finish transmission {}, duration: {:.2f} seconds, reach minimum: {}", frequency.toString(), duration, isMinimalTime);
+  m_transmissions.erase(frequency);
+}
+
+void DataController::flushTransmission(const Frequency& frequency) {
+  if (m_transmissions.count(frequency) == 0) {
+    Logger::warn("DataCtrl", "flush transmission not found {}", frequency.toString());
+    return;
+  }
+
+  auto& container = m_transmissions[frequency];
+  const auto isMinimalTime = m_config.minRecordingTime() <= container.lastActive - container.firstActive;
+  if (isMinimalTime) {
+    while (!container.queue.empty() && container.queue.front().time <= container.lastActive) {
+      sendTransmission(container.frequencyRange, container.queue.front());
+      container.queue.pop();
     }
   }
 }
@@ -78,6 +93,7 @@ void DataController::sendTransmission(const FrequencyRange& frequencyRange, cons
 }
 
 void DataController::sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
+  std::unique_lock lock(m_mutex);
   const auto samplesSize = (frequencyRange.stop.value - frequencyRange.start.value) / frequencyRange.step.value + 1;
   std::vector<uint8_t> data(sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(int8_t) * samplesSize);
   uint64_t offset = 0;
