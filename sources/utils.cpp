@@ -44,10 +44,9 @@ std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency
   return data;
 }
 
-void shift(std::vector<std::complex<float>> &samples, int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
-  const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
-  for (uint32_t i = 0; i < samplesCount; ++i) {
-    samples[i] *= std::exp(f * static_cast<float>(i));
+void shift(std::vector<std::complex<float>> &samples, const std::vector<std::complex<float>> &factors) {
+  for (uint32_t i = 0; i < samples.size(); ++i) {
+    samples[i] *= factors[i];
   }
 }
 

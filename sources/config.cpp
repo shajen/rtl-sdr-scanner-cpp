@@ -1,7 +1,7 @@
 #include "config.h"
 
 // experts only
-constexpr auto RESAMPLER_FILTER_LENGTH = 10;
+constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
 
 nlohmann::json readJson(const std::string &path) {
@@ -81,7 +81,7 @@ Config::Config(const std::string &path)
       m_maxSilenceTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_silence_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_recording_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
-      m_threads(readKey(m_json, {"recording", "threads"}, 4)),
+      m_maxConcurrentTransmissions(readKey(m_json, {"recording", "max_concurrent_transmissions"}, 10)),
       m_recordingFrequencyGroupSize(readKey(m_json, {"detection", "frequency_group_size"}, 10000)),
       m_noiseLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "noise_learning_time_seconds"}, 3))),
       m_noiseDetectionMargin(readKey(m_json, {"detection", "noise_detection_margin"}, 10)),
@@ -106,7 +106,7 @@ std::chrono::milliseconds Config::rangeScanningTime() const { return m_rangeScan
 std::chrono::milliseconds Config::maxSilenceTime() const { return m_maxSilenceTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }
 uint32_t Config::minRecordingSampleRate() const { return m_minRecordingSampleRate; }
-uint8_t Config::threads() const { return m_threads; }
+uint8_t Config::maxConcurrentTransmissions() const { return m_maxConcurrentTransmissions; }
 
 uint32_t Config::recordingFrequencyGroupSize() const { return m_recordingFrequencyGroupSize; }
 std::chrono::seconds Config::noiseLearningTime() const { return m_noiseLearningTime; }

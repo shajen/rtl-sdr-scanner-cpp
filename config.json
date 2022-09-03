@@ -23,7 +23,7 @@
     "max_silence_time_ms": 2000,
     "min_recording_time_ms": 1000,
     "min_sample_rate": 64000,
-    "threads": 4
+    "max_concurrent_transmissions": 10
   },
   "detection": {
     "frequency_group_size": 10000,

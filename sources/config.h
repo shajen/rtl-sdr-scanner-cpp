@@ -23,7 +23,7 @@ class Config {
   uint32_t tornSignalsMaxAllowedTransmissionsCount() const;
   uint32_t minRecordingSampleRate() const;
   uint32_t recordingFrequencyGroupSize() const;
-  uint8_t threads() const;
+  uint8_t maxConcurrentTransmissions() const;
 
   spdlog::level::level_enum logLevelConsole() const;
   spdlog::level::level_enum logLevelFile() const;
@@ -53,7 +53,7 @@ class Config {
   const std::chrono::milliseconds m_maxSilenceTime;
   const std::chrono::milliseconds m_minRecordingTime;
   const uint32_t m_minRecordingSampleRate;
-  const uint8_t m_threads;
+  const uint8_t m_maxConcurrentTransmissions;
 
   const uint32_t m_recordingFrequencyGroupSize;
   const std::chrono::seconds m_noiseLearningTime;

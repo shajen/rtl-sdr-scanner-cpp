@@ -94,7 +94,7 @@ void Recorder::appendSamples(const FrequencyRange& frequencyRange, std::vector<u
   std::unique_lock lock(m_mutex);
   m_inSamples.push_back({time(), std::move(samples), frequencyRange});
   m_cv.notify_one();
-  Logger::debug("recorder", "push input samples, size: {}", m_outSamples.size());
+  Logger::debug("recorder", "push input samples, size: {}", m_inSamples.size());
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
@@ -102,20 +102,18 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   const auto rawBufferSamples = samples.size() / 2;
   const auto center = frequencyRange.center();
 
-  if (m_rawBuffer.size() != rawBufferSamples) {
+  if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
     Logger::debug("recorder", "raw buffer resized, size: {}", rawBufferSamples);
   }
-  if (m_shiftData.size() != rawBufferSamples) {
+  if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
     Logger::debug("recorder", "shift data resized, size: {}", m_shiftData.size());
   }
 
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "uint8 to complex finished");
-  for (uint32_t i = 0; i < m_rawBuffer.size(); ++i) {
-    m_rawBuffer[i] *= m_shiftData[i];
-  }
+  shift(m_rawBuffer, m_shiftData);
   Logger::trace("recorder", "shift finished");
   const auto signals = m_spectrogram.psd(center, frequencyRange.bandwidth(), m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "psd finished");
@@ -124,8 +122,21 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   m_dataController.sendSignals(time, frequencyRange, signals);
   Logger::trace("recorder", "signal sent");
 
+  for (auto it = m_workers.begin(); it != m_workers.end();) {
+    auto f = [it](const std::pair<Frequency, bool>& data) { return it->first == data.first; };
+    const auto transmisionInProgress = std::any_of(activeFrequencies.begin(), activeFrequencies.end(), f);
+    if (transmisionInProgress) {
+      it++;
+    } else {
+      it = m_workers.erase(it);
+    }
+  }
   for (const auto& [frequency, isActive] : activeFrequencies) {
     if (m_workers.count(frequency) == 0) {
+      if (m_config.maxConcurrentTransmissions() <= m_workers.size()) {
+        Logger::warn("recorder", "reached concurrent transmissions limit, skip {}", frequency.toString());
+        continue;
+      }
       auto rws = std::make_unique<RecorderWorkerStruct>();
       auto worker = std::make_unique<RecorderWorker>(m_config, m_workerLastId++, frequency, rws->mutex, rws->cv, rws->samples, m_mutex, m_cv, m_outSamples);
       rws->worker = std::move(worker);
@@ -136,15 +147,6 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     rws->samples.push_back({time, m_rawBuffer, frequencyRange, isActive});
     rws->cv.notify_one();
     Logger::debug("recorder", "push worker input samples, queue size: {}", rws->samples.size());
-  }
-  for (auto it = m_workers.begin(); it != m_workers.end();) {
-    auto f = [it](const std::pair<Frequency, bool>& data) { return it->first == data.first; };
-    const auto transmisionInProgress = std::any_of(activeFrequencies.begin(), activeFrequencies.end(), f);
-    if (transmisionInProgress) {
-      it++;
-    } else {
-      it = m_workers.erase(it);
-    }
   }
   Logger::debug("recorder", "samples processing finished");
 }

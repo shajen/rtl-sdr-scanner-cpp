@@ -59,16 +59,16 @@ WorkerOutputSamples RecorderWorker::processSamples(WorkerInputSamples &&inputSam
   Logger::debug("recorder", "thread: {}, processing started, samples: {}", m_id, inputSamples.samples.size());
   const auto sampleRate = inputSamples.frequencyRange.sampleRate();
   const auto decimateRate(sampleRate.value / m_config.minRecordingSampleRate());
-  const auto rawBufferSamples = inputSamples.samples.size() / 2;
+  const auto rawBufferSamples = inputSamples.samples.size();
   const auto downSamples = rawBufferSamples / decimateRate;
   const auto center = inputSamples.frequencyRange.center();
   const auto bandwidth = inputSamples.frequencyRange.bandwidth().value / decimateRate;
 
-  if (m_shiftData.size() != rawBufferSamples) {
+  if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(center.value - m_frequency.value, sampleRate, rawBufferSamples);
     Logger::debug("recorder", "thread: {}, shift data resized, size: {}", m_id, m_shiftData.size());
   }
-  if (m_decimatorBuffer.size() != downSamples) {
+  if (m_decimatorBuffer.size() < downSamples) {
     m_decimatorBuffer.resize(downSamples);
     Logger::debug("recorder", "thread: {}, decimator buffer resized, size: {}", m_id, m_decimatorBuffer.size());
   }
@@ -76,12 +76,11 @@ WorkerOutputSamples RecorderWorker::processSamples(WorkerInputSamples &&inputSam
     m_decimator = std::make_unique<Decimator>(m_config, decimateRate);
   }
 
-  for (uint32_t i = 0; i < inputSamples.samples.size(); ++i) {
-    inputSamples.samples[i] *= m_shiftData[i];
-  }
+  shift(inputSamples.samples, m_shiftData);
   Logger::trace("recorder", "thread: {}, shift finished", m_id);
   m_decimator->decimate(inputSamples.samples.data(), downSamples, m_decimatorBuffer.data());
   Logger::trace("recorder", "thread: {}, decimate finished", m_id);
 
+  Logger::debug("recorder", "thread: {}, processing finished", m_id);
   return {inputSamples.time, m_decimatorBuffer, {m_frequency.value - bandwidth / 2, m_frequency.value + bandwidth / 2, inputSamples.frequencyRange.step.value}, inputSamples.isActive};
 }

@@ -37,6 +37,7 @@ class RtlSdrScanner {
   Frequency m_lastBandwidth;
   std::vector<uint8_t> m_rawBuffer;
   std::vector<std::complex<float>> m_buffer;
+  std::vector<std::complex<float>> m_shiftData;
   std::map<uint32_t, std::unique_ptr<Spectrogram>> m_spectrogram;
   std::map<std::pair<uint32_t, uint32_t>, std::unique_ptr<Recorder>> m_recorders;
 };
