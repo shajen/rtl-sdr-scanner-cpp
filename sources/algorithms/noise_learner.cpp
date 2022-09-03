@@ -29,9 +29,9 @@ std::vector<Signal> NoiseLearner::getStrongSignals(const std::vector<Signal>& si
 
 void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<std::pair<FrequencyRange, bool>>& activeFrequencies) {
   if (m_frequencyNoise.count(signals.front().frequency) == 0 || m_frequencyNoise.count(signals.back().frequency) == 0) {
-    Logger::info("NoiseLrn", "initialize, {}, {}", signals.front().frequency.toString(), signals.back().frequency.toString());
+    Logger::info("NoiseLrn", "initialize, {}, {}", signals.front().frequency.toString("start"), signals.back().frequency.toString("stop"));
     for (const auto& signal : signals) {
-      m_frequencyNoise.insert({signal.frequency, {0, 0.0, std::numeric_limits<float>::infinity()}});
+      m_frequencyNoise.insert({signal.frequency, {0, -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()}});
     }
   } else {
     const auto signalsBegin = signals.begin();
@@ -52,11 +52,19 @@ void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<
       }
       auto& noise = itNoise->second;
       noise.samplesCount++;
-      noise.samplesSum += itSignal->power.value;
+      noise.sampleMax = std::max(noise.sampleMax, itSignal->power.value);
       if (m_config.noiseLearningSamplesCount() <= noise.samplesCount) {
-        noise.noiseLevel = noise.samplesSum / noise.samplesCount + m_config.noiseDetectionMargin();
+        //        const auto isNormal = std::abs(noise.sampleMax + m_config.noiseDetectionMargin() - noise.noiseLevel) * 2.0 <= m_config.noiseDetectionMargin();
+        //        if (std::isfinite(noise.sampleMax) && std::isfinite(noise.noiseLevel) && !isNormal) {
+        //          Logger::warn("NoiseLrn", "unusually high max, {}", itNoise->first.toString());
+        //          noise.noiseLevel = std::numeric_limits<float>::infinity();
+        //          noise.samplesCount = 0;
+        //          noise.sampleMax = -std::numeric_limits<float>::infinity();
+        //        } else {
+        noise.noiseLevel = noise.sampleMax + m_config.noiseDetectionMargin();
         noise.samplesCount = 0;
-        noise.samplesSum = 0;
+        noise.sampleMax = -std::numeric_limits<float>::infinity();
+        //        }
       }
       itSignal++;
       itNoise++;

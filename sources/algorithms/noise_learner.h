@@ -15,7 +15,7 @@ class NoiseLearner {
  private:
   struct Noise {
     uint32_t samplesCount;
-    float samplesSum;
+    float sampleMax;
     float noiseLevel;
   };
 

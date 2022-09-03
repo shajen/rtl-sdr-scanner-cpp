@@ -89,10 +89,10 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     if (transmisionInProgress) {
       it++;
     } else {
-      const auto frequency = it->first;
+      const auto frequencyRange = it->first;
       it = m_workers.erase(it);
       std::unique_lock lock(m_dataMutex);
-      Logger::info("recorder", "erase worker {}, total workers: {}, queue size: {}", frequency.toString(), m_workers.size(), m_samples.size());
+      Logger::info("recorder", "erase worker {}, total workers: {}, queue size: {}", frequencyRange.center().toString(), m_workers.size(), m_samples.size());
     }
   }
   for (const auto& [transmissionSampleRate, isActive] : activeFrequencies) {
@@ -101,12 +101,12 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     }
     if (m_workers.count(transmissionSampleRate) == 0) {
       if (m_config.maxConcurrentTransmissions() <= m_workers.size()) {
-        Logger::warn("recorder", "reached concurrent transmissions limit, skip {}", transmissionSampleRate.toString());
+        Logger::warn("recorder", "reached concurrent transmissions limit, skip {}", transmissionSampleRate.center().toString());
         continue;
       }
       {
         std::unique_lock lock(m_dataMutex);
-        Logger::info("recorder", "create worker {}, total workers: {}, queue size: {}", transmissionSampleRate.toString(), m_workers.size() + 1, m_samples.size());
+        Logger::info("recorder", "create worker {}, total workers: {}, queue size: {}", transmissionSampleRate.center().toString(), m_workers.size() + 1, m_samples.size());
       }
       auto rws = std::make_unique<RecorderWorkerStruct>();
       auto worker = std::make_unique<RecorderWorker>(m_config, m_dataController, m_workerLastId++, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
