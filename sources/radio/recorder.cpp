@@ -7,10 +7,10 @@
 
 #include <map>
 
-Recorder::Recorder(const Config& config, DataController& dataController, SignalsMatcher& signalsMatcher, uint32_t spectrogramSize)
+Recorder::Recorder(const Config& config, DataController& dataController, TransmissionDetector& transmissionDetector, uint32_t spectrogramSize)
     : m_config(config),
       m_dataController(dataController),
-      m_signalsMatcher(signalsMatcher),
+      m_transmissionDetector(transmissionDetector),
       m_spectrogram(config, spectrogramSize),
       m_workerLastId(0),
       m_isWorking(true),
@@ -78,14 +78,14 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   Logger::trace("recorder", "shift finished");
   const auto signals = m_spectrogram.psd(center, frequencyRange.bandwidth(), m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "psd finished");
-  const auto activeFrequencies = m_signalsMatcher.getFrequencies(time, signals);
-  Logger::trace("recorder", "active frequencies finished, count: {}", activeFrequencies.size());
+  const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
+  Logger::trace("recorder", "active transmissions finished, count: {}", activeTransmissions.size());
   m_dataController.sendSignals(time, frequencyRange, signals);
   Logger::trace("recorder", "signal sent");
 
   for (auto it = m_workers.begin(); it != m_workers.end();) {
     auto f = [it](const std::pair<FrequencyRange, bool>& data) { return it->first == data.first; };
-    const auto transmisionInProgress = std::any_of(activeFrequencies.begin(), activeFrequencies.end(), f);
+    const auto transmisionInProgress = std::any_of(activeTransmissions.begin(), activeTransmissions.end(), f);
     if (transmisionInProgress) {
       it++;
     } else {
@@ -95,7 +95,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
       Logger::info("recorder", "erase worker {}, total workers: {}, queue size: {}", frequencyRange.center().toString(), m_workers.size(), m_samples.size());
     }
   }
-  for (const auto& [transmissionSampleRate, isActive] : activeFrequencies) {
+  for (const auto& [transmissionSampleRate, isActive] : activeTransmissions) {
     if (isActive) {
       m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
     }

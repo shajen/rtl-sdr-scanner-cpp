@@ -2,8 +2,8 @@
 
 #include <algorithms/decimator.h>
 #include <algorithms/spectrogram.h>
+#include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
-#include <radio/signals_matcher.h>
 #include <utils.h>
 
 #include <condition_variable>

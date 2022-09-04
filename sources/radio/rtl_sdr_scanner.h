@@ -26,7 +26,7 @@ class RtlSdrScanner {
   void readSamples(const FrequencyRange& frequencyRange);
 
   DataController& m_dataController;
-  SignalsMatcher m_signalsMatcher;
+  TransmissionDetector m_transmissionDetector;
   const Config& m_config;
   const int m_deviceIndex;
   std::atomic_bool m_isRunning;

@@ -7,7 +7,7 @@
 using StreamCallbackData = std::tuple<RtlSdrScanner*, std::unique_ptr<Recorder>&, FrequencyRange, bool>;
 
 RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& config, int deviceIndex)
-    : m_dataController(dataController), m_signalsMatcher(config), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
+    : m_dataController(dataController), m_transmissionDetector(config), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
   Logger::debug("rtl_sdr", "init");
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
@@ -65,7 +65,7 @@ RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& confi
     }
     const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
     if (m_recorders.count(key) == 0) {
-      m_recorders[key] = std::make_unique<Recorder>(m_config, m_dataController, m_signalsMatcher, frequencyRange.fftSize());
+      m_recorders[key] = std::make_unique<Recorder>(m_config, m_dataController, m_transmissionDetector, frequencyRange.fftSize());
     }
   }
   m_rawBuffer.resize(maxSamples);
@@ -178,7 +178,7 @@ void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
     shift(m_buffer, m_shiftData);
     const auto signals = m_spectrogram[spectrogramSize]->psd(centerFrequency, bandwidth, m_buffer, samples / 2);
     m_dataController.sendSignals(now, frequencyRange, signals);
-    if (!m_signalsMatcher.getFrequencies(now, signals).empty()) {
+    if (!m_transmissionDetector.getTransmissions(now, signals).empty()) {
       Logger::info("rtl_sdr", "start recording");
       startStream(frequencyRange, false);
     }

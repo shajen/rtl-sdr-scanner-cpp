@@ -2,9 +2,9 @@
 
 #include <algorithms/decimator.h>
 #include <algorithms/spectrogram.h>
+#include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
 #include <radio/recorder_worker.h>
-#include <radio/signals_matcher.h>
 #include <utils.h>
 
 #include <complex>
@@ -18,7 +18,7 @@
 
 class Recorder {
  public:
-  Recorder(const Config& config, DataController& dataController, SignalsMatcher& signalsMatcher, uint32_t spectrogramSize);
+  Recorder(const Config& config, DataController& dataController, TransmissionDetector& transmissionDetector, uint32_t spectrogramSize);
   ~Recorder();
 
   void clear();
@@ -30,7 +30,7 @@ class Recorder {
 
   const Config& m_config;
   DataController& m_dataController;
-  SignalsMatcher& m_signalsMatcher;
+  TransmissionDetector& m_transmissionDetector;
   Spectrogram m_spectrogram;
   std::vector<std::complex<float>> m_rawBuffer;
   std::vector<std::complex<float>> m_shiftData;
