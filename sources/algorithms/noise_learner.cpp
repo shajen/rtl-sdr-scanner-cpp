@@ -28,7 +28,8 @@ std::vector<Signal> NoiseLearner::getStrongSignals(const std::vector<Signal>& si
 }
 
 void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<std::pair<FrequencyRange, bool>>& activeFrequencies) {
-  if (m_frequencyNoise.count(signals.front().frequency) == 0 || m_frequencyNoise.count(signals.back().frequency) == 0) {
+  const auto existingSignals = std::distance(m_frequencyNoise.lower_bound(signals.front().frequency), m_frequencyNoise.upper_bound(signals.back().frequency));
+  if (static_cast<uint32_t>(existingSignals) != signals.size()) {
     Logger::info("NoiseLrn", "initialize, {}, {}", signals.front().frequency.toString("start"), signals.back().frequency.toString("stop"));
     for (const auto& signal : signals) {
       m_frequencyNoise.insert({signal.frequency, {0, -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()}});
