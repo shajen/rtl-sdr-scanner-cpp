@@ -18,11 +18,12 @@
 
 class Recorder {
  public:
-  Recorder(const Config& config, DataController& dataController, TransmissionDetector& transmissionDetector);
+  Recorder(const Config& config, DataController& dataController);
   ~Recorder();
 
   void clear();
   void appendSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
+  bool checkSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
   bool isFinished() const;
 
  private:
@@ -30,7 +31,7 @@ class Recorder {
 
   const Config& m_config;
   DataController& m_dataController;
-  TransmissionDetector& m_transmissionDetector;
+  TransmissionDetector m_transmissionDetector;
   std::map<uint32_t, std::unique_ptr<Spectrogram>> m_spectrograms;
   std::vector<std::complex<float>> m_rawBuffer;
   std::vector<std::complex<float>> m_shiftData;

@@ -1,0 +1,69 @@
+#include "sdr_scanner.h"
+
+#include <logger.h>
+#include <utils.h>
+
+SdrScanner::SdrScanner(const Config& config, SdrDevice& device, DataController& dataController) : m_config(config), m_device(device), m_recorder(config, dataController), m_isRunning(true) {
+  const auto ignoredFrequencies = config.ignoredFrequencies();
+  Logger::info("Scanner", "ignored frequency ranges: {}", ignoredFrequencies.size());
+  for (const auto& frequencyRange : ignoredFrequencies) {
+    Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());
+  }
+
+  const auto scannerFrequencies = config.scannerFrequencies();
+  Logger::info("Scanner", "original frequency ranges: {}", scannerFrequencies.size());
+  for (const auto& frequencyRange : scannerFrequencies) {
+    Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());
+  }
+
+  const auto splittedFrequencyRanges = splitFrequencyRanges(m_config.rtlSdrMaxBandwidth(), scannerFrequencies);
+  Logger::info("Scanner", "splitted frequency ranges: {}", splittedFrequencyRanges.size());
+  for (const auto& frequencyRange : splittedFrequencyRanges) {
+    Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());
+  }
+
+  if (splittedFrequencyRanges.empty()) {
+    throw std::runtime_error("empty frequency ranges");
+  }
+
+  m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
+    try {
+      if (splittedFrequencyRanges.size() == 1) {
+        startStream(splittedFrequencyRanges.front(), true);
+      } else {
+        while (m_isRunning) {
+          for (const auto& frequencyRange : splittedFrequencyRanges) {
+            readSamples(frequencyRange);
+          }
+        }
+      }
+    } catch (const std::exception& exception) {
+      Logger::error("Scanner", "exception: {}", exception.what());
+    }
+    m_isRunning = false;
+  });
+}
+
+SdrScanner::~SdrScanner() {
+  m_isRunning = false;
+  m_thread->join();
+}
+
+bool SdrScanner::isRunning() const { return m_isRunning; }
+
+void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForever) {
+  auto f = [this, frequencyRange, runForever](uint8_t* buf, uint32_t len) {
+    m_recorder.appendSamples(frequencyRange, std::vector<uint8_t>({buf, buf + len}));
+    return m_isRunning && (runForever || !m_recorder.isFinished());
+  };
+  m_recorder.clear();
+  m_device.startStream(frequencyRange, std::move(f));
+  m_recorder.clear();
+}
+
+void SdrScanner::readSamples(const FrequencyRange& frequencyRange) {
+  auto data = m_device.readData(frequencyRange);
+  if (!data.empty() && m_recorder.checkSamples(frequencyRange, std::move(data))) {
+    startStream(frequencyRange, false);
+  }
+}

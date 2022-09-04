@@ -3,7 +3,8 @@
 #include <logger.h>
 #include <network/data_controller.h>
 #include <network/mqtt.h>
-#include <radio/rtl_sdr_scanner.h>
+#include <radio/rtl_sdr_device.h>
+#include <radio/sdr_scanner.h>
 #include <signal.h>
 
 volatile bool isRunning{true};
@@ -43,26 +44,21 @@ int main(int argc, char* argv[]) {
           reloadConfig = true;
         }
       };
-      Mqtt mqtt(*config);
-      mqtt.setMessageCallback(f);
-      DataController dataController(*config, mqtt);
-
-      std::vector<std::unique_ptr<RtlSdrScanner>> scanners;
-      for (int i = 0; i < RtlSdrScanner::devicesCount(); ++i) {
-        scanners.push_back(std::make_unique<RtlSdrScanner>(dataController, *config, i));
-      }
-
-      if (scanners.empty()) {
+      if (RtlSdrDevice::devicesCount() == 0) {
         Logger::warn("main", "not found rtl sdr devices");
-        break;
-      }
-      signal(SIGINT, handler);
-      while (isRunning && !scanners.empty() && !reloadConfig) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const std::unique_ptr<RtlSdrScanner>& scanner) { return !scanner->isRunning(); }), scanners.end());
-      }
-      if (scanners.empty()) {
-        break;
+      } else {
+        Mqtt mqtt(*config);
+        mqtt.setMessageCallback(f);
+        DataController dataController(*config, mqtt);
+        RtlSdrDevice device(*config, 0);
+        SdrScanner scanner(*config, device, dataController);
+        signal(SIGINT, handler);
+        while (isRunning && scanner.isRunning() && !reloadConfig) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        if (!scanner.isRunning()) {
+          break;
+        }
       }
     }
   } catch (const std::exception& exception) {
