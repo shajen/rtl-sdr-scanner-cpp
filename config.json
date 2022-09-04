@@ -27,10 +27,9 @@
   },
   "detection": {
     "frequency_group_size": 10000,
-    "noise_learning_samples_count": 20,
-    "noise_detection_margin": 50,
-    "torn_signals_learning_time_seconds": 60,
-    "torn_signals_max_allowed_transmissions_count": 10
+    "noise_learning_time_seconds": 10,
+    "noise_detection_margin": 20,
+    "torn_signals_learning_time_seconds": 60
   },
   "output": {
     "recordings": "sdr/recordings",

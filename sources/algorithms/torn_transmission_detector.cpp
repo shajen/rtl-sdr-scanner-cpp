@@ -9,25 +9,37 @@ TornTransmissionDetector::TornTransmissionDetector(const Config& config) : m_con
 
 void TornTransmissionDetector::update(const std::chrono::milliseconds& time) {
   if (m_lastUpdate + m_config.tornSignalsLearningTime() <= time) {
-    std::swap(m_transmissionsCount, m_tmpTransmissionsCount);
-    m_tmpTransmissionsCount.clear();
-    m_lastUpdate = time;
-    for (const auto& [frequencyGroup, count] : m_transmissionsCount) {
-      Logger::debug("TornDtr", "group {}, changes: {}", frequencyGroup.center().toString(), count);
+    m_transmissionsAverageDuration.clear();
+    for (const auto& [frequencyGroup, data] : m_transmissionsData) {
+      const auto averageDuration = std::chrono::milliseconds(data.sum.count() / data.count);
+      m_transmissionsAverageDuration[frequencyGroup] = averageDuration;
+      Logger::info("TornDtr", "transmission {}, average duration: {:.2f} seconds", frequencyGroup.center().toString(), averageDuration.count() / 1000.0);
     }
+    m_transmissionsData.clear();
+    m_lastUpdate = time;
     initialized = true;
   }
 }
 
-void TornTransmissionDetector::reportTransmission(const FrequencyRange& frequencyRange) { m_tmpTransmissionsCount[frequencyRange]++; }
-
-uint32_t TornTransmissionDetector::getTransmissionsCount(const FrequencyRange& frequencyRange) const {
-  const auto it = m_transmissionsCount.find(frequencyRange);
-  if (it != m_transmissionsCount.end()) {
-    return it->second;
-  } else if (initialized) {
-    return 0;
+void TornTransmissionDetector::reportTransmission(const FrequencyRange& frequencyRange, const std::chrono::milliseconds duration) {
+  Logger::info("TornDtr", "report transmission {}, duration: {:.2f} seconds", frequencyRange.center().toString(), duration.count() / 1000.0);
+  auto it = m_transmissionsData.find(frequencyRange);
+  if (it != m_transmissionsData.end()) {
+    it->second.count++;
+    it->second.sum += duration;
   } else {
-    return std::numeric_limits<uint32_t>::max();
+    m_transmissionsData.insert({frequencyRange, {1, duration}});
+  }
+}
+
+bool TornTransmissionDetector::isTransmissionOk(const FrequencyRange& frequencyRange) const {
+  const auto it = m_transmissionsAverageDuration.find(frequencyRange);
+  if (it != m_transmissionsAverageDuration.end()) {
+    Logger::debug("TornDtr", "check transmission {}, average duration: {:.2f} seconds", frequencyRange.center().toString(), it->second.count() / 1000.0);
+    return m_config.minRecordingTime() <= it->second;
+  } else if (initialized) {
+    return true;
+  } else {
+    return false;
   }
 }

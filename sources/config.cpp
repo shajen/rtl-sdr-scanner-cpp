@@ -90,10 +90,9 @@ Config::Config(const std::string &path, const std::string &config)
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
       m_maxConcurrentTransmissions(readKey(m_json, {"recording", "max_concurrent_transmissions"}, 10)),
       m_recordingFrequencyGroupSize(readKey(m_json, {"detection", "frequency_group_size"}, 10000)),
-      m_noiseLearningSamplesCount(readKey(m_json, {"detection", "noise_learning_samples_count"}, 20)),
+      m_noiseLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "noise_learning_time_seconds"}, 10))),
       m_noiseDetectionMargin(readKey(m_json, {"detection", "noise_detection_margin"}, 10)),
       m_tornSignalsLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "torn_signals_learning_time_seconds"}, 60))),
-      m_tornSignalsMaxAllowedTransmissionsCount(readKey(m_json, {"detection", "torn_signals_max_allowed_transmissions_count"}, 10)),
       m_logsDirectory(readKey(m_json, {"output", "logs"}, std::string("sdr/logs"))),
       m_consoleLogLevel(parseLogLevel(readKey(m_json, {"output", "console_log_level"}, std::string("info")))),
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
@@ -116,11 +115,9 @@ uint32_t Config::minRecordingSampleRate() const { return m_minRecordingSampleRat
 uint8_t Config::maxConcurrentTransmissions() const { return m_maxConcurrentTransmissions; }
 
 uint32_t Config::recordingFrequencyGroupSize() const { return m_recordingFrequencyGroupSize; }
-uint32_t Config::noiseLearningSamplesCount() const { return m_noiseLearningSamplesCount; }
+std::chrono::seconds Config::noiseLearningTime() const { return m_noiseLearningTime; }
 uint32_t Config::noiseDetectionMargin() const { return m_noiseDetectionMargin; }
 std::chrono::seconds Config::tornSignalsLearningTime() const { return m_tornSignalsLearningTime; }
-uint32_t Config::tornSignalsMaxAllowedTransmissionsCount() const { return m_tornSignalsMaxAllowedTransmissionsCount; }
-
 
 spdlog::level::level_enum Config::logLevelFile() const { return m_fileLogLevel; }
 spdlog::level::level_enum Config::logLevelConsole() const { return m_consoleLogLevel; }

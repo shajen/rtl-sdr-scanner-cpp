@@ -16,10 +16,9 @@ class Config {
   std::chrono::milliseconds rangeScanningTime() const;
   std::chrono::milliseconds maxSilenceTime() const;
   std::chrono::milliseconds minRecordingTime() const;
-  uint32_t noiseLearningSamplesCount() const;
+  std::chrono::seconds noiseLearningTime() const;
   uint32_t noiseDetectionMargin() const;
   std::chrono::seconds tornSignalsLearningTime() const;
-  uint32_t tornSignalsMaxAllowedTransmissionsCount() const;
   uint32_t minRecordingSampleRate() const;
   uint32_t recordingFrequencyGroupSize() const;
   uint8_t maxConcurrentTransmissions() const;
@@ -55,10 +54,9 @@ class Config {
   const uint8_t m_maxConcurrentTransmissions;
 
   const uint32_t m_recordingFrequencyGroupSize;
-  const uint32_t m_noiseLearningSamplesCount;
+  const std::chrono::seconds m_noiseLearningTime;
   const uint32_t m_noiseDetectionMargin;
   const std::chrono::seconds m_tornSignalsLearningTime;
-  const uint32_t m_tornSignalsMaxAllowedTransmissionsCount;
 
   const std::string m_logsDirectory;
   const spdlog::level::level_enum m_consoleLogLevel;

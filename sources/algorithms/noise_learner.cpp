@@ -34,6 +34,8 @@ void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<
       m_frequencyNoise.insert({signal.frequency, {0, -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()}});
     }
   } else {
+    const auto noiseLearningTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_config.noiseLearningTime());
+    const auto learningSamplesCount = noiseLearningTime.count() / m_config.rangeScanningTime().count();
     const auto signalsBegin = signals.begin();
     const auto signalsEnd = signals.end();
     const auto noiseBegin = m_frequencyNoise.lower_bound(signals.front().frequency);
@@ -53,18 +55,10 @@ void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<
       auto& noise = itNoise->second;
       noise.samplesCount++;
       noise.sampleMax = std::max(noise.sampleMax, itSignal->power.value);
-      if (m_config.noiseLearningSamplesCount() <= noise.samplesCount) {
-        //        const auto isNormal = std::abs(noise.sampleMax + m_config.noiseDetectionMargin() - noise.noiseLevel) * 2.0 <= m_config.noiseDetectionMargin();
-        //        if (std::isfinite(noise.sampleMax) && std::isfinite(noise.noiseLevel) && !isNormal) {
-        //          Logger::warn("NoiseLrn", "unusually high max, {}", itNoise->first.toString());
-        //          noise.noiseLevel = std::numeric_limits<float>::infinity();
-        //          noise.samplesCount = 0;
-        //          noise.sampleMax = -std::numeric_limits<float>::infinity();
-        //        } else {
+      if (learningSamplesCount <= noise.samplesCount) {
         noise.noiseLevel = noise.sampleMax + m_config.noiseDetectionMargin();
         noise.samplesCount = 0;
         noise.sampleMax = -std::numeric_limits<float>::infinity();
-        //        }
       }
       itSignal++;
       itNoise++;
