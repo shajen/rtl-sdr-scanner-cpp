@@ -18,7 +18,7 @@
 
 class Recorder {
  public:
-  Recorder(const Config& config, DataController& dataController, TransmissionDetector& transmissionDetector, uint32_t spectrogramSize);
+  Recorder(const Config& config, DataController& dataController, TransmissionDetector& transmissionDetector);
   ~Recorder();
 
   void clear();
@@ -31,7 +31,7 @@ class Recorder {
   const Config& m_config;
   DataController& m_dataController;
   TransmissionDetector& m_transmissionDetector;
-  Spectrogram m_spectrogram;
+  std::map<uint32_t, std::unique_ptr<Spectrogram>> m_spectrograms;
   std::vector<std::complex<float>> m_rawBuffer;
   std::vector<std::complex<float>> m_shiftData;
   std::chrono::milliseconds m_lastActiveDataTime;

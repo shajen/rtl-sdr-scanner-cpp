@@ -4,10 +4,10 @@
 #include <rtl-sdr.h>
 #include <utils.h>
 
-using StreamCallbackData = std::tuple<RtlSdrScanner*, std::unique_ptr<Recorder>&, FrequencyRange, bool>;
+using StreamCallbackData = std::tuple<RtlSdrScanner*, Recorder*, FrequencyRange, bool>;
 
 RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& config, int deviceIndex)
-    : m_dataController(dataController), m_transmissionDetector(config), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true) {
+    : m_dataController(dataController), m_transmissionDetector(config), m_config(config), m_deviceIndex(deviceIndex), m_isRunning(true), m_recorder(config, m_dataController, m_transmissionDetector) {
   Logger::debug("rtl_sdr", "init");
   char serial[256];
   rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
@@ -62,10 +62,6 @@ RtlSdrScanner::RtlSdrScanner(DataController& dataController, const Config& confi
     const auto spectrogramSize = frequencyRange.fftSize();
     if (m_spectrogram.count(spectrogramSize) == 0) {
       m_spectrogram[spectrogramSize] = std::make_unique<Spectrogram>(m_config, spectrogramSize);
-    }
-    const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
-    if (m_recorders.count(key) == 0) {
-      m_recorders[key] = std::make_unique<Recorder>(m_config, m_dataController, m_transmissionDetector, frequencyRange.fftSize());
     }
   }
   m_rawBuffer.resize(maxSamples);
@@ -135,7 +131,7 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
     Logger::debug("rtl_sdr", "read bytes: {}", len);
     StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
     RtlSdrScanner* scanner = std::get<0>(*data);
-    std::unique_ptr<Recorder>& recorder = std::get<1>(*data);
+    Recorder* recorder = std::get<1>(*data);
     FrequencyRange frequencyRange = std::get<2>(*data);
     bool runForever = std::get<3>(*data);
     recorder->appendSamples(frequencyRange, std::vector<uint8_t>({buf, buf + len}));
@@ -144,14 +140,12 @@ void RtlSdrScanner::startStream(const FrequencyRange& frequencyRange, bool runFo
       Logger::info("rtl_sdr", "cancel stream");
     }
   };
-  const auto key = std::make_pair(frequencyRange.bandwidth().value, frequencyRange.sampleRate().value);
-  auto& recorder = m_recorders[key];
-  recorder->clear();
-  StreamCallbackData data(this, recorder, frequencyRange, runForever);
+  m_recorder.clear();
+  StreamCallbackData data(this, &m_recorder, frequencyRange, runForever);
   Logger::info("rtl_sdr", "start stream");
   rtlsdr_read_async(m_device, f, &data, 0, 0);
   Logger::info("rtl_sdr", "stop stream");
-  recorder->clear();
+  m_recorder.clear();
 }
 
 void RtlSdrScanner::readSamples(const FrequencyRange& frequencyRange) {
