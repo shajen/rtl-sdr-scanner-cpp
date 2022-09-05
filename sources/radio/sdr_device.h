@@ -7,6 +7,8 @@
 
 class SdrDevice {
  public:
+  virtual ~SdrDevice() = default;
+
   using Callback = std::function<bool(uint8_t*, uint32_t)>;
 
   virtual void startStream(const FrequencyRange& frequencyRange, Callback&& callback) = 0;

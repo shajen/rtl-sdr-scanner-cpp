@@ -7,11 +7,11 @@ typedef struct rtlsdr_dev rtlsdr_dev_t;
 class RtlSdrDevice : public SdrDevice {
  public:
   RtlSdrDevice(const Config& config, int deviceIndex);
-  ~RtlSdrDevice();
+  ~RtlSdrDevice() override;
 
   void startStream(const FrequencyRange& frequencyRange, Callback&& callback) override;
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
-  static int devicesCount();
+  static std::vector<uint32_t> listDevices();
 
  private:
   void setupDevice(const FrequencyRange& frequencyRange);

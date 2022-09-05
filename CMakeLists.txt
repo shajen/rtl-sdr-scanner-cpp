@@ -22,6 +22,11 @@ if(NOT MOSQUITTO_LIB)
   message(FATAL_ERROR "mosquitto library not found")
 endif()
 
+find_library(HACKRF_LIB hackrf)
+if(NOT HACKRF_LIB)
+  message(FATAL_ERROR "hackrf library not found")
+endif()
+
 file(GLOB_RECURSE SRC
     "${PROJECT_SOURCE_DIR}/sources/*.h"
     "${PROJECT_SOURCE_DIR}/sources/*.cpp"
@@ -37,6 +42,7 @@ TARGET_LINK_LIBRARIES(auto-sdr
     Threads::Threads
     liquid
     mosquitto
+    hackrf
     stdc++fs
     nlohmann_json::nlohmann_json
 )

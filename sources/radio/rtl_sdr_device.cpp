@@ -82,7 +82,13 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
   }
 }
 
-int RtlSdrDevice::devicesCount() { return rtlsdr_get_device_count(); }
+std::vector<uint32_t> RtlSdrDevice::listDevices() {
+  std::vector<uint32_t> indexes;
+  for (uint32_t i = 0; i < rtlsdr_get_device_count(); ++i) {
+    indexes.push_back(i);
+  }
+  return indexes;
+}
 
 void RtlSdrDevice::setupDevice(const FrequencyRange& frequencyRange) {
   const auto centerFrequency = frequencyRange.center();
