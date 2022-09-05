@@ -41,7 +41,7 @@ void Mqtt::publish(const std::string &topic, const std::string &data) {
   std::unique_lock lock(m_mutex);
   if (m_messages.size() < QUEUE_MAX_SIZE) {
     m_messages.emplace(topic, std::vector<uint8_t>{data.begin(), data.end()});
-    Logger::debug("mqtt", "queue size: {}", m_messages.size());
+    Logger::debug("Mqtt", "queue size: {}", m_messages.size());
   }
 }
 
@@ -49,7 +49,7 @@ void Mqtt::publish(const std::string &topic, const std::vector<uint8_t> &data) {
   std::unique_lock lock(m_mutex);
   if (m_messages.size() < QUEUE_MAX_SIZE) {
     m_messages.emplace(topic, data);
-    Logger::debug("mqtt", "queue size: {}", m_messages.size());
+    Logger::debug("Mqtt", "queue size: {}", m_messages.size());
   }
 }
 
@@ -57,14 +57,14 @@ void Mqtt::publish(const std::string &topic, const std::vector<uint8_t> &&data) 
   std::unique_lock lock(m_mutex);
   if (m_messages.size() < QUEUE_MAX_SIZE) {
     m_messages.emplace(topic, std::move(data));
-    Logger::debug("mqtt", "queue size: {}", m_messages.size());
+    Logger::debug("Mqtt", "queue size: {}", m_messages.size());
   }
 }
 
 void Mqtt::setMessageCallback(std::function<void(const std::string &, const std::string &)> callback) { m_callbacks.push_back(callback); }
 
 void Mqtt::onConnect() {
-  Logger::info("mqtt", "connected");
+  Logger::info("Mqtt", "connected");
   mosquitto_subscribe(m_client, nullptr, TOPIC, QOS);
 }
 
@@ -72,12 +72,12 @@ void Mqtt::onDisconnect() {
   if (!m_isRunning) {
     return;
   }
-  Logger::warn("mqtt", "disconnected");
+  Logger::warn("Mqtt", "disconnected");
   while (m_isRunning && mosquitto_reconnect(m_client) != MOSQ_ERR_SUCCESS) {
-    Logger::info("mqtt", "reconnecting");
+    Logger::info("Mqtt", "reconnecting");
     std::this_thread::sleep_for(RECONNECT_INTERVAL);
   }
-  Logger::info("mqtt", "reconnecting success");
+  Logger::info("Mqtt", "reconnecting success");
   std::unique_lock lock(m_mutex);
   while (!m_messages.empty()) {
     m_messages.pop();
@@ -85,7 +85,7 @@ void Mqtt::onDisconnect() {
 }
 
 void Mqtt::onMessage(const mosquitto_message *message) {
-  Logger::info("mqtt", "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload));
+  Logger::info("Mqtt", "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload));
   const std::string topic(message->topic);
   const std::string data(static_cast<char *>(message->payload), message->payloadlen);
   for (auto &callback : m_callbacks) {

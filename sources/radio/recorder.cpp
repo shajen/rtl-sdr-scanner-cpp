@@ -9,7 +9,7 @@
 
 Recorder::Recorder(const Config& config, DataController& dataController)
     : m_config(config), m_dataController(dataController), m_transmissionDetector(config), m_spectrogram(config), m_isWorking(true), m_isReady(false), m_thread([this]() {
-        Logger::info("recorder", "start thread id: {}", getThreadId());
+        Logger::info("Recorder", "start thread id: {}", getThreadId());
         while (m_isWorking) {
           {
             std::unique_lock<std::mutex> lock(m_dataMutex);
@@ -23,11 +23,11 @@ Recorder::Recorder(const Config& config, DataController& dataController)
             RecorderInputSamples inputSamples = std::move(m_samples.front());
             m_samples.pop_front();
             lock.unlock();
-            Logger::debug("recorder", "pop input samples, size: {}", m_samples.size());
+            Logger::debug("Recorder", "pop input samples, size: {}", m_samples.size());
             processSamples(inputSamples.time, inputSamples.frequencyRange, std::move(inputSamples.samples));
           }
         }
-        Logger::info("recorder", "stop thread id: {}", getThreadId());
+        Logger::info("Recorder", "stop thread id: {}", getThreadId());
       }) {}
 
 Recorder::~Recorder() {
@@ -47,7 +47,7 @@ void Recorder::appendSamples(const std::chrono::milliseconds& time, const Freque
   std::unique_lock lock(m_dataMutex);
   m_samples.push_back({time, std::move(samples), frequencyRange});
   m_cv.notify_one();
-  Logger::debug("recorder", "push input samples, size: {}", m_samples.size());
+  Logger::debug("Recorder", "push input samples, size: {}", m_samples.size());
 }
 
 bool Recorder::isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
@@ -55,49 +55,49 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 
   if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
-    Logger::debug("recorder", "raw buffer resized, size: {}", rawBufferSamples);
+    Logger::debug("Recorder", "raw buffer resized, size: {}", rawBufferSamples);
   }
   if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
-    Logger::debug("recorder", "shift data resized, size: {}", m_shiftData.size());
+    Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
   }
 
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
-  Logger::trace("recorder", "uint8 to complex finished");
+  Logger::trace("Recorder", "uint8 to complex finished");
   shift(m_rawBuffer, m_shiftData);
-  Logger::trace("recorder", "shift finished");
+  Logger::trace("Recorder", "shift finished");
   const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
-  Logger::trace("recorder", "psd finished");
+  Logger::trace("Recorder", "psd finished");
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
-  Logger::trace("recorder", "active transmissions finished, count: {}", activeTransmissions.size());
+  Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
   m_dataController.sendSignals(time, frequencyRange, signals);
-  Logger::trace("recorder", "signal sent");
+  Logger::trace("Recorder", "signal sent");
   return (!m_transmissionDetector.getTransmissions(time, signals).empty());
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
-  Logger::debug("recorder", "samples processing started, workers: {}", m_workers.size());
+  Logger::debug("Recorder", "samples processing started, workers: {}", m_workers.size());
   std::unique_lock lock(m_processingMutex);
   const auto rawBufferSamples = samples.size() / 2;
 
   if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
-    Logger::debug("recorder", "raw buffer resized, size: {}", rawBufferSamples);
+    Logger::debug("Recorder", "raw buffer resized, size: {}", rawBufferSamples);
   }
   if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
-    Logger::debug("recorder", "shift data resized, size: {}", m_shiftData.size());
+    Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
   }
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
-  Logger::trace("recorder", "uint8 to complex finished");
+  Logger::trace("Recorder", "uint8 to complex finished");
   shift(m_rawBuffer, m_shiftData);
-  Logger::trace("recorder", "shift finished");
+  Logger::trace("Recorder", "shift finished");
   const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
-  Logger::trace("recorder", "psd finished");
+  Logger::trace("Recorder", "psd finished");
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
-  Logger::trace("recorder", "active transmissions finished, count: {}", activeTransmissions.size());
+  Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
   m_dataController.sendSignals(time, frequencyRange, signals);
-  Logger::trace("recorder", "signal sent");
+  Logger::trace("Recorder", "signal sent");
 
   m_lastDataTime = std::max(m_lastDataTime, time);
   for (auto it = m_workers.begin(); it != m_workers.end();) {
@@ -109,7 +109,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
       const auto frequencyRange = it->first;
       it = m_workers.erase(it);
       std::unique_lock lock(m_dataMutex);
-      Logger::info("recorder", "erase worker {}, total workers: {}, queue size: {}", frequencyRange.center().toString(), m_workers.size(), m_samples.size());
+      Logger::info("Recorder", "erase worker {}, total workers: {}, queue size: {}", frequencyRange.center().toString(), m_workers.size(), m_samples.size());
     }
   }
   for (const auto& [transmissionSampleRate, isActive] : activeTransmissions) {
@@ -118,12 +118,12 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     }
     if (m_workers.count(transmissionSampleRate) == 0) {
       if (m_config.maxConcurrentTransmissions() <= m_workers.size()) {
-        Logger::warn("recorder", "reached concurrent transmissions limit, skip {}", transmissionSampleRate.center().toString());
+        Logger::warn("Recorder", "reached concurrent transmissions limit, skip {}", transmissionSampleRate.center().toString());
         continue;
       }
       {
         std::unique_lock lock(m_dataMutex);
-        Logger::info("recorder", "create worker {}, total workers: {}, queue size: {}", transmissionSampleRate.center().toString(), m_workers.size() + 1, m_samples.size());
+        Logger::info("Recorder", "create worker {}, total workers: {}, queue size: {}", transmissionSampleRate.center().toString(), m_workers.size() + 1, m_samples.size());
       }
       auto rws = std::make_unique<RecorderWorkerStruct>();
       auto worker = std::make_unique<RecorderWorker>(m_config, m_dataController, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
@@ -134,9 +134,9 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     std::unique_lock<std::mutex> lock(rws->mutex);
     rws->samples.push_back({time, m_rawBuffer, frequencyRange, isActive});
     rws->cv.notify_one();
-    Logger::debug("recorder", "push worker input samples, queue size: {}", rws->samples.size());
+    Logger::debug("Recorder", "push worker input samples, queue size: {}", rws->samples.size());
   }
-  Logger::debug("recorder", "samples processing finished");
+  Logger::debug("Recorder", "samples processing finished");
 }
 
 bool Recorder::isTransmissionInProgress() const { return m_lastDataTime <= m_lastActiveDataTime + m_config.maxSilenceTime(); }
