@@ -53,8 +53,8 @@ bool SdrScanner::isRunning() const { return m_isRunning; }
 
 void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForever) {
   auto f = [this, frequencyRange, runForever](uint8_t* buf, uint32_t len) {
-    m_recorder.appendSamples(frequencyRange, std::vector<uint8_t>({buf, buf + len}));
-    return m_isRunning && (runForever || !m_recorder.isFinished());
+    m_recorder.appendSamples(time(), frequencyRange, std::vector<uint8_t>({buf, buf + len}));
+    return m_isRunning && (runForever || m_recorder.isTransmissionInProgress());
   };
   m_recorder.clear();
   m_device.startStream(frequencyRange, std::move(f));
@@ -63,7 +63,7 @@ void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForev
 
 void SdrScanner::readSamples(const FrequencyRange& frequencyRange) {
   auto data = m_device.readData(frequencyRange);
-  if (!data.empty() && m_recorder.checkSamples(frequencyRange, std::move(data))) {
+  if (!data.empty() && m_recorder.isTransmission(time(), frequencyRange, std::move(data))) {
     startStream(frequencyRange, false);
   }
 }

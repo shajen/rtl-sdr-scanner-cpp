@@ -22,9 +22,9 @@ class Recorder {
   ~Recorder();
 
   void clear();
-  void appendSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
-  bool checkSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
-  bool isFinished() const;
+  void appendSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
+  bool isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
+  bool isTransmissionInProgress() const;
 
  private:
   void processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
@@ -35,6 +35,7 @@ class Recorder {
   Spectrogram m_spectrogram;
   std::vector<std::complex<float>> m_rawBuffer;
   std::vector<std::complex<float>> m_shiftData;
+  std::chrono::milliseconds m_lastDataTime;
   std::chrono::milliseconds m_lastActiveDataTime;
   uint64_t m_workerLastId;
 

@@ -43,14 +43,14 @@ void Recorder::clear() {
   m_samples.clear();
 }
 
-void Recorder::appendSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
+void Recorder::appendSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
   std::unique_lock lock(m_dataMutex);
-  m_samples.push_back({time(), std::move(samples), frequencyRange});
+  m_samples.push_back({time, std::move(samples), frequencyRange});
   m_cv.notify_one();
   Logger::debug("recorder", "push input samples, size: {}", m_samples.size());
 }
 
-bool Recorder::checkSamples(const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
+bool Recorder::isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
   const auto rawBufferSamples = samples.size() / 2;
 
   if (m_rawBuffer.size() < rawBufferSamples) {
@@ -62,18 +62,17 @@ bool Recorder::checkSamples(const FrequencyRange& frequencyRange, std::vector<ui
     Logger::debug("recorder", "shift data resized, size: {}", m_shiftData.size());
   }
 
-  const auto now = time();
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "uint8 to complex finished");
   shift(m_rawBuffer, m_shiftData);
   Logger::trace("recorder", "shift finished");
   const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
   Logger::trace("recorder", "psd finished");
-  const auto activeTransmissions = m_transmissionDetector.getTransmissions(now, signals);
+  const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
   Logger::trace("recorder", "active transmissions finished, count: {}", activeTransmissions.size());
-  m_dataController.sendSignals(now, frequencyRange, signals);
+  m_dataController.sendSignals(time, frequencyRange, signals);
   Logger::trace("recorder", "signal sent");
-  return (!m_transmissionDetector.getTransmissions(now, signals).empty());
+  return (!m_transmissionDetector.getTransmissions(time, signals).empty());
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
@@ -100,6 +99,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   m_dataController.sendSignals(time, frequencyRange, signals);
   Logger::trace("recorder", "signal sent");
 
+  m_lastDataTime = std::max(m_lastDataTime, time);
   for (auto it = m_workers.begin(); it != m_workers.end();) {
     auto f = [it](const std::pair<FrequencyRange, bool>& data) { return it->first == data.first; };
     const auto transmisionInProgress = std::any_of(activeTransmissions.begin(), activeTransmissions.end(), f);
@@ -139,4 +139,4 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   Logger::debug("recorder", "samples processing finished");
 }
 
-bool Recorder::isFinished() const { return m_lastActiveDataTime + m_config.maxSilenceTime() < time(); }
+bool Recorder::isTransmissionInProgress() const { return m_lastDataTime <= m_lastActiveDataTime + m_config.maxSilenceTime(); }
