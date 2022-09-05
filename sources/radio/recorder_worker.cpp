@@ -22,7 +22,7 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
           while (m_isWorking) {
             std::unique_lock<std::mutex> lock(m_mutex);
             if (m_samples.empty()) {
-              continue;
+              break;
             }
             WorkerInputSamples inputSamples = std::move(m_samples.front());
             m_samples.pop_front();

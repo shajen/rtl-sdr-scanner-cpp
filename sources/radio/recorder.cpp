@@ -18,7 +18,7 @@ Recorder::Recorder(const Config& config, DataController& dataController)
           while (m_isWorking) {
             std::unique_lock<std::mutex> lock(m_dataMutex);
             if (m_samples.empty()) {
-              continue;
+              break;
             }
             RecorderInputSamples inputSamples = std::move(m_samples.front());
             m_samples.pop_front();
