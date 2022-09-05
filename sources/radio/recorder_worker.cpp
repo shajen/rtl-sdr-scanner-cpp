@@ -64,7 +64,7 @@ void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
     m_decimator = std::make_unique<Decimator>(m_config, decimateRate);
   }
 
-  shift(inputSamples.samples, m_shiftData);
+  shift(inputSamples.samples, m_shiftData, rawBufferSamples);
   Logger::trace("RecorderWrk", "thread id: {}, shift finished", getThreadId());
   m_decimator->decimate(inputSamples.samples.data(), downSamples, m_decimatorBuffer.data());
   Logger::trace("RecorderWrk", "thread id: {}, decimate finished", getThreadId());

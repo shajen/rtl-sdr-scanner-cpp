@@ -8,7 +8,15 @@
 #include <map>
 
 Recorder::Recorder(const Config& config, DataController& dataController)
-    : m_config(config), m_dataController(dataController), m_transmissionDetector(config), m_spectrogram(config), m_isWorking(true), m_isReady(false), m_thread([this]() {
+    : m_config(config),
+      m_dataController(dataController),
+      m_transmissionDetector(config),
+      m_spectrogram(config),
+      m_lastDataTime(0),
+      m_lastActiveDataTime(0),
+      m_isWorking(true),
+      m_isReady(false),
+      m_thread([this]() {
         Logger::info("Recorder", "start thread id: {}", getThreadId());
         while (m_isWorking) {
           {
@@ -41,6 +49,8 @@ void Recorder::clear() {
   std::unique_lock<std::mutex> lock2(m_processingMutex);
   m_workers.clear();
   m_samples.clear();
+  m_lastDataTime = time();
+  m_lastActiveDataTime = m_lastDataTime;
 }
 
 void Recorder::appendSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
@@ -55,7 +65,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 
   if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
-    Logger::debug("Recorder", "raw buffer resized, size: {}", rawBufferSamples);
+    Logger::debug("Recorder", "raw buffer resized, size: {}", m_rawBuffer.size());
   }
   if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
@@ -64,7 +74,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
   Logger::trace("Recorder", "uint8 to complex finished");
-  shift(m_rawBuffer, m_shiftData);
+  shift(m_rawBuffer, m_shiftData, rawBufferSamples);
   Logger::trace("Recorder", "shift finished");
   const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
   Logger::trace("Recorder", "psd finished");
@@ -72,7 +82,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
   Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
   m_dataController.sendSignals(time, frequencyRange, signals);
   Logger::trace("Recorder", "signal sent");
-  return (!m_transmissionDetector.getTransmissions(time, signals).empty());
+  return (!activeTransmissions.empty());
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
@@ -82,7 +92,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
 
   if (m_rawBuffer.size() < rawBufferSamples) {
     m_rawBuffer.resize(rawBufferSamples);
-    Logger::debug("Recorder", "raw buffer resized, size: {}", rawBufferSamples);
+    Logger::debug("Recorder", "raw buffer resized, size: {}", m_rawBuffer.size());
   }
   if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
@@ -90,7 +100,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   }
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
   Logger::trace("Recorder", "uint8 to complex finished");
-  shift(m_rawBuffer, m_shiftData);
+  shift(m_rawBuffer, m_shiftData, rawBufferSamples);
   Logger::trace("Recorder", "shift finished");
   const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
   Logger::trace("Recorder", "psd finished");
@@ -132,7 +142,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     }
     auto& rws = m_workers.at(transmissionSampleRate);
     std::unique_lock<std::mutex> lock(rws->mutex);
-    rws->samples.push_back({time, m_rawBuffer, frequencyRange, isActive});
+    rws->samples.push_back({time, {m_rawBuffer.begin(), m_rawBuffer.begin() + rawBufferSamples}, frequencyRange, isActive});
     rws->cv.notify_one();
     Logger::debug("Recorder", "push worker input samples, queue size: {}", rws->samples.size());
   }

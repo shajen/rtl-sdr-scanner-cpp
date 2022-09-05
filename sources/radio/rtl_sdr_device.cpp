@@ -45,6 +45,9 @@ RtlSdrDevice::~RtlSdrDevice() {
 void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& callback) {
   using StreamCallbackData = std::tuple<RtlSdrDevice*, Callback*>;
 
+  const auto sampleRate = frequencyRange.sampleRate();
+  const auto samples = getSamplesCount(sampleRate, m_config.rangeScanningTime());
+
   setupDevice(frequencyRange);
   auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
     Logger::debug("RtlSdr", "read bytes: {}", len);
@@ -58,7 +61,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
   };
   Logger::info("RtlSdr", "start stream");
   StreamCallbackData data(this, &callback);
-  rtlsdr_read_async(m_device, f, &data, 0, 0);
+  rtlsdr_read_async(m_device, f, &data, 0, samples);
   Logger::info("RtlSdr", "stop stream");
 }
 
@@ -75,10 +78,7 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
     throw std::runtime_error("read samples error, dropped samples");
   } else {
     Logger::debug("RtlSdr", "read bytes: {}", samples);
-    std::vector<uint8_t> data;
-    data.reserve(samples);
-    std::copy(m_rawBuffer.begin(), m_rawBuffer.begin() + samples,   std::back_inserter(data));
-    return data;
+    return {m_rawBuffer.begin(), m_rawBuffer.begin() + samples};
   }
 }
 

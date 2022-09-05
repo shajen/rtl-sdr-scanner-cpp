@@ -28,11 +28,11 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
   }
 }
 
-void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffer, const uint32_t samples) {
-  if (buffer.size() < samples) {
+void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffer, uint32_t samplesCount) {
+  if (buffer.size() < samplesCount) {
     throw std::runtime_error("buffer size to small");
   }
-  const auto count = std::min(samples, static_cast<uint32_t>(buffer.size()));
+  const auto count = std::min(samplesCount, static_cast<uint32_t>(buffer.size()));
   for (uint32_t i = 0; i < count; ++i) {
     buffer[i] = std::complex<float>((rawBuffer[2 * i] - 127.5) / 127.5, (rawBuffer[2 * i + 1] - 127.5) / 127.5);
   }
@@ -49,8 +49,8 @@ std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency
   return data;
 }
 
-void shift(std::vector<std::complex<float>> &samples, const std::vector<std::complex<float>> &factors) {
-  for (uint32_t i = 0; i < samples.size(); ++i) {
+void shift(std::vector<std::complex<float>> &samples, const std::vector<std::complex<float>> &factors, uint32_t samplesCount) {
+  for (uint32_t i = 0; i < samplesCount; ++i) {
     samples[i] *= factors[i];
   }
 }
