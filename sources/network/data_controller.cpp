@@ -93,18 +93,15 @@ void DataController::sendTransmission(const FrequencyRange& frequencyRange, cons
 
 void DataController::sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
   std::unique_lock lock(m_mutex);
-  const auto samplesSize = (frequencyRange.stop.value - frequencyRange.start.value) / frequencyRange.step.value + 1;
-  std::vector<uint8_t> data(sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(int8_t) * samplesSize);
+  std::vector<uint8_t> data(sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(int8_t) * signals.size());
   uint64_t offset = 0;
   add(data.data(), offset, static_cast<uint64_t>(time.count()));
   add(data.data(), offset, static_cast<uint32_t>(frequencyRange.start.value));
   add(data.data(), offset, static_cast<uint32_t>(frequencyRange.stop.value));
   add(data.data(), offset, static_cast<uint32_t>(frequencyRange.step.value));
-  add(data.data(), offset, static_cast<uint32_t>(samplesSize));
+  add(data.data(), offset, static_cast<uint32_t>(signals.size()));
   for (const auto& signal : signals) {
-    if (frequencyRange.start.value <= signal.frequency.value && signal.frequency.value <= frequencyRange.stop.value) {
-      add(data.data(), offset, static_cast<int8_t>(signal.power.value));
-    }
+    add(data.data(), offset, static_cast<int8_t>(signal.power.value));
   }
   m_mqtt.publish("sdr/spectrogram", std::move(data));
 }
