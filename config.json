@@ -3,12 +3,7 @@
     {
       "start": 144000000,
       "stop": 146000000,
-      "step": 125
-    },
-    {
-      "start": 430000000,
-      "stop": 440000000,
-      "step": 125
+      "step": 500
     }
   ],
   "ignored_frequencies_ranges": [],
@@ -20,19 +15,18 @@
   },
   "recording": {
     "range_scanning_time_ms": 100,
-    "max_silence_time_ms": 2000,
-    "min_recording_time_ms": 1000,
-    "min_sample_rate": 64000,
+    "max_silence_time_ms": 500,
+    "min_recording_time_ms": 2000,
+    "min_sample_rate": 32000,
     "max_concurrent_transmissions": 10
   },
   "detection": {
     "frequency_group_size": 10000,
-    "noise_learning_time_seconds": 10,
+    "noise_learning_time_seconds": 30,
     "noise_detection_margin": 20,
     "torn_signals_learning_time_seconds": 60
   },
   "output": {
-    "recordings": "sdr/recordings",
     "logs": "sdr/logs",
     "file_log_level": "info",
     "console_log_level": "info"
