@@ -27,6 +27,7 @@ SdrScanner::SdrScanner(const Config& config, SdrDevice& device, DataController& 
   }
 
   m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
+    Logger::info("Scanner", "start thread id: {}", getThreadId());
     try {
       if (splittedFrequencyRanges.size() == 1) {
         startStream(splittedFrequencyRanges.front(), true);
@@ -41,6 +42,7 @@ SdrScanner::SdrScanner(const Config& config, SdrDevice& device, DataController& 
       Logger::error("Scanner", "exception: {}", exception.what());
     }
     m_isRunning = false;
+    Logger::info("Scanner", "stop thread id: {}", getThreadId());
   });
 }
 

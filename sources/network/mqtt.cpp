@@ -1,6 +1,7 @@
 #include "mqtt.h"
 
 #include <logger.h>
+#include <utils.h>
 
 constexpr auto KEEP_ALIVE = 60;
 constexpr auto LOOP_TIMEOUT_MS = 1;
@@ -11,6 +12,7 @@ constexpr auto QUEUE_MAX_SIZE = 1000;
 
 Mqtt::Mqtt(const Config& config)
     : m_client(mosquitto_new(nullptr, true, this)), m_isRunning(true), m_thread([this, config]() {
+        Logger::info("Mqtt", "start thread id: {}", getThreadId());
         mosquitto_username_pw_set(m_client, config.mqttUsername().c_str(), config.mqttPassword().c_str());
         mosquitto_connect_callback_set(m_client, [](mosquitto *, void *p, int) { reinterpret_cast<Mqtt *>(p)->onConnect(); });
         mosquitto_disconnect_callback_set(m_client, [](mosquitto *, void *p, int) { reinterpret_cast<Mqtt *>(p)->onDisconnect(); });
@@ -25,6 +27,7 @@ Mqtt::Mqtt(const Config& config)
             m_messages.pop();
           }
         }
+        Logger::info("Mqtt", "stop thread id: {}", getThreadId());
       }) {}
 
 Mqtt::~Mqtt() {

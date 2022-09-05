@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
   }
   Logger::configure(*config);
 
+  Logger::info("main", "start thread id: {}", getThreadId());
   Logger::info("main", "start app auto-sdr");
 #ifndef NDEBUG
   Logger::info("main", "build type: debug");
@@ -76,5 +77,6 @@ int main(int argc, char* argv[]) {
     Logger::error("main", "main exception: {}", exception.what());
   }
   Logger::info("main", "stop app auto-sdr");
+  Logger::info("main", "stop thread id: {}", getThreadId());
   return 0;
 }

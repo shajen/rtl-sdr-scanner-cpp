@@ -8,6 +8,8 @@
 #include <optional>
 #include <vector>
 
+uint32_t getThreadId();
+
 uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time);
 
 void toComplex(const uint8_t* rawBuffer, std::vector<std::complex<float>>& buffer, const uint32_t samples);

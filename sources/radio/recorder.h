@@ -37,7 +37,6 @@ class Recorder {
   std::vector<std::complex<float>> m_shiftData;
   std::chrono::milliseconds m_lastDataTime;
   std::chrono::milliseconds m_lastActiveDataTime;
-  uint64_t m_workerLastId;
 
   std::atomic_bool m_isWorking;
   std::atomic_bool m_isReady;

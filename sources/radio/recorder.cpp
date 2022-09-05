@@ -8,8 +8,8 @@
 #include <map>
 
 Recorder::Recorder(const Config& config, DataController& dataController)
-    : m_config(config), m_dataController(dataController), m_transmissionDetector(config), m_spectrogram(config), m_workerLastId(0), m_isWorking(true), m_isReady(false), m_thread([this]() {
-        Logger::info("recorder", "start thread");
+    : m_config(config), m_dataController(dataController), m_transmissionDetector(config), m_spectrogram(config), m_isWorking(true), m_isReady(false), m_thread([this]() {
+        Logger::info("recorder", "start thread id: {}", getThreadId());
         while (m_isWorking) {
           {
             std::unique_lock<std::mutex> lock(m_dataMutex);
@@ -27,7 +27,7 @@ Recorder::Recorder(const Config& config, DataController& dataController)
             processSamples(inputSamples.time, inputSamples.frequencyRange, std::move(inputSamples.samples));
           }
         }
-        Logger::info("recorder", "stop thread");
+        Logger::info("recorder", "stop thread id: {}", getThreadId());
       }) {}
 
 Recorder::~Recorder() {
@@ -126,7 +126,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
         Logger::info("recorder", "create worker {}, total workers: {}, queue size: {}", transmissionSampleRate.center().toString(), m_workers.size() + 1, m_samples.size());
       }
       auto rws = std::make_unique<RecorderWorkerStruct>();
-      auto worker = std::make_unique<RecorderWorker>(m_config, m_dataController, m_workerLastId++, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
+      auto worker = std::make_unique<RecorderWorker>(m_config, m_dataController, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
       rws->worker = std::move(worker);
       m_workers.insert({transmissionSampleRate, std::move(rws)});
     }

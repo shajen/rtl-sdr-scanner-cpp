@@ -7,6 +7,11 @@
 #include <numeric>
 #include <stdexcept>
 #include <thread>
+#include <unistd.h>
+
+uint32_t getThreadId() {
+  return gettid();
+}
 
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
