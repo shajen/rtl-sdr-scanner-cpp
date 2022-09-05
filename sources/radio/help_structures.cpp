@@ -50,7 +50,7 @@ std::string FrequencyRange::toString() const {
   if (step.value != 0) {
     offset += sprintf(buf + offset, ", %s", step.toString("step").c_str());
   }
-  if (maxBandwidth.value != 0) {
+  if (b.value != 0) {
     offset += sprintf(buf + offset, ", %s", b.toString("bandwidth").c_str());
   }
   return std::string(buf);
