@@ -18,9 +18,9 @@ class TransmissionDetector {
   std::vector<std::pair<FrequencyRange, bool>> getTransmissions(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
 
  private:
-  void updateTransmissionLastSignalTime(const std::chrono::milliseconds& time, const std::vector<Signal>& signals, const uint32_t step);
+  void updateTransmissionLastSignalTime(const std::chrono::milliseconds& time, const std::vector<Signal>& signals);
   std::vector<std::pair<FrequencyRange, bool>> getTransmissionWithActiveFlag(const std::chrono::milliseconds& time, const FrequencyRange& start, const FrequencyRange& stop);
-  FrequencyRange getTransmission(const Frequency& frequency, const uint32_t step) const;
+  FrequencyRange getTransmission(const Frequency& frequency) const;
 
   struct TransmissionStruct {
     std::chrono::milliseconds firstSignal;

@@ -77,12 +77,11 @@ void DataController::flushTransmission(const FrequencyRange& frequencyRange) {
 }
 
 void DataController::sendTransmission(const FrequencyRange& frequencyRange, const Transmission& transmission) {
-  std::vector<uint8_t> data(sizeof(uint64_t) + 4 * sizeof(uint32_t) + sizeof(uint8_t) * 2 * transmission.samples.size());
+  std::vector<uint8_t> data(sizeof(uint64_t) + 3 * sizeof(uint32_t) + sizeof(uint8_t) * 2 * transmission.samples.size());
   uint64_t offset = 0;
   add(data.data(), offset, static_cast<uint64_t>(transmission.time.count()));
   add(data.data(), offset, static_cast<uint32_t>(frequencyRange.start.value));
   add(data.data(), offset, static_cast<uint32_t>(frequencyRange.stop.value));
-  add(data.data(), offset, static_cast<uint32_t>(frequencyRange.step.value));
   add(data.data(), offset, static_cast<uint32_t>(2 * transmission.samples.size()));
   for (const auto& value : transmission.samples) {
     add(data.data(), offset, static_cast<uint8_t>(value.real() * 127.5 + 127.5));
