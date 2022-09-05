@@ -87,7 +87,6 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
   Logger::debug("Recorder", "samples processing started, workers: {}", m_workers.size());
-  std::unique_lock lock(m_processingMutex);
   const auto rawBufferSamples = samples.size() / 2;
 
   if (m_rawBuffer.size() < rawBufferSamples) {
@@ -109,6 +108,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   m_dataController.sendSignals(time, frequencyRange, signals);
   Logger::trace("Recorder", "signal sent");
 
+  std::unique_lock lock(m_processingMutex);
   m_lastDataTime = std::max(m_lastDataTime, time);
   for (auto it = m_workers.begin(); it != m_workers.end();) {
     auto f = [it](const std::pair<FrequencyRange, bool>& data) { return it->first == data.first; };
@@ -149,4 +149,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   Logger::debug("Recorder", "samples processing finished");
 }
 
-bool Recorder::isTransmissionInProgress() const { return m_lastDataTime <= m_lastActiveDataTime + m_config.maxSilenceTime(); }
+bool Recorder::isTransmissionInProgress() const {
+  std::unique_lock lock(m_processingMutex);
+  return m_lastDataTime <= m_lastActiveDataTime + m_config.maxSilenceTime();
+}

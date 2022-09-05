@@ -55,7 +55,7 @@ class Recorder {
     std::unique_ptr<RecorderWorker> worker;
   };
 
-  std::mutex m_processingMutex;
+  mutable std::mutex m_processingMutex;
   std::mutex m_dataMutex;
   std::condition_variable m_cv;
   std::deque<RecorderInputSamples> m_samples;
