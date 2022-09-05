@@ -32,7 +32,7 @@ class Recorder {
   const Config& m_config;
   DataController& m_dataController;
   TransmissionDetector m_transmissionDetector;
-  std::map<uint32_t, std::unique_ptr<Spectrogram>> m_spectrograms;
+  Spectrogram m_spectrogram;
   std::vector<std::complex<float>> m_rawBuffer;
   std::vector<std::complex<float>> m_shiftData;
   std::chrono::milliseconds m_lastActiveDataTime;

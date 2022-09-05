@@ -9,13 +9,12 @@
 
 class Spectrogram {
  public:
-  Spectrogram(const Config& config, uint32_t size);
+  Spectrogram(const Config& config);
   virtual ~Spectrogram();
-  std::vector<Signal> psd(Frequency centerFrequency, Frequency bandwidth, std::vector<std::complex<float>>& buffer, uint32_t size);
+  std::vector<Signal> psd(FrequencyRange frequencyRange, std::vector<std::complex<float>>& data, const uint32_t dataSize);
 
  private:
   const Config& m_config;
-  const uint32_t m_size;
   std::vector<float> m_buffer;
-  spgramcf m_spectrogram;
+  std::map<FrequencyRange, spgramcf> m_spectrograms;
 };
