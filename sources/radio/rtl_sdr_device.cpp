@@ -45,9 +45,6 @@ RtlSdrDevice::~RtlSdrDevice() {
 void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& callback) {
   using StreamCallbackData = std::tuple<RtlSdrDevice*, Callback*>;
 
-  const auto sampleRate = frequencyRange.sampleRate();
-  const auto samples = getSamplesCount(sampleRate, m_config.frequencyRangeScanningTime());
-
   setupDevice(frequencyRange);
   auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
     Logger::debug("RtlSdr", "read bytes: {}", len);
@@ -61,7 +58,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
   };
   Logger::info("RtlSdr", "start stream");
   StreamCallbackData data(this, &callback);
-  rtlsdr_read_async(m_device, f, &data, 0, samples);
+  rtlsdr_read_async(m_device, f, &data, 0, 0);
   Logger::info("RtlSdr", "stop stream");
 }
 
