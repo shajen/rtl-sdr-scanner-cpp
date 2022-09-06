@@ -82,51 +82,49 @@ std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, c
 
 Config::Config(const std::string &path, const std::string &config)
     : m_json(readJsonFromFileAndMerge(path, config)),
-      m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125}, {430000000, 440000000, 125}})),
-      m_ignoredFrequencies(parseFrequenciesRanges(m_json, "ignored_frequencies_ranges", {})),
-      m_rangeScanningTime(std::chrono::milliseconds(readKey(m_json, {"recording", "range_scanning_time_ms"}, 100))),
-      m_maxSilenceTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_silence_time_ms"}, 2000))),
-      m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_recording_time_ms"}, 1000))),
+      m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125}})),
+      m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
+      m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
-      m_maxConcurrentTransmissions(readKey(m_json, {"recording", "max_concurrent_transmissions"}, 10)),
-      m_recordingFrequencyGroupSize(readKey(m_json, {"detection", "frequency_group_size"}, 10000)),
+      m_maxConcurrentTransmissions(readKey(m_json, {"recording", "max_concurrent_recordings"}, 10)),
+      m_frequencyGroupingSize(readKey(m_json, {"detection", "frequency_grouping_size"}, 10000)),
+      m_frequencyRangeScanningTime(std::chrono::milliseconds(readKey(m_json, {"detection", "frequency_range_scanning_time_ms"}, 100))),
       m_noiseLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "noise_learning_time_seconds"}, 10))),
       m_noiseDetectionMargin(readKey(m_json, {"detection", "noise_detection_margin"}, 10)),
-      m_tornSignalsLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "torn_signals_learning_time_seconds"}, 60))),
+      m_tornTransmissionLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "torn_transmission_learning_time_seconds"}, 60))),
       m_logsDirectory(readKey(m_json, {"output", "logs"}, std::string("sdr/logs"))),
       m_consoleLogLevel(parseLogLevel(readKey(m_json, {"output", "console_log_level"}, std::string("info")))),
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
-      m_ppm(readKey(m_json, {"device", "ppm_error"}, 0)),
-      m_gain(readKey(m_json, {"device", "tuner_gain"}, 0.0)),
-      m_maxBandwidth(readKey(m_json, {"device", "max_bandwidth"}, 2500000)),
-      m_radioOffset(readKey(m_json, {"device", "offset"}, 0)),
+      m_rtlSdrPpm(readKey(m_json, {"devices", "rtl_sdr", "ppm_error"}, 0)),
+      m_rtlSdrGain(readKey(m_json, {"devices", "rtl_sdr", "tuner_gain"}, 0.0)),
+      m_rtlSdrMaxBandwidth(readKey(m_json, {"devices", "rtl_sdr", "max_bandwidth"}, 2560000)),
+      m_rtlSdrRadioOffset(readKey(m_json, {"devices", "rtl_sdr", "offset"}, 0)),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
       m_mqttPassword(readKey(m_json, {"mqtt", "password"}, std::string(""))) {}
 
 std::vector<FrequencyRange> Config::scannerFrequencies() const { return m_scannerFrequencies; }
-std::vector<FrequencyRange> Config::ignoredFrequencies() const { return m_ignoredFrequencies; }
 
-std::chrono::milliseconds Config::rangeScanningTime() const { return m_rangeScanningTime; }
-std::chrono::milliseconds Config::maxSilenceTime() const { return m_maxSilenceTime; }
+std::chrono::milliseconds Config::maxRecordingNoiseTime() const { return m_maxRecordingNoiseTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }
 uint32_t Config::minRecordingSampleRate() const { return m_minRecordingSampleRate; }
 uint8_t Config::maxConcurrentTransmissions() const { return m_maxConcurrentTransmissions; }
 
-uint32_t Config::recordingFrequencyGroupSize() const { return m_recordingFrequencyGroupSize; }
+std::chrono::milliseconds Config::frequencyRangeScanningTime() const { return m_frequencyRangeScanningTime; }
+uint32_t Config::frequencyGroupingSize() const { return m_frequencyGroupingSize; }
 std::chrono::seconds Config::noiseLearningTime() const { return m_noiseLearningTime; }
 uint32_t Config::noiseDetectionMargin() const { return m_noiseDetectionMargin; }
-std::chrono::seconds Config::tornSignalsLearningTime() const { return m_tornSignalsLearningTime; }
+std::chrono::seconds Config::tornTransmissionLearningTime() const { return m_tornTransmissionLearningTime; }
 
 spdlog::level::level_enum Config::logLevelFile() const { return m_fileLogLevel; }
 spdlog::level::level_enum Config::logLevelConsole() const { return m_consoleLogLevel; }
 std::string Config::logDir() const { return m_logsDirectory; }
 
-uint32_t Config::rtlSdrPpm() const { return m_ppm; }
-float Config::rtlSdrGain() const { return m_gain; }
-uint32_t Config::rtlSdrMaxBandwidth() const { return m_maxBandwidth; }
-int32_t Config::radioOffset() const { return m_radioOffset; }
+uint32_t Config::rtlSdrPpm() const { return m_rtlSdrPpm; }
+float Config::rtlSdrGain() const { return m_rtlSdrGain; }
+uint32_t Config::rtlSdrMaxBandwidth() const { return m_rtlSdrMaxBandwidth; }
+int32_t Config::rtlSdrOffset() const { return m_rtlSdrRadioOffset; }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }
 int Config::mqttPort() const { return m_mqttPort; }

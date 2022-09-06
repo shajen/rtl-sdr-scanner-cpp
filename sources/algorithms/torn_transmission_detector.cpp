@@ -8,7 +8,7 @@
 TornTransmissionDetector::TornTransmissionDetector(const Config& config) : m_config(config), initialized(false), m_lastUpdate(time()) {}
 
 void TornTransmissionDetector::update(const std::chrono::milliseconds& time) {
-  if (m_lastUpdate + m_config.tornSignalsLearningTime() <= time) {
+  if (m_lastUpdate + m_config.tornTransmissionLearningTime() <= time) {
     m_transmissionsAverageDuration.clear();
     for (const auto& [frequencyGroup, data] : m_transmissionsData) {
       const auto averageDuration = std::chrono::milliseconds(data.sum.count() / data.count);

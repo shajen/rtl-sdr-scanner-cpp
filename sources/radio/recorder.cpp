@@ -68,7 +68,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
     Logger::debug("Recorder", "raw buffer resized, size: {}", m_rawBuffer.size());
   }
   if (m_shiftData.size() < rawBufferSamples) {
-    m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
+    m_shiftData = getShiftData(m_config.rtlSdrOffset(), frequencyRange.sampleRate(), rawBufferSamples);
     Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
   }
 
@@ -94,7 +94,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     Logger::debug("Recorder", "raw buffer resized, size: {}", m_rawBuffer.size());
   }
   if (m_shiftData.size() < rawBufferSamples) {
-    m_shiftData = getShiftData(m_config.radioOffset(), frequencyRange.sampleRate(), rawBufferSamples);
+    m_shiftData = getShiftData(m_config.rtlSdrOffset(), frequencyRange.sampleRate(), rawBufferSamples);
     Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
   }
   toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
@@ -151,5 +151,5 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
 
 bool Recorder::isTransmissionInProgress() const {
   std::unique_lock lock(m_processingMutex);
-  return m_lastDataTime <= m_lastActiveDataTime + m_config.maxSilenceTime();
+  return m_lastDataTime <= m_lastActiveDataTime + m_config.maxRecordingNoiseTime();
 }

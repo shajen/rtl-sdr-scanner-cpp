@@ -36,7 +36,7 @@ void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<
     }
   } else {
     const auto noiseLearningTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_config.noiseLearningTime());
-    const auto learningSamplesCount = noiseLearningTime.count() / m_config.rangeScanningTime().count();
+    const auto learningSamplesCount = noiseLearningTime.count() / m_config.frequencyRangeScanningTime().count();
     const auto signalsBegin = signals.begin();
     const auto signalsEnd = signals.end();
     const auto noiseBegin = m_frequencyNoise.lower_bound(signals.front().frequency);

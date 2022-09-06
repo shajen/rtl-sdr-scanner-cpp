@@ -31,7 +31,7 @@ RtlSdrDevice::RtlSdrDevice(const Config& config, int deviceIndex) : m_config(con
   }
 
   const Frequency maxBandwidth{m_config.rtlSdrMaxBandwidth()};
-  const auto maxSamples = getSamplesCount(maxBandwidth, m_config.rangeScanningTime());
+  const auto maxSamples = getSamplesCount(maxBandwidth, m_config.frequencyRangeScanningTime());
   m_rawBuffer.resize(maxSamples);
 }
 
@@ -46,7 +46,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
   using StreamCallbackData = std::tuple<RtlSdrDevice*, Callback*>;
 
   const auto sampleRate = frequencyRange.sampleRate();
-  const auto samples = getSamplesCount(sampleRate, m_config.rangeScanningTime());
+  const auto samples = getSamplesCount(sampleRate, m_config.frequencyRangeScanningTime());
 
   setupDevice(frequencyRange);
   auto f = [](uint8_t* buf, uint32_t len, void* ctx) {
@@ -67,7 +67,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
 
 std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange) {
   const auto sampleRate = frequencyRange.sampleRate();
-  const auto samples = getSamplesCount(sampleRate, m_config.rangeScanningTime());
+  const auto samples = getSamplesCount(sampleRate, m_config.frequencyRangeScanningTime());
 
   setupDevice(frequencyRange);
   int read{0};

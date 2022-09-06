@@ -40,7 +40,7 @@ std::vector<std::pair<FrequencyRange, bool>> TransmissionDetector::getTransmissi
   const auto end = m_transmissions.upper_bound(stop);
   for (auto it = begin; it != end;) {
     const bool isActive = it->second.lastSignal == time;
-    const bool isTimeout = it->second.lastSignal + m_config.maxSilenceTime() <= time;
+    const bool isTimeout = it->second.lastSignal + m_config.maxRecordingNoiseTime() <= time;
     const auto isTransmissionOk = m_tornTransmissionDetector.isTransmissionOk(it->first);
     if (!isTimeout) {
       if (isTransmissionOk) {
@@ -58,7 +58,7 @@ std::vector<std::pair<FrequencyRange, bool>> TransmissionDetector::getTransmissi
 }
 
 FrequencyRange TransmissionDetector::getTransmission(const Frequency& frequency) const {
-  const auto groupSize = m_config.recordingFrequencyGroupSize();
+  const auto groupSize = m_config.frequencyGroupingSize();
   const auto offset = frequency.value % groupSize <= groupSize / 2 ? 0 : groupSize;
   const auto center = frequency.value - (frequency.value % groupSize) + offset;
   return {center - m_config.minRecordingSampleRate() / 2, center + m_config.minRecordingSampleRate() / 2};

@@ -6,25 +6,26 @@
       "step": 500
     }
   ],
-  "ignored_frequencies_ranges": [],
-  "device": {
-    "ppm_error": 0,
-    "tuner_gain": 0.0,
-    "max_bandwidth": 2500000,
-    "offset": 0
+  "devices": {
+    "rtl_sdr": {
+      "ppm_error": 0,
+      "tuner_gain": 0.0,
+      "max_bandwidth": 2560000,
+      "offset": 0
+    }
   },
   "recording": {
-    "range_scanning_time_ms": 100,
-    "max_silence_time_ms": 500,
-    "min_recording_time_ms": 2000,
-    "min_sample_rate": 32000,
-    "max_concurrent_transmissions": 10
+    "max_noise_time_ms": 500,
+    "min_time_ms": 2000,
+    "min_sample_rate": 16000,
+    "max_concurrent_recordings": 10
   },
   "detection": {
-    "frequency_group_size": 10000,
+    "frequency_grouping_size": 10000,
+    "frequency_range_scanning_time_ms": 64,
     "noise_learning_time_seconds": 30,
     "noise_detection_margin": 20,
-    "torn_signals_learning_time_seconds": 60
+    "torn_transmission_learning_time_seconds": 60
   },
   "output": {
     "logs": "sdr/logs",

@@ -13,15 +13,16 @@ class Config {
   std::vector<FrequencyRange> scannerFrequencies() const;
   std::vector<FrequencyRange> ignoredFrequencies() const;
 
-  std::chrono::milliseconds rangeScanningTime() const;
-  std::chrono::milliseconds maxSilenceTime() const;
+  std::chrono::milliseconds maxRecordingNoiseTime() const;
   std::chrono::milliseconds minRecordingTime() const;
+  uint32_t minRecordingSampleRate() const;
+  uint8_t maxConcurrentTransmissions() const;
+
+  uint32_t frequencyGroupingSize() const;
+  std::chrono::milliseconds frequencyRangeScanningTime() const;
   std::chrono::seconds noiseLearningTime() const;
   uint32_t noiseDetectionMargin() const;
-  std::chrono::seconds tornSignalsLearningTime() const;
-  uint32_t minRecordingSampleRate() const;
-  uint32_t recordingFrequencyGroupSize() const;
-  uint8_t maxConcurrentTransmissions() const;
+  std::chrono::seconds tornTransmissionLearningTime() const;
 
   spdlog::level::level_enum logLevelConsole() const;
   spdlog::level::level_enum logLevelFile() const;
@@ -30,7 +31,7 @@ class Config {
   uint32_t rtlSdrPpm() const;
   float rtlSdrGain() const;
   uint32_t rtlSdrMaxBandwidth() const;
-  int32_t radioOffset() const;
+  int32_t rtlSdrOffset() const;
 
   std::string mqttHostname() const;
   int mqttPort() const;
@@ -45,27 +46,26 @@ class Config {
   const nlohmann::json m_json;
 
   const std::vector<FrequencyRange> m_scannerFrequencies;
-  const std::vector<FrequencyRange> m_ignoredFrequencies;
 
-  const std::chrono::milliseconds m_rangeScanningTime;
-  const std::chrono::milliseconds m_maxSilenceTime;
+  const std::chrono::milliseconds m_maxRecordingNoiseTime;
   const std::chrono::milliseconds m_minRecordingTime;
   const uint32_t m_minRecordingSampleRate;
   const uint8_t m_maxConcurrentTransmissions;
 
-  const uint32_t m_recordingFrequencyGroupSize;
+  const uint32_t m_frequencyGroupingSize;
+  const std::chrono::milliseconds m_frequencyRangeScanningTime;
   const std::chrono::seconds m_noiseLearningTime;
   const uint32_t m_noiseDetectionMargin;
-  const std::chrono::seconds m_tornSignalsLearningTime;
+  const std::chrono::seconds m_tornTransmissionLearningTime;
 
   const std::string m_logsDirectory;
   const spdlog::level::level_enum m_consoleLogLevel;
   const spdlog::level::level_enum m_fileLogLevel;
 
-  const uint32_t m_ppm;
-  const float m_gain;
-  const uint32_t m_maxBandwidth;
-  const int32_t m_radioOffset;
+  const uint32_t m_rtlSdrPpm;
+  const float m_rtlSdrGain;
+  const uint32_t m_rtlSdrMaxBandwidth;
+  const int32_t m_rtlSdrRadioOffset;
 
   const std::string m_mqttHostname;
   const int m_mqttPort;

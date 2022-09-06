@@ -4,12 +4,6 @@
 #include <utils.h>
 
 SdrScanner::SdrScanner(const Config& config, SdrDevice& device, DataController& dataController) : m_config(config), m_device(device), m_recorder(config, dataController), m_isRunning(true) {
-  const auto ignoredFrequencies = config.ignoredFrequencies();
-  Logger::info("Scanner", "ignored frequency ranges: {}", ignoredFrequencies.size());
-  for (const auto& frequencyRange : ignoredFrequencies) {
-    Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());
-  }
-
   const auto scannerFrequencies = config.scannerFrequencies();
   Logger::info("Scanner", "original frequency ranges: {}", scannerFrequencies.size());
   for (const auto& frequencyRange : scannerFrequencies) {
