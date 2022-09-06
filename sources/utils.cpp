@@ -20,11 +20,11 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
     }
     return 2 * time.count() * sampleRate.value / 1000;
   } else {
-    const auto factor = (1000 / time.count());
-    if (sampleRate.value % factor != 0) {
+    const auto samplesCount = std::lround(sampleRate.value / (1000.0 / time.count()) * 2);
+    if (samplesCount % 512 != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
-    return sampleRate.value / factor * 2;
+    return samplesCount;
   }
 }
 
