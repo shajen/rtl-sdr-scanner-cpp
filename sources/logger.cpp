@@ -31,6 +31,7 @@ void Logger::Logger::configure(const Config &config) {
   }
 
   _logger->set_level(spdlog::level::trace);
+  _logger->flush_on(spdlog::level::warn);
 }
 
 void Logger::fit(char *buf, const char *label, const char *fmt, uint8_t n) {
