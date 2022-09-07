@@ -20,7 +20,7 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
     }
     return 2 * time.count() * sampleRate.value / 1000;
   } else {
-    const auto samplesCount = std::lround(sampleRate.value / (1000.0 / time.count()) * 2);
+    const auto samplesCount = std::lround(sampleRate.value / (1000.0f / time.count()) * 2);
     if (samplesCount % 512 != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
@@ -30,14 +30,14 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
 
 void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffer, uint32_t samplesCount) {
   for (uint32_t i = 0; i < samplesCount; ++i) {
-    buffer[i] = std::complex<float>((rawBuffer[2 * i] - 127.5) / 127.5, (rawBuffer[2 * i + 1] - 127.5) / 127.5);
+    buffer[i] = std::complex<float>((rawBuffer[2 * i] - 127.5f) / 127.5f, (rawBuffer[2 * i + 1] - 127.5f) / 127.5f);
   }
 }
 
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
 
 std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
-  const auto f = std::complex<float>(0.0, -1.0) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
+  const auto f = std::complex<float>(0.0f, -1.0f) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
   std::vector<std::complex<float>> data(samplesCount);
   for (uint32_t i = 0; i < samplesCount; ++i) {
     data[i] = std::exp(f * static_cast<float>(i));
