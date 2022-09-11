@@ -14,6 +14,8 @@ class RtlSdrDevice : public SdrDevice {
   static std::vector<uint32_t> listDevices();
 
  private:
+  void open();
+  void close();
   bool isSamplesOk(uint8_t* buf, uint32_t len);
   void setupDevice(const FrequencyRange& frequencyRange);
 

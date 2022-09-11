@@ -4,43 +4,12 @@
 #include <rtl-sdr.h>
 #include <utils.h>
 
-RtlSdrDevice::RtlSdrDevice(const Config& config, int deviceIndex) : m_config(config), m_deviceIndex(deviceIndex) {
-  char serial[256];
-  rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
-  Logger::info("RtlSdr", "open device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
+#include <thread>
+#include <chrono>
 
-  if (rtlsdr_open(&m_device, deviceIndex) != 0) {
-    throw std::runtime_error("can not open rtl sdr device");
-  }
+RtlSdrDevice::RtlSdrDevice(const Config& config, int deviceIndex) : m_config(config), m_deviceIndex(deviceIndex) { open(); }
 
-  if (0.01 <= config.rtlSdrGain()) {
-    if (rtlsdr_set_tuner_gain_mode(m_device, 1) != 0) {
-      throw std::runtime_error("can not set tuner gain manual");
-    }
-    if (rtlsdr_set_tuner_gain(m_device, std::lround(config.rtlSdrGain() * 10)) != 0) {
-      throw std::runtime_error("can not set tuner gain");
-    }
-  } else {
-    if (rtlsdr_set_tuner_gain_mode(m_device, 0) != 0) {
-      throw std::runtime_error("can not set tuner gain auto");
-    }
-  }
-
-  if (config.rtlSdrPpm() != 0 && rtlsdr_set_freq_correction(m_device, config.rtlSdrPpm()) != 0) {
-    throw std::runtime_error("can not set tuner ppm");
-  }
-
-  const Frequency maxBandwidth{m_config.rtlSdrMaxBandwidth()};
-  const auto maxSamples = getSamplesCount(maxBandwidth, m_config.frequencyRangeScanningTime());
-  m_rawBuffer.resize(maxSamples);
-}
-
-RtlSdrDevice::~RtlSdrDevice() {
-  char serial[256];
-  rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
-  Logger::info("RtlSdr", "close device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
-  rtlsdr_close(m_device);
-}
+RtlSdrDevice::~RtlSdrDevice() { close(); }
 
 void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& callback) {
   using StreamCallbackData = std::tuple<RtlSdrDevice*, Callback*>;
@@ -79,6 +48,9 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
       return {m_rawBuffer.begin(), m_rawBuffer.begin() + samples};
     } else {
       Logger::warn("RtlSdr", "samples not ok, {}", frequencyRange.toString());
+      close();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      open();
       return {};
     }
   }
@@ -90,6 +62,44 @@ std::vector<uint32_t> RtlSdrDevice::listDevices() {
     indexes.push_back(i);
   }
   return indexes;
+}
+
+void RtlSdrDevice::open() {
+  char serial[256];
+  rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
+  Logger::info("RtlSdr", "open device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
+
+  if (rtlsdr_open(&m_device, m_deviceIndex) != 0) {
+    throw std::runtime_error("can not open rtl sdr device");
+  }
+
+  if (0.01 <= m_config.rtlSdrGain()) {
+    if (rtlsdr_set_tuner_gain_mode(m_device, 1) != 0) {
+      throw std::runtime_error("can not set tuner gain manual");
+    }
+    if (rtlsdr_set_tuner_gain(m_device, std::lround(m_config.rtlSdrGain() * 10)) != 0) {
+      throw std::runtime_error("can not set tuner gain");
+    }
+  } else {
+    if (rtlsdr_set_tuner_gain_mode(m_device, 0) != 0) {
+      throw std::runtime_error("can not set tuner gain auto");
+    }
+  }
+
+  if (m_config.rtlSdrPpm() != 0 && rtlsdr_set_freq_correction(m_device, m_config.rtlSdrPpm()) != 0) {
+    throw std::runtime_error("can not set tuner ppm");
+  }
+
+  const Frequency maxBandwidth{m_config.rtlSdrMaxBandwidth()};
+  const auto maxSamples = getSamplesCount(maxBandwidth, m_config.frequencyRangeScanningTime());
+  m_rawBuffer.resize(maxSamples);
+}
+
+void RtlSdrDevice::close() {
+  char serial[256];
+  rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
+  Logger::info("RtlSdr", "close device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
+  rtlsdr_close(m_device);
 }
 
 bool RtlSdrDevice::isSamplesOk(uint8_t* buf, uint32_t len) {
