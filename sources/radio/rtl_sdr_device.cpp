@@ -7,7 +7,9 @@
 #include <thread>
 #include <chrono>
 
-RtlSdrDevice::RtlSdrDevice(const Config& config, int deviceIndex) : m_config(config), m_deviceIndex(deviceIndex) { open(); }
+int getDeviceIndex(const std::string& serial) { return rtlsdr_get_index_by_serial(serial.c_str()); }
+
+RtlSdrDevice::RtlSdrDevice(const Config& config, const std::string& serial) : m_config(config), m_serial(serial), m_deviceIndex(getDeviceIndex(serial)) { open(); }
 
 RtlSdrDevice::~RtlSdrDevice() { close(); }
 
@@ -56,18 +58,27 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
   }
 }
 
-std::vector<uint32_t> RtlSdrDevice::listDevices() {
-  std::vector<uint32_t> indexes;
+std::string RtlSdrDevice::name() { return {"rtlsdr_" + m_serial}; }
+
+std::vector<std::string> RtlSdrDevice::listDevices() {
+  std::vector<std::string> serials;
   for (uint32_t i = 0; i < rtlsdr_get_device_count(); ++i) {
-    indexes.push_back(i);
+    char serial[256];
+    if (rtlsdr_get_device_usb_strings(i, nullptr, nullptr, serial) != 0) {
+      throw std::runtime_error("can not read rtl sdr serial");
+    }
+    serials.push_back({serial});
   }
-  return indexes;
+  return serials;
 }
 
 void RtlSdrDevice::open() {
+  char manufacturer[256];
+  char product[256];
   char serial[256];
-  rtlsdr_get_device_usb_strings(m_deviceIndex, nullptr, nullptr, serial);
-  Logger::info("RtlSdr", "open device, index: {}, name: {}, serial: {}", m_deviceIndex, rtlsdr_get_device_name(m_deviceIndex), serial);
+  rtlsdr_get_device_usb_strings(m_deviceIndex, manufacturer, product, serial);
+  const auto name = rtlsdr_get_device_name(m_deviceIndex);
+  Logger::info("RtlSdr", "open device, index: {}, name: {}, manufacturer: {}, product: {}, serial: {}", m_deviceIndex, name, manufacturer, product, serial);
 
   if (rtlsdr_open(&m_device, m_deviceIndex) != 0) {
     throw std::runtime_error("can not open rtl sdr device");

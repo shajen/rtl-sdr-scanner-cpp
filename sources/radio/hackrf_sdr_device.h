@@ -4,6 +4,12 @@
 #include <libhackrf/hackrf.h>
 #include <radio/sdr_device.h>
 
+class HackRfInitializer {
+ public:
+  HackRfInitializer();
+  ~HackRfInitializer();
+};
+
 class HackrfSdrDevice : public SdrDevice {
  public:
   HackrfSdrDevice(const Config& config, const std::string& serial);
@@ -11,9 +17,11 @@ class HackrfSdrDevice : public SdrDevice {
 
   static std::vector<std::string> listDevices();
   void startStream(const FrequencyRange& frequencyRange, Callback&& callback) override;
+  std::string name() override;
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
 
  private:
   const Config& m_config;
   const std::string m_serial;
+  const HackRfInitializer m_hackRfInitializer;
 };

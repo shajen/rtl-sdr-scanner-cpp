@@ -13,4 +13,5 @@ class SdrDevice {
 
   virtual void startStream(const FrequencyRange& frequencyRange, Callback&& callback) = 0;
   virtual std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) = 0;
+  virtual std::string name() = 0;
 };

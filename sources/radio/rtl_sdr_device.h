@@ -6,12 +6,13 @@ typedef struct rtlsdr_dev rtlsdr_dev_t;
 
 class RtlSdrDevice : public SdrDevice {
  public:
-  RtlSdrDevice(const Config& config, int deviceIndex);
+  RtlSdrDevice(const Config& config, const std::string& serial);
   ~RtlSdrDevice() override;
 
   void startStream(const FrequencyRange& frequencyRange, Callback&& callback) override;
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
-  static std::vector<uint32_t> listDevices();
+  std::string name() override;
+  static std::vector<std::string> listDevices();
 
  private:
   void open();
@@ -20,6 +21,7 @@ class RtlSdrDevice : public SdrDevice {
   void setupDevice(const FrequencyRange& frequencyRange);
 
   const Config& m_config;
+  const std::string m_serial;
   const int m_deviceIndex;
   rtlsdr_dev_t* m_device;
   Frequency m_lastBandwidth;

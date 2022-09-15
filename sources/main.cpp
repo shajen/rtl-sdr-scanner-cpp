@@ -11,8 +11,22 @@
 volatile bool isRunning{true};
 
 void handler(int) {
-  Logger::info("main", "received stop signal");
+  Logger::warn("main", "received stop signal");
   isRunning = false;
+}
+
+std::unique_ptr<SdrDevice> createDevice(const Config& config) {
+  for (const auto& id : RtlSdrDevice::listDevices()) {
+    if (config.deviceSerial() == "auto" || config.deviceSerial() == id) {
+      return std::make_unique<RtlSdrDevice>(config, id);
+    }
+  }
+  for (const auto& id : HackrfSdrDevice::listDevices()) {
+    if (config.deviceSerial() == "auto" || config.deviceSerial() == id) {
+      return std::make_unique<HackrfSdrDevice>(config, id);
+    }
+  }
+  return nullptr;
 }
 
 int main(int argc, char* argv[]) {
@@ -46,29 +60,21 @@ int main(int argc, char* argv[]) {
           reloadConfig = true;
         }
       };
-      std::vector<std::unique_ptr<SdrDevice>> devices;
-      for (const auto& id : RtlSdrDevice::listDevices()) {
-        devices.push_back(std::make_unique<RtlSdrDevice>(*config, id));
-      }
-      for (const auto& id : HackrfSdrDevice::listDevices()) {
-        devices.push_back(std::make_unique<HackrfSdrDevice>(*config, id));
-      }
-      if (devices.size() == 0) {
+
+      auto device = createDevice(*config);
+      if (!device) {
         Logger::warn("main", "not found sdr devices");
+        break;
       } else {
         Mqtt mqtt(*config);
         mqtt.setMessageCallback(f);
-        DataController dataController(*config, mqtt);
-        std::vector<std::unique_ptr<SdrScanner>> scanners;
-        for (auto& device : devices) {
-          scanners.push_back(std::make_unique<SdrScanner>(*config, *device, dataController));
-        }
+        DataController dataController(*config, mqtt, device->name());
+        SdrScanner scanner(*config, *device, dataController);
         signal(SIGINT, handler);
-        while (isRunning && !scanners.empty() && !reloadConfig) {
+        while (isRunning && scanner.isRunning() && !reloadConfig) {
           std::this_thread::sleep_for(std::chrono::milliseconds(10));
-          scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const std::unique_ptr<SdrScanner>& scanner) { return !scanner->isRunning(); }), scanners.end());
         }
-        if (scanners.empty()) {
+        if (!reloadConfig) {
           break;
         }
       }

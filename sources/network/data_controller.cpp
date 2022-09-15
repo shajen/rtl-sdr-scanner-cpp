@@ -22,7 +22,8 @@ void add(uint8_t* p, uint64_t& offset, const T* value, int size) {
   offset += sizeof(T) * size;
 }
 
-DataController::DataController(Config& config, Mqtt& mqtt) : m_config(config), m_mqtt(mqtt) {}
+DataController::DataController(Config& config, Mqtt& mqtt, const std::string& deviceName)
+    : m_config(config), m_mqtt(mqtt), m_spectrogramTopic(std::string("sdr/" + deviceName + "/spectrogram")), m_transmissionsTopic(std::string("sdr/" + deviceName + "/transmission")) {}
 
 DataController::~DataController() = default;
 
@@ -87,7 +88,7 @@ void DataController::sendTransmission(const FrequencyRange& frequencyRange, cons
     add(data.data(), offset, static_cast<uint8_t>(value.real() * 127.5 + 127.5));
     add(data.data(), offset, static_cast<uint8_t>(value.imag() * 127.5 + 127.5));
   }
-  m_mqtt.publish("sdr/transmission", std::move(data));
+  m_mqtt.publish(m_transmissionsTopic, std::move(data));
 }
 
 void DataController::sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
@@ -102,5 +103,5 @@ void DataController::sendSignals(const std::chrono::milliseconds time, const Fre
   for (const auto& signal : signals) {
     add(data.data(), offset, static_cast<int8_t>(signal.power.value));
   }
-  m_mqtt.publish("sdr/spectrogram", std::move(data));
+  m_mqtt.publish(m_spectrogramTopic, std::move(data));
 }

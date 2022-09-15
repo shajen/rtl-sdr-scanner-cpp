@@ -12,7 +12,7 @@
 
 class DataController {
  public:
-  DataController(Config& config, Mqtt& mqtt);
+  DataController(Config& config, Mqtt& mqtt, const std::string& deviceName);
   ~DataController();
 
   void pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive);
@@ -39,5 +39,7 @@ class DataController {
   Config& m_config;
   std::map<FrequencyRange, TransmissionsContainer> m_transmissions;
   Mqtt& m_mqtt;
+  const std::string m_spectrogramTopic;
+  const std::string m_transmissionsTopic;
   std::mutex m_mutex;
 };
