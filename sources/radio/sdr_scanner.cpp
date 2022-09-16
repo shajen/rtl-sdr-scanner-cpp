@@ -3,14 +3,15 @@
 #include <logger.h>
 #include <utils.h>
 
-SdrScanner::SdrScanner(const Config& config, SdrDevice& device, DataController& dataController) : m_config(config), m_device(device), m_recorder(config, dataController), m_isRunning(true) {
+SdrScanner::SdrScanner(const Config& config, SdrDevice& device, DataController& dataController)
+    : m_config(config), m_device(device), m_recorder(config, m_device.offset(), dataController), m_isRunning(true) {
   const auto scannerFrequencies = config.scannerFrequencies();
   Logger::info("Scanner", "original frequency ranges: {}", scannerFrequencies.size());
   for (const auto& frequencyRange : scannerFrequencies) {
     Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());
   }
 
-  const auto splittedFrequencyRanges = splitFrequencyRanges(m_config.rtlSdrMaxBandwidth(), scannerFrequencies);
+  const auto splittedFrequencyRanges = splitFrequencyRanges(device.maxBandwidth(), scannerFrequencies);
   Logger::info("Scanner", "splitted frequency ranges: {}", splittedFrequencyRanges.size());
   for (const auto& frequencyRange : splittedFrequencyRanges) {
     Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());

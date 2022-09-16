@@ -58,7 +58,11 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
   }
 }
 
-std::string RtlSdrDevice::name() { return {"rtlsdr_" + m_serial}; }
+std::string RtlSdrDevice::name() const { return {"rtlsdr_" + m_serial}; }
+
+uint32_t RtlSdrDevice::offset() const { return m_config.rtlSdrOffset(); }
+
+int32_t RtlSdrDevice::maxBandwidth() const { return m_config.rtlSdrMaxBandwidth(); }
 
 std::vector<std::string> RtlSdrDevice::listDevices() {
   std::vector<std::string> serials;

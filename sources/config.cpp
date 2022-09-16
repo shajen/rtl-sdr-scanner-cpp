@@ -99,6 +99,10 @@ Config::Config(const std::string &path, const std::string &config)
       m_rtlSdrGain(readKey(m_json, {"devices", "rtl_sdr", "tuner_gain"}, 0.0)),
       m_rtlSdrMaxBandwidth(readKey(m_json, {"devices", "rtl_sdr", "max_bandwidth"}, 2560000)),
       m_rtlSdrRadioOffset(readKey(m_json, {"devices", "rtl_sdr", "offset"}, 0)),
+      m_hackRfLnaGain(readKey(m_json, {"devices", "hack_rf", "lna_gain"}, 0)),
+      m_hackRfVgaGain(readKey(m_json, {"devices", "hack_rf", "vga_gain"}, 0)),
+      m_hackRfMaxBandwidth(readKey(m_json, {"devices", "hack_rf", "max_bandwidth"}, 0)),
+      m_hackRfRadioOffset(readKey(m_json, {"devices", "hack_rf", "offset"}, 0)),
       m_deviceSerial(readKey(m_json, {"devices", "serial"}, std::string("auto"))),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
@@ -126,6 +130,12 @@ uint32_t Config::rtlSdrPpm() const { return m_rtlSdrPpm; }
 float Config::rtlSdrGain() const { return m_rtlSdrGain; }
 uint32_t Config::rtlSdrMaxBandwidth() const { return m_rtlSdrMaxBandwidth; }
 int32_t Config::rtlSdrOffset() const { return m_rtlSdrRadioOffset; }
+
+uint32_t Config::hackRfLnaGain() const { return m_hackRfLnaGain; }
+uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
+uint32_t Config::hackRfMaxBandwidth() const { return m_hackRfMaxBandwidth; }
+int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
+
 std::string Config::deviceSerial() const { return m_deviceSerial; }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }

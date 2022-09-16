@@ -18,7 +18,7 @@
 
 class Recorder {
  public:
-  Recorder(const Config& config, DataController& dataController);
+  Recorder(const Config& config, int32_t offset, DataController& dataController);
   ~Recorder();
 
   void clear();
@@ -30,6 +30,7 @@ class Recorder {
   void processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
 
   const Config& m_config;
+  const int32_t m_offset;
   DataController& m_dataController;
   TransmissionDetector m_transmissionDetector;
   Spectrogram m_spectrogram;

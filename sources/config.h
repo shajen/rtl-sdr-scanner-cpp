@@ -32,6 +32,12 @@ class Config {
   float rtlSdrGain() const;
   uint32_t rtlSdrMaxBandwidth() const;
   int32_t rtlSdrOffset() const;
+
+  uint32_t hackRfLnaGain() const;
+  uint32_t hackRfVgaGain() const;
+  uint32_t hackRfMaxBandwidth() const;
+  int32_t hackRfOffset() const;
+
   std::string deviceSerial() const;
 
   std::string mqttHostname() const;
@@ -67,6 +73,12 @@ class Config {
   const float m_rtlSdrGain;
   const uint32_t m_rtlSdrMaxBandwidth;
   const int32_t m_rtlSdrRadioOffset;
+
+  const uint32_t m_hackRfLnaGain;
+  const uint32_t m_hackRfVgaGain;
+  const uint32_t m_hackRfMaxBandwidth;
+  const int32_t m_hackRfRadioOffset;
+
   const std::string m_deviceSerial;
 
   const std::string m_mqttHostname;

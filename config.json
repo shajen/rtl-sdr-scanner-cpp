@@ -13,6 +13,12 @@
       "tuner_gain": 0.0,
       "max_bandwidth": 2560000,
       "offset": 0
+    },
+    "hack_rf": {
+      "lna_gain": 0,
+      "vga_gain": 0,
+      "offset": 0,
+      "max_bandwidth": 25600000
     }
   },
   "recording": {
