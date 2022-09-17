@@ -56,7 +56,7 @@ liquid_float_complex *toLiquidComplex(std::complex<float> *ptr) { return reinter
 std::vector<FrequencyRange> splitFrequencyRanges(const uint32_t maxBandwidth, const std::vector<FrequencyRange> &frequencyRanges) {
   std::vector<FrequencyRange> result;
   for (const auto &frequencyRange : frequencyRanges) {
-    if (frequencyRange.bandwidth().value <= maxBandwidth) {
+    if (frequencyRange.bandwidth.value <= maxBandwidth) {
       result.push_back({frequencyRange.start.value, frequencyRange.stop.value, frequencyRange.step.value, maxBandwidth});
     } else {
       uint32_t range = 1;

@@ -61,5 +61,5 @@ FrequencyRange TransmissionDetector::getTransmission(const Frequency& frequency)
   const auto groupSize = m_config.frequencyGroupingSize();
   const auto offset = frequency.value % groupSize <= groupSize / 2 ? 0 : groupSize;
   const auto center = frequency.value - (frequency.value % groupSize) + offset;
-  return {center - m_config.minRecordingSampleRate() / 2, center + m_config.minRecordingSampleRate() / 2};
+  return {center - m_config.minRecordingSampleRate() / 2, center + m_config.minRecordingSampleRate() / 2, 0, 0};
 }

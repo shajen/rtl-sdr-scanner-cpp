@@ -18,7 +18,7 @@ std::vector<Signal> Spectrogram::psd(FrequencyRange frequencyRange, std::vector<
 
   const auto fftSize = frequencyRange.fftSize();
   const auto centerFrequency = frequencyRange.center();
-  const auto bandwidth = frequencyRange.bandwidth();
+  const auto bandwidth = frequencyRange.bandwidth;
   const auto correctedSize = std::min(dataSize, static_cast<uint32_t>(std::lround(dataSize * m_config.spectrogramFactor())));
   auto& spectrogram = m_spectrograms[frequencyRange];
 

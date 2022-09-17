@@ -22,6 +22,18 @@ std::vector<Frequency> getBandwidths() {
   return bandwidths;
 }
 
+Frequency fitSampleRate(Frequency sampleRate, Frequency maxBandwidth) {
+  if (maxBandwidth.value == 0) {
+    return {0};
+  }
+  const static auto bandwidts = getBandwidths();
+  const auto it = std::lower_bound(bandwidts.cbegin(), bandwidts.cend(), sampleRate);
+  if (maxBandwidth.value < it->value) {
+    throw std::runtime_error("can not fit bandwidth, invalid range or max bandwidth");
+  }
+  return {it->value};
+}
+
 std::string Frequency::toString(const std::string label) const {
   char buf[1024];
   const auto f1 = value / 1000000;
@@ -63,38 +75,25 @@ std::string Power::toString() const {
 
 std::string Signal::toString() const { return frequency.toString() + ", " + power.toString(); }
 
+FrequencyRange::FrequencyRange(const uint32_t _start, const uint32_t _stop, const uint32_t _step, const uint32_t maxBandwidth)
+    : start({_start}), stop({_stop}), step({_step}), sampleRate(fitSampleRate({_stop - _start}, {maxBandwidth})), bandwidth(sampleRate) {}
+
 std::string FrequencyRange::toString() const {
   char buf[1024];
-  Frequency b({bandwidth()});
   auto offset = sprintf(buf, "%s, %s", start.toString("start").c_str(), stop.toString("stop").c_str());
   if (step.value != 0) {
     offset += sprintf(buf + offset, ", %s", step.toString("step").c_str());
   }
-  if (b.value != 0) {
-    offset += sprintf(buf + offset, ", %s", b.toString("bandwidth").c_str());
+  if (bandwidth.value != 0) {
+    offset += sprintf(buf + offset, ", %s", bandwidth.toString("bandwidth").c_str());
   }
   return std::string(buf);
 }
 
 Frequency FrequencyRange::center() const { return {(start.value + stop.value) / 2}; }
 
-Frequency FrequencyRange::bandwidth() const {
-  if (maxBandwidth.value == 0) {
-    return {0};
-  }
-  const static auto bandwidts = getBandwidths();
-  const Frequency range{stop.value - start.value};
-  const auto it = std::lower_bound(bandwidts.cbegin(), bandwidts.cend(), range);
-  if (maxBandwidth.value < it->value) {
-    throw std::runtime_error("can not fit bandwidth, invalid range or max bandwidth");
-  }
-  return {it->value};
-}
+uint32_t FrequencyRange::fftSize() const { return bandwidth.value / step.value; }
 
-Frequency FrequencyRange::sampleRate() const { return bandwidth(); }
+bool FrequencyRange::operator==(const FrequencyRange &rhs) const { return start == rhs.start && stop == rhs.stop && step == rhs.step && sampleRate == rhs.sampleRate && bandwidth == rhs.bandwidth; }
 
-uint32_t FrequencyRange::fftSize() const { return bandwidth().value / step.value; }
-
-bool FrequencyRange::operator==(const FrequencyRange &rhs) const { return start == rhs.start && stop == rhs.stop && step == rhs.step && maxBandwidth == rhs.maxBandwidth; }
-
-bool FrequencyRange::operator<(const FrequencyRange &rhs) const { return start < rhs.start || stop < rhs.stop || step < rhs.step || maxBandwidth < rhs.maxBandwidth; }
+bool FrequencyRange::operator<(const FrequencyRange &rhs) const { return start < rhs.start || stop < rhs.stop || step < rhs.step || sampleRate < rhs.sampleRate || bandwidth < rhs.bandwidth; }

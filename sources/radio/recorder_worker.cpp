@@ -46,7 +46,7 @@ RecorderWorker::~RecorderWorker() {
 
 void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
   Logger::debug("RecorderWrk", "thread id: {}, processing started, samples: {}", getThreadId(), inputSamples.samples.size());
-  const auto sampleRate = inputSamples.frequencyRange.sampleRate();
+  const auto sampleRate = inputSamples.frequencyRange.sampleRate;
   const auto decimateRate(sampleRate.value / (m_outputFrequencyRange.stop.value - m_outputFrequencyRange.start.value));
   const auto rawBufferSamples = inputSamples.samples.size();
   const auto downSamples = rawBufferSamples / decimateRate;

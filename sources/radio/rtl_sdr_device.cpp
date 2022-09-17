@@ -34,7 +34,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
 }
 
 std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange) {
-  const auto sampleRate = frequencyRange.sampleRate();
+  const auto sampleRate = frequencyRange.sampleRate;
   const auto samples = getSamplesCount(sampleRate, m_config.frequencyRangeScanningTime());
 
   setupDevice(frequencyRange);
@@ -127,8 +127,8 @@ bool RtlSdrDevice::isSamplesOk(uint8_t* buf, uint32_t len) {
 
 void RtlSdrDevice::setupDevice(const FrequencyRange& frequencyRange) {
   const auto centerFrequency = frequencyRange.center();
-  const auto bandwidth = frequencyRange.bandwidth();
-  const auto sampleRate = frequencyRange.sampleRate();
+  const auto bandwidth = frequencyRange.bandwidth;
+  const auto sampleRate = frequencyRange.sampleRate;
   bool resetBuffer = false;
 
   if (m_lastBandwidth.value != bandwidth.value) {

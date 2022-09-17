@@ -91,7 +91,7 @@ std::vector<std::string> HackrfSdrDevice::listDevices() {
 
 void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback &&callback) {
   setup(frequencyRange);
-  const auto samples = getSamplesCount(frequencyRange.sampleRate(), m_config.frequencyRangeScanningTime());
+  const auto samples = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime());
   Logger::info("HackRf", "start stream, samples: {}", samples);
   CallbackData callbackData(samples);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
@@ -123,7 +123,7 @@ int32_t HackrfSdrDevice::maxBandwidth() const { return m_config.hackRfMaxBandwid
 
 std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRange) {
   setup(frequencyRange);
-  const auto samples = getSamplesCount(frequencyRange.sampleRate(), m_config.frequencyRangeScanningTime());
+  const auto samples = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime());
   Logger::debug("HackRf", "start read data, samples: {}", samples);
   CallbackData callbackData(samples);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
@@ -140,12 +140,12 @@ std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRa
 }
 
 void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
-  if (frequencyRange.sampleRate().value != m_sampleRate.value) {
-    Logger::debug("HackRf", "set sample rate {}", frequencyRange.sampleRate().toString("sample rate"));
-    if (hackrf_set_sample_rate(m_device, frequencyRange.sampleRate().value) != HACKRF_SUCCESS) {
+  if (frequencyRange.sampleRate.value != m_sampleRate.value) {
+    Logger::debug("HackRf", "set sample rate {}", frequencyRange.sampleRate.toString("sample rate"));
+    if (hackrf_set_sample_rate(m_device, frequencyRange.sampleRate.value) != HACKRF_SUCCESS) {
       throw std::runtime_error("can not set sample rate");
     }
-    m_sampleRate = frequencyRange.sampleRate();
+    m_sampleRate = frequencyRange.sampleRate;
   }
   if (frequencyRange.center().value != m_frequency.value) {
     Logger::debug("HackRf", "set center {}", frequencyRange.center().toString());
