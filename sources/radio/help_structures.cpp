@@ -1,6 +1,26 @@
 #include "help_structures.h"
 
+#include <algorithm>
 #include <cmath>
+#include <stdexcept>
+#include <vector>
+
+std::vector<Frequency> getBandwidths() {
+  std::vector<Frequency> bandwidths;
+  for (int i = 10; i <= 20; ++i) {
+    const uint32_t base = 1 << i;
+    uint32_t bandwidth = base;
+    uint32_t nextBandwidth = bandwidth * 10;
+    bandwidths.push_back({bandwidth});
+    while (bandwidth < nextBandwidth) {
+      bandwidths.push_back({nextBandwidth});
+      bandwidth *= 10;
+      nextBandwidth *= 10;
+    }
+  }
+  std::sort(bandwidths.begin(), bandwidths.end());
+  return bandwidths;
+}
 
 std::string Frequency::toString(const std::string label) const {
   char buf[1024];
@@ -59,20 +79,16 @@ std::string FrequencyRange::toString() const {
 Frequency FrequencyRange::center() const { return {(start.value + stop.value) / 2}; }
 
 Frequency FrequencyRange::bandwidth() const {
-  if (step.value == 0) {
+  if (maxBandwidth.value == 0) {
     return {0};
   }
-  uint32_t range = 1;
-  if (maxBandwidth.value) {
-    while (step.value * range * 2 < maxBandwidth.value) {
-      range = range << 1;
-    }
-  } else {
-    while (step.value * range < stop.value - start.value) {
-      range = range << 1;
-    }
+  const static auto bandwidts = getBandwidths();
+  const Frequency range{stop.value - start.value};
+  const auto it = std::lower_bound(bandwidts.cbegin(), bandwidts.cend(), range);
+  if (maxBandwidth.value < it->value) {
+    throw std::runtime_error("can not fit bandwidth, invalid range or max bandwidth");
   }
-  return {step.value * range};
+  return {it->value};
 }
 
 Frequency FrequencyRange::sampleRate() const { return bandwidth(); }

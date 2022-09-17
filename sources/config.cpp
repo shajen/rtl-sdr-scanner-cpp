@@ -71,7 +71,7 @@ std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, c
       const auto start = value["start"].get<uint32_t>();
       const auto stop = value["stop"].get<uint32_t>();
       const auto step = readKey(value, {"step"}, static_cast<uint32_t>(125));
-      ranges.push_back({start, stop, step});
+      ranges.push_back({start, stop, step, 0});
     }
   } catch (const nlohmann::json::type_error &) {
     fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
@@ -82,7 +82,7 @@ std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, c
 
 Config::Config(const std::string &path, const std::string &config)
     : m_json(readJsonFromFileAndMerge(path, config)),
-      m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125}})),
+      m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125, 0}})),
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),

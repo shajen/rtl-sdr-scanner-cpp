@@ -1,25 +1,33 @@
 #include "hackrf_sdr_device.h"
 
 #include <logger.h>
+#include <utils.h>
 
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 
-using StreamCallbackData = std::tuple<std::mutex, std::condition_variable, std::vector<uint8_t>>;
+struct CallbackData {
+  CallbackData(uint32_t totalSamples) : buffer(totalSamples), samplesReceived(0) {}
+  std::mutex mutex;
+  std::condition_variable cv;
+  std::vector<uint8_t> buffer;
+  uint32_t samplesReceived;
+};
 
 int HackRfCallbackStream(hackrf_transfer *transfer) {
-  Logger::debug("HackRf", "read bytes: {}, valid: {}", transfer->buffer_length, transfer->valid_length);
-  StreamCallbackData *callbackData = reinterpret_cast<StreamCallbackData *>(transfer->rx_ctx);
-  std::mutex &mutex = std::get<0>(*callbackData);
-  std::condition_variable &cv = std::get<1>(*callbackData);
-  std::vector<uint8_t> &buffer = std::get<2>(*callbackData);
+  Logger::debug("HackRf", "read bytes: {}", transfer->valid_length);
+  CallbackData *callbackData = reinterpret_cast<CallbackData *>(transfer->rx_ctx);
 
-  std::unique_lock<std::mutex> lock(mutex);
-  buffer.resize(transfer->valid_length);
-  memcpy(buffer.data(), transfer->buffer, transfer->valid_length);
-  cv.notify_all();
+  std::unique_lock<std::mutex> lock(callbackData->mutex);
+  memcpy(callbackData->buffer.data() + callbackData->samplesReceived, transfer->buffer, transfer->valid_length);
+  callbackData->samplesReceived += transfer->valid_length;
+  if (callbackData->buffer.size() <= callbackData->samplesReceived) {
+    Logger::debug("HackRf", "total read bytes: {}", callbackData->samplesReceived);
+    callbackData->samplesReceived = 0;
+    callbackData->cv.notify_all();
+  }
   return 0;
 }
 
@@ -55,10 +63,10 @@ HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial
     throw std::runtime_error("can not set antenna");
   }
   if (hackrf_set_lna_gain(m_device, m_config.hackRfLnaGain()) != HACKRF_SUCCESS) {
-    throw std::runtime_error("can not lna gain");
+    throw std::runtime_error("can not set lna gain");
   }
   if (hackrf_set_vga_gain(m_device, m_config.hackRfVgaGain()) != HACKRF_SUCCESS) {
-    throw std::runtime_error("can not vga gain");
+    throw std::runtime_error("can not set vga gain");
   }
 }
 
@@ -83,19 +91,21 @@ std::vector<std::string> HackrfSdrDevice::listDevices() {
 
 void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback &&callback) {
   setup(frequencyRange);
-  Logger::info("HackRf", "start stream");
-  StreamCallbackData callbackData;
+  const auto samples = getSamplesCount(frequencyRange.sampleRate(), m_config.frequencyRangeScanningTime());
+  Logger::info("HackRf", "start stream, samples: {}", samples);
+  CallbackData callbackData(samples);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start stream");
   }
-  std::mutex &mutex = std::get<0>(callbackData);
-  std::condition_variable &cv = std::get<1>(callbackData);
-  std::vector<uint8_t> &buffer = std::get<2>(callbackData);
 
-  std::unique_lock lock(mutex);
   while (true) {
-    cv.wait(lock);
-    if (!callback(buffer.data(), buffer.size())) {
+    std::vector<uint8_t> buffer;
+    {
+      std::unique_lock lock(callbackData.mutex);
+      callbackData.cv.wait(lock);
+      buffer = callbackData.buffer;
+    }
+    if (!callback(callbackData.buffer.data(), callbackData.buffer.size())) {
       break;
     }
   }
@@ -113,22 +123,20 @@ int32_t HackrfSdrDevice::maxBandwidth() const { return m_config.hackRfMaxBandwid
 
 std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRange) {
   setup(frequencyRange);
-  Logger::debug("HackRf", "start read data");
-  StreamCallbackData callbackData;
+  const auto samples = getSamplesCount(frequencyRange.sampleRate(), m_config.frequencyRangeScanningTime());
+  Logger::debug("HackRf", "start read data, samples: {}", samples);
+  CallbackData callbackData(samples);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start read data");
   }
-  std::mutex &mutex = std::get<0>(callbackData);
-  std::condition_variable &cv = std::get<1>(callbackData);
-  std::vector<uint8_t> &buffer = std::get<2>(callbackData);
 
-  std::unique_lock lock(mutex);
-  cv.wait(lock);
+  std::unique_lock lock(callbackData.mutex);
+  callbackData.cv.wait(lock);
   Logger::debug("HackRf", "stop read data");
   if (hackrf_stop_rx(m_device) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not stop read data");
   }
-  return buffer;
+  return callbackData.buffer;
 }
 
 void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
