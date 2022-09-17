@@ -60,7 +60,7 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
 
 std::string RtlSdrDevice::name() const { return {"rtlsdr_" + m_serial}; }
 
-uint32_t RtlSdrDevice::offset() const { return m_config.rtlSdrOffset(); }
+int32_t RtlSdrDevice::offset() const { return m_config.rtlSdrOffset(); }
 
 int32_t RtlSdrDevice::maxBandwidth() const { return m_config.rtlSdrMaxBandwidth(); }
 
@@ -131,24 +131,24 @@ void RtlSdrDevice::setupDevice(const FrequencyRange& frequencyRange) {
   const auto sampleRate = frequencyRange.sampleRate;
   bool resetBuffer = false;
 
-  if (m_lastBandwidth.value != bandwidth.value) {
-    Logger::debug("RtlSdr", "set {}", bandwidth.toString("bandwidth"));
-    if (rtlsdr_set_tuner_bandwidth(m_device, bandwidth.value) != 0) {
+  if (m_lastBandwidth != bandwidth) {
+    Logger::debug("RtlSdr", "set {}", frequencyToString(bandwidth, "bandwidth"));
+    if (rtlsdr_set_tuner_bandwidth(m_device, bandwidth) != 0) {
       throw std::runtime_error("set bandwidth error");
     }
     m_lastBandwidth = bandwidth;
     resetBuffer = true;
   }
-  if (rtlsdr_get_sample_rate(m_device) != sampleRate.value) {
-    Logger::debug("RtlSdr", "set {}", sampleRate.toString("sample rate"));
-    if (rtlsdr_set_sample_rate(m_device, sampleRate.value) != 0) {
+  if (rtlsdr_get_sample_rate(m_device) != sampleRate) {
+    Logger::debug("RtlSdr", "set {}", frequencyToString(sampleRate, "sample rate"));
+    if (rtlsdr_set_sample_rate(m_device, sampleRate) != 0) {
       throw std::runtime_error("set sample rate error");
     }
     resetBuffer = true;
   }
-  if (rtlsdr_get_center_freq(m_device) != centerFrequency.value) {
-    Logger::debug("RtlSdr", "set {}", centerFrequency.toString("center frequency"));
-    if (rtlsdr_set_center_freq(m_device, centerFrequency.value) != 0) {
+  if (rtlsdr_get_center_freq(m_device) != centerFrequency) {
+    Logger::debug("RtlSdr", "set {}", frequencyToString(centerFrequency, "center frequency"));
+    if (rtlsdr_set_center_freq(m_device, centerFrequency) != 0) {
       throw std::runtime_error("set center frequency error");
     }
     resetBuffer = true;

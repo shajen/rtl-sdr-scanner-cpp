@@ -30,15 +30,15 @@ std::vector<Signal> Spectrogram::psd(FrequencyRange frequencyRange, std::vector<
   spgramcf_write(spectrogram, toLiquidComplex(data.data()), correctedSize);
   spgramcf_get_psd(spectrogram, m_buffer.data());
 
-  const auto cuttedSize = (frequencyRange.stop.value - frequencyRange.start.value) / frequencyRange.step.value + 1;
-  const auto offsetFrequency = frequencyRange.start.value - (centerFrequency.value - bandwidth.value / 2);
-  const auto offset = offsetFrequency / frequencyRange.step.value;
+  const auto cuttedSize = (frequencyRange.stop - frequencyRange.start) / frequencyRange.step + 1;
+  const auto offsetFrequency = frequencyRange.start - (centerFrequency - bandwidth / 2);
+  const auto offset = offsetFrequency / frequencyRange.step;
 
   std::vector<Signal> signals(cuttedSize);
   for (uint32_t i = offset; i < offset + cuttedSize; ++i) {
-    const auto f = (centerFrequency.value - bandwidth.value / 2) + static_cast<uint64_t>(i) * bandwidth.value / fftSize;
+    const auto f = (centerFrequency - bandwidth / 2) + static_cast<uint64_t>(i) * bandwidth / fftSize;
     const auto power = m_buffer[i];
-    signals[i - offset] = {{static_cast<uint32_t>(f)}, {power}};
+    signals[i - offset] = {static_cast<Frequency>(f), {power}};
   }
   return signals;
 }

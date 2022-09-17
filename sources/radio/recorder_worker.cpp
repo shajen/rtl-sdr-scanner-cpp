@@ -13,7 +13,7 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
       m_samples(inSamples),
       m_isWorking(true),
       m_thread([this]() {
-        Logger::info("RecorderWrk", "thread id: {}, start, {}", getThreadId(), m_outputFrequencyRange.center().toString());
+        Logger::info("RecorderWrk", "thread id: {}, start, {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()));
         while (m_isWorking) {
           {
             std::unique_lock<std::mutex> lock(m_mutex);
@@ -28,14 +28,14 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
             m_samples.pop_front();
             const auto size = m_samples.size();
             lock.unlock();
-            Logger::debug("RecorderWrk", "thread id: {}, processing {} started, queue size: {}", getThreadId(), m_outputFrequencyRange.center().toString(), size);
+            Logger::debug("RecorderWrk", "thread id: {}, processing {} started, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), size);
             processSamples(std::move(inputSamples));
-            Logger::debug("RecorderWrk", "thread id: {}, processing {} finished", getThreadId(), m_outputFrequencyRange.center().toString());
+            Logger::debug("RecorderWrk", "thread id: {}, processing {} finished", getThreadId(), frequencyToString(m_outputFrequencyRange.center()));
           }
         }
         m_dataController.finishTransmission(m_outputFrequencyRange);
         std::unique_lock lock(m_mutex);
-        Logger::info("RecorderWrk", "thread id: {}, stop, {}, queue size: {}", getThreadId(), m_outputFrequencyRange.center().toString(), m_samples.size());
+        Logger::info("RecorderWrk", "thread id: {}, stop, {}, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), m_samples.size());
       }) {}
 
 RecorderWorker::~RecorderWorker() {
@@ -47,13 +47,13 @@ RecorderWorker::~RecorderWorker() {
 void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
   Logger::debug("RecorderWrk", "thread id: {}, processing started, samples: {}", getThreadId(), inputSamples.samples.size());
   const auto sampleRate = inputSamples.frequencyRange.sampleRate;
-  const auto decimateRate(sampleRate.value / (m_outputFrequencyRange.stop.value - m_outputFrequencyRange.start.value));
+  const auto decimateRate(sampleRate / (m_outputFrequencyRange.stop - m_outputFrequencyRange.start));
   const auto rawBufferSamples = inputSamples.samples.size();
   const auto downSamples = rawBufferSamples / decimateRate;
   const auto center = inputSamples.frequencyRange.center();
 
   if (m_shiftData.size() < rawBufferSamples) {
-    m_shiftData = getShiftData(center.value - m_outputFrequencyRange.center().value, sampleRate, rawBufferSamples);
+    m_shiftData = getShiftData(center - m_outputFrequencyRange.center(), sampleRate, rawBufferSamples);
     Logger::debug("RecorderWrk", "thread id: {}, shift data resized, size: {}", getThreadId(), m_shiftData.size());
   }
   if (m_decimatorBuffer.size() < downSamples) {

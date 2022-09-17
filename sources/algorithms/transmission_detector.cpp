@@ -44,7 +44,7 @@ std::vector<std::pair<FrequencyRange, bool>> TransmissionDetector::getTransmissi
     const auto isTransmissionOk = m_tornTransmissionDetector.isTransmissionOk(it->first);
     if (!isTimeout) {
       if (isTransmissionOk) {
-        Logger::debug("SigMatcher", "add group {}, active: {}", it->first.center().toString(), isActive);
+        Logger::debug("SigMatcher", "add group {}, active: {}", frequencyToString(it->first.center()), isActive);
         frequencyGroupActiveTransmissionsWithActiveFlag.emplace_back(it->first, isActive);
       }
       it++;
@@ -59,7 +59,7 @@ std::vector<std::pair<FrequencyRange, bool>> TransmissionDetector::getTransmissi
 
 FrequencyRange TransmissionDetector::getTransmission(const Frequency& frequency) const {
   const auto groupSize = m_config.frequencyGroupingSize();
-  const auto offset = frequency.value % groupSize <= groupSize / 2 ? 0 : groupSize;
-  const auto center = frequency.value - (frequency.value % groupSize) + offset;
+  const auto offset = frequency % groupSize <= groupSize / 2 ? 0 : groupSize;
+  const auto center = frequency - (frequency % groupSize) + offset;
   return {center - m_config.minRecordingSampleRate() / 2, center + m_config.minRecordingSampleRate() / 2, 0, 0};
 }

@@ -22,4 +22,4 @@ void shift(std::vector<std::complex<float>>& samples, const std::vector<std::com
 
 liquid_float_complex* toLiquidComplex(std::complex<float>* ptr);
 
-std::vector<FrequencyRange> splitFrequencyRanges(const uint32_t maxBandwidth, const std::vector<FrequencyRange>& frequencyRanges);
+std::vector<FrequencyRange> splitFrequencyRanges(const Frequency maxBandwidth, const std::vector<FrequencyRange>& frequencyRanges);

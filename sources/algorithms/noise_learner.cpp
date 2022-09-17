@@ -18,7 +18,7 @@ std::vector<Signal> NoiseLearner::getStrongSignals(const std::vector<Signal>& si
   auto itSignal = signalsBegin;
   auto itNoise = noiseBegin;
   while (itSignal != signalsEnd && itNoise != noiseEnd) {
-    if (itNoise->second.noiseLevel <= itSignal->power.value) {
+    if (itNoise->second.noiseLevel <= itSignal->power) {
       strongSignals.push_back(*itSignal);
     }
     itSignal++;
@@ -30,7 +30,7 @@ std::vector<Signal> NoiseLearner::getStrongSignals(const std::vector<Signal>& si
 void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<std::pair<FrequencyRange, bool>>& activeFrequencies) {
   const auto existingSignals = std::distance(m_frequencyNoise.lower_bound(signals.front().frequency), m_frequencyNoise.upper_bound(signals.back().frequency));
   if (static_cast<uint32_t>(existingSignals) != signals.size()) {
-    Logger::info("NoiseLrn", "initialize, {}, {}", signals.front().frequency.toString("start"), signals.back().frequency.toString("stop"));
+    Logger::info("NoiseLrn", "initialize, {}, {}", frequencyToString(signals.front().frequency, "start"), frequencyToString(signals.back().frequency, "stop"));
     for (const auto& signal : signals) {
       m_frequencyNoise.insert({signal.frequency, {0, -std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity()}});
     }
@@ -55,7 +55,7 @@ void NoiseLearner::update(const std::vector<Signal>& signals, const std::vector<
       }
       auto& noise = itNoise->second;
       noise.samplesCount++;
-      noise.sampleMax = std::max(noise.sampleMax, itSignal->power.value);
+      noise.sampleMax = std::max(noise.sampleMax, itSignal->power);
       if (learningSamplesCount <= noise.samplesCount) {
         noise.noiseLevel = noise.sampleMax + m_config.noiseDetectionMargin();
         noise.samplesCount = 0;

@@ -12,7 +12,7 @@ class RtlSdrDevice : public SdrDevice {
   void startStream(const FrequencyRange& frequencyRange, Callback&& callback) override;
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
   std::string name() const override;
-  uint32_t offset() const override;
+  int32_t offset() const override;
   int32_t maxBandwidth() const override;
   static std::vector<std::string> listDevices();
 

@@ -13,7 +13,7 @@ void TornTransmissionDetector::update(const std::chrono::milliseconds& time) {
     for (const auto& [frequencyGroup, data] : m_transmissionsData) {
       const auto averageDuration = std::chrono::milliseconds(data.sum.count() / data.count);
       m_transmissionsAverageDuration[frequencyGroup] = averageDuration;
-      Logger::info("TornDtr", "transmission {}, average duration: {:.2f} seconds", frequencyGroup.center().toString(), averageDuration.count() / 1000.0);
+      Logger::info("TornDtr", "transmission {}, average duration: {:.2f} seconds", frequencyToString(frequencyGroup.center()), averageDuration.count() / 1000.0);
     }
     m_transmissionsData.clear();
     m_lastUpdate = time;
@@ -22,7 +22,7 @@ void TornTransmissionDetector::update(const std::chrono::milliseconds& time) {
 }
 
 void TornTransmissionDetector::reportTransmission(const FrequencyRange& frequencyRange, const std::chrono::milliseconds duration) {
-  Logger::info("TornDtr", "report transmission {}, duration: {:.2f} seconds", frequencyRange.center().toString(), duration.count() / 1000.0);
+  Logger::info("TornDtr", "report transmission {}, duration: {:.2f} seconds", frequencyToString(frequencyRange.center()), duration.count() / 1000.0);
   auto it = m_transmissionsData.find(frequencyRange);
   if (it != m_transmissionsData.end()) {
     it->second.count++;
@@ -35,7 +35,7 @@ void TornTransmissionDetector::reportTransmission(const FrequencyRange& frequenc
 bool TornTransmissionDetector::isTransmissionOk(const FrequencyRange& frequencyRange) const {
   const auto it = m_transmissionsAverageDuration.find(frequencyRange);
   if (it != m_transmissionsAverageDuration.end()) {
-    Logger::debug("TornDtr", "check transmission {}, average duration: {:.2f} seconds", frequencyRange.center().toString(), it->second.count() / 1000.0);
+    Logger::debug("TornDtr", "check transmission {}, average duration: {:.2f} seconds", frequencyToString(frequencyRange.center()), it->second.count() / 1000.0);
     return m_config.minRecordingTime() <= it->second;
   } else if (initialized) {
     return true;

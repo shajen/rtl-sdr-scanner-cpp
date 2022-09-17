@@ -117,7 +117,7 @@ void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback
 
 std::string HackrfSdrDevice::name() const { return {"hackrf_" + m_serial}; }
 
-uint32_t HackrfSdrDevice::offset() const { return m_config.hackRfOffset(); }
+int32_t HackrfSdrDevice::offset() const { return m_config.hackRfOffset(); }
 
 int32_t HackrfSdrDevice::maxBandwidth() const { return m_config.hackRfMaxBandwidth(); }
 
@@ -140,16 +140,16 @@ std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRa
 }
 
 void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
-  if (frequencyRange.sampleRate.value != m_sampleRate.value) {
-    Logger::debug("HackRf", "set sample rate {}", frequencyRange.sampleRate.toString("sample rate"));
-    if (hackrf_set_sample_rate(m_device, frequencyRange.sampleRate.value) != HACKRF_SUCCESS) {
+  if (frequencyRange.sampleRate != m_sampleRate) {
+    Logger::debug("HackRf", "set sample rate {}", frequencyToString(frequencyRange.sampleRate, "sample rate"));
+    if (hackrf_set_sample_rate(m_device, frequencyRange.sampleRate) != HACKRF_SUCCESS) {
       throw std::runtime_error("can not set sample rate");
     }
     m_sampleRate = frequencyRange.sampleRate;
   }
-  if (frequencyRange.center().value != m_frequency.value) {
-    Logger::debug("HackRf", "set center {}", frequencyRange.center().toString());
-    if (hackrf_set_freq(m_device, frequencyRange.center().value) != HACKRF_SUCCESS) {
+  if (frequencyRange.center() != m_frequency) {
+    Logger::debug("HackRf", "set center {}", frequencyToString(frequencyRange.center()));
+    if (hackrf_set_freq(m_device, frequencyRange.center()) != HACKRF_SUCCESS) {
       throw std::runtime_error("can not set frequnecy");
     }
     m_frequency = frequencyRange.center();

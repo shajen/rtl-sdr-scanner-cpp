@@ -15,12 +15,12 @@ uint32_t getThreadId() {
 
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {
-    if (time.count() * sampleRate.value % 1000 != 0) {
+    if (time.count() * sampleRate % 1000 != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
-    return 2 * time.count() * sampleRate.value / 1000;
+    return 2 * time.count() * sampleRate / 1000;
   } else {
-    const auto samplesCount = std::lround(sampleRate.value / (1000.0f / time.count()) * 2);
+    const auto samplesCount = std::lround(sampleRate / (1000.0f / time.count()) * 2);
     if (samplesCount % 512 != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
@@ -37,7 +37,7 @@ void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffe
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
 
 std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
-  const auto f = std::complex<float>(0.0f, -1.0f) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate.value));
+  const auto f = std::complex<float>(0.0f, -1.0f) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate));
   std::vector<std::complex<float>> data(samplesCount);
   for (uint32_t i = 0; i < samplesCount; ++i) {
     data[i] = std::exp(f * static_cast<float>(i));
@@ -53,22 +53,22 @@ void shift(std::vector<std::complex<float>> &samples, const std::vector<std::com
 
 liquid_float_complex *toLiquidComplex(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
 
-std::vector<FrequencyRange> splitFrequencyRanges(const uint32_t maxBandwidth, const std::vector<FrequencyRange> &frequencyRanges) {
+std::vector<FrequencyRange> splitFrequencyRanges(const Frequency maxBandwidth, const std::vector<FrequencyRange> &frequencyRanges) {
   std::vector<FrequencyRange> result;
   for (const auto &frequencyRange : frequencyRanges) {
-    if (frequencyRange.bandwidth.value <= maxBandwidth) {
-      result.push_back({frequencyRange.start.value, frequencyRange.stop.value, frequencyRange.step.value, maxBandwidth});
+    if (frequencyRange.bandwidth <= maxBandwidth) {
+      result.push_back({frequencyRange.start, frequencyRange.stop, frequencyRange.step, maxBandwidth});
     } else {
-      uint32_t range = 1;
-      while (frequencyRange.step.value * range * 2 < maxBandwidth) {
+      Frequency range = 1;
+      while (frequencyRange.step * range * 2 < maxBandwidth) {
         range = range << 1;
       }
-      const auto bandwidth = range * frequencyRange.step.value;
+      const auto bandwidth = range * frequencyRange.step;
       const auto factor = std::floor(log10(bandwidth));
-      const auto base = static_cast<uint32_t>(pow(10, factor));
+      const auto base = static_cast<Frequency>(pow(10, factor));
       const auto max = (bandwidth / base) * base;
-      for (uint32_t start = frequencyRange.start.value; start < frequencyRange.stop.value; start += max) {
-        result.push_back({start, start + max, frequencyRange.step.value, maxBandwidth});
+      for (Frequency start = frequencyRange.start; start < frequencyRange.stop; start += max) {
+        result.push_back({start, start + max, frequencyRange.step, maxBandwidth});
       }
     }
   }

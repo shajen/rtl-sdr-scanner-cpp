@@ -15,10 +15,10 @@ class Config {
 
   std::chrono::milliseconds maxRecordingNoiseTime() const;
   std::chrono::milliseconds minRecordingTime() const;
-  uint32_t minRecordingSampleRate() const;
+  Frequency minRecordingSampleRate() const;
   uint8_t maxConcurrentTransmissions() const;
 
-  uint32_t frequencyGroupingSize() const;
+  Frequency frequencyGroupingSize() const;
   std::chrono::milliseconds frequencyRangeScanningTime() const;
   std::chrono::seconds noiseLearningTime() const;
   uint32_t noiseDetectionMargin() const;
@@ -30,12 +30,12 @@ class Config {
 
   uint32_t rtlSdrPpm() const;
   float rtlSdrGain() const;
-  uint32_t rtlSdrMaxBandwidth() const;
+  Frequency rtlSdrMaxBandwidth() const;
   int32_t rtlSdrOffset() const;
 
   uint32_t hackRfLnaGain() const;
   uint32_t hackRfVgaGain() const;
-  uint32_t hackRfMaxBandwidth() const;
+  Frequency hackRfMaxBandwidth() const;
   int32_t hackRfOffset() const;
 
   std::string deviceSerial() const;
@@ -56,10 +56,10 @@ class Config {
 
   const std::chrono::milliseconds m_maxRecordingNoiseTime;
   const std::chrono::milliseconds m_minRecordingTime;
-  const uint32_t m_minRecordingSampleRate;
+  const Frequency m_minRecordingSampleRate;
   const uint8_t m_maxConcurrentTransmissions;
 
-  const uint32_t m_frequencyGroupingSize;
+  const Frequency m_frequencyGroupingSize;
   const std::chrono::milliseconds m_frequencyRangeScanningTime;
   const std::chrono::seconds m_noiseLearningTime;
   const uint32_t m_noiseDetectionMargin;
@@ -71,12 +71,12 @@ class Config {
 
   const uint32_t m_rtlSdrPpm;
   const float m_rtlSdrGain;
-  const uint32_t m_rtlSdrMaxBandwidth;
+  const Frequency m_rtlSdrMaxBandwidth;
   const int32_t m_rtlSdrRadioOffset;
 
   const uint32_t m_hackRfLnaGain;
   const uint32_t m_hackRfVgaGain;
-  const uint32_t m_hackRfMaxBandwidth;
+  const Frequency m_hackRfMaxBandwidth;
   const int32_t m_hackRfRadioOffset;
 
   const std::string m_deviceSerial;

@@ -68,9 +68,9 @@ std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, c
   std::vector<FrequencyRange> ranges;
   try {
     for (const nlohmann::json &value : json[key]) {
-      const auto start = value["start"].get<uint32_t>();
-      const auto stop = value["stop"].get<uint32_t>();
-      const auto step = readKey(value, {"step"}, static_cast<uint32_t>(125));
+      const auto start = value["start"].get<Frequency>();
+      const auto stop = value["stop"].get<Frequency>();
+      const auto step = readKey(value, {"step"}, static_cast<Frequency>(125));
       ranges.push_back({start, stop, step, 0});
     }
   } catch (const nlohmann::json::type_error &) {
@@ -113,11 +113,11 @@ std::vector<FrequencyRange> Config::scannerFrequencies() const { return m_scanne
 
 std::chrono::milliseconds Config::maxRecordingNoiseTime() const { return m_maxRecordingNoiseTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }
-uint32_t Config::minRecordingSampleRate() const { return m_minRecordingSampleRate; }
+Frequency Config::minRecordingSampleRate() const { return m_minRecordingSampleRate; }
 uint8_t Config::maxConcurrentTransmissions() const { return m_maxConcurrentTransmissions; }
 
 std::chrono::milliseconds Config::frequencyRangeScanningTime() const { return m_frequencyRangeScanningTime; }
-uint32_t Config::frequencyGroupingSize() const { return m_frequencyGroupingSize; }
+Frequency Config::frequencyGroupingSize() const { return m_frequencyGroupingSize; }
 std::chrono::seconds Config::noiseLearningTime() const { return m_noiseLearningTime; }
 uint32_t Config::noiseDetectionMargin() const { return m_noiseDetectionMargin; }
 std::chrono::seconds Config::tornTransmissionLearningTime() const { return m_tornTransmissionLearningTime; }
@@ -128,12 +128,12 @@ std::string Config::logDir() const { return m_logsDirectory; }
 
 uint32_t Config::rtlSdrPpm() const { return m_rtlSdrPpm; }
 float Config::rtlSdrGain() const { return m_rtlSdrGain; }
-uint32_t Config::rtlSdrMaxBandwidth() const { return m_rtlSdrMaxBandwidth; }
+Frequency Config::rtlSdrMaxBandwidth() const { return m_rtlSdrMaxBandwidth; }
 int32_t Config::rtlSdrOffset() const { return m_rtlSdrRadioOffset; }
 
 uint32_t Config::hackRfLnaGain() const { return m_hackRfLnaGain; }
 uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
-uint32_t Config::hackRfMaxBandwidth() const { return m_hackRfMaxBandwidth; }
+Frequency Config::hackRfMaxBandwidth() const { return m_hackRfMaxBandwidth; }
 int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
 
 std::string Config::deviceSerial() const { return m_deviceSerial; }

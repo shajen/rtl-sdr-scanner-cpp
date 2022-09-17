@@ -3,21 +3,11 @@
 #include <cstdint>
 #include <string>
 
-struct Frequency {
-  std::string toString(const std::string label = "frequency") const;
+using Frequency = uint32_t;
+using Power = float;
 
-  bool operator==(const Frequency& frequency) const;
-  bool operator<(const Frequency& frequency) const;
-  bool operator<=(const Frequency& frequency) const;
-
-  uint32_t value;
-};
-
-struct Power {
-  std::string toString() const;
-
-  float value;
-};
+std::string frequencyToString(const Frequency& frequency, const std::string& label = "frequency");
+std::string powerToString(const Power& power);
 
 struct Signal {
   std::string toString() const;
@@ -27,7 +17,7 @@ struct Signal {
 };
 
 struct FrequencyRange {
-  FrequencyRange(const uint32_t _start, const uint32_t _stop, const uint32_t _step, const uint32_t maxBandwidth);
+  FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency maxBandwidth);
   std::string toString() const;
 
   Frequency center() const;
