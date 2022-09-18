@@ -13,7 +13,7 @@
 
 class SdrScanner {
  public:
-  SdrScanner(const Config& config, SdrDevice& device, DataController& dataController);
+  SdrScanner(const Config& config, const std::vector<UserDefinedFrequencyRange>& ranges, SdrDevice& device, DataController& dataController);
   ~SdrScanner();
 
   bool isRunning() const;

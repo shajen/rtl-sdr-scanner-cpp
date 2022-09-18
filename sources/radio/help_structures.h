@@ -17,7 +17,7 @@ struct Signal {
 };
 
 struct FrequencyRange {
-  FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency maxBandwidth);
+  FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency _sampleRate);
   std::string toString() const;
 
   Frequency center() const;

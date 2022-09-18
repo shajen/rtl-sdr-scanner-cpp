@@ -4,6 +4,10 @@
 constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
 
+std::string UserDefinedFrequencyRange::toString() const {
+  return frequencyToString(start, "start") + ", " + frequencyToString(stop, "stop") + ", " + frequencyToString(step, "step") + ", " + frequencyToString(sampleRate, "sample rate");
+}
+
 nlohmann::json readJsonFromFile(const std::string &path) {
   constexpr auto BUFFER_SIZE = 1024 * 1024;
   FILE *file = fopen(path.c_str(), "r");
@@ -64,25 +68,31 @@ spdlog::level::level_enum parseLogLevel(const std::string &level) {
   return spdlog::level::level_enum::off;
 }
 
-std::vector<FrequencyRange> parseFrequenciesRanges(const nlohmann::json &json, const std::string &key, const std::vector<FrequencyRange> defaultValue) {
-  std::vector<FrequencyRange> ranges;
+std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const nlohmann::json &json, const std::string &key) {
+  std::vector<UserDefinedFrequencyRanges> ranges;
   try {
     for (const nlohmann::json &value : json[key]) {
-      const auto start = value["start"].get<Frequency>();
-      const auto stop = value["stop"].get<Frequency>();
-      const auto step = readKey(value, {"step"}, static_cast<Frequency>(125));
-      ranges.push_back({start, stop, step, 0});
+      const auto deviceSerial = value["device_serial"].get<std::string>();
+      std::vector<UserDefinedFrequencyRange> subRanges;
+      for (const nlohmann::json &subValue : value["ranges"]) {
+        const auto start = subValue["start"].get<Frequency>();
+        const auto stop = subValue["stop"].get<Frequency>();
+        const auto step = subValue["step"].get<Frequency>();
+        const auto sampleRate = subValue["sample_rate"].get<Frequency>();
+        subRanges.push_back({start, stop, step, sampleRate});
+      }
+      ranges.push_back({deviceSerial, subRanges});
     }
   } catch (const nlohmann::json::type_error &) {
     fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
-    return defaultValue;
+    return {{"auto", {{144000000, 146000000, 250, 2048000}}}};
   }
   return ranges;
 }
 
 Config::Config(const std::string &path, const std::string &config)
     : m_json(readJsonFromFileAndMerge(path, config)),
-      m_scannerFrequencies(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges", {{144000000, 146000000, 125, 0}})),
+      m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges")),
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
@@ -97,19 +107,16 @@ Config::Config(const std::string &path, const std::string &config)
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
       m_rtlSdrPpm(readKey(m_json, {"devices", "rtl_sdr", "ppm_error"}, 0)),
       m_rtlSdrGain(readKey(m_json, {"devices", "rtl_sdr", "tuner_gain"}, 0.0)),
-      m_rtlSdrMaxBandwidth(readKey(m_json, {"devices", "rtl_sdr", "max_bandwidth"}, 2560000)),
       m_rtlSdrRadioOffset(readKey(m_json, {"devices", "rtl_sdr", "offset"}, 0)),
       m_hackRfLnaGain(readKey(m_json, {"devices", "hack_rf", "lna_gain"}, 0)),
       m_hackRfVgaGain(readKey(m_json, {"devices", "hack_rf", "vga_gain"}, 0)),
-      m_hackRfMaxBandwidth(readKey(m_json, {"devices", "hack_rf", "max_bandwidth"}, 0)),
       m_hackRfRadioOffset(readKey(m_json, {"devices", "hack_rf", "offset"}, 0)),
-      m_deviceSerial(readKey(m_json, {"devices", "serial"}, std::string("auto"))),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
       m_mqttPassword(readKey(m_json, {"mqtt", "password"}, std::string(""))) {}
 
-std::vector<FrequencyRange> Config::scannerFrequencies() const { return m_scannerFrequencies; }
+std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() const { return m_userDefinedFrequencyRanges; }
 
 std::chrono::milliseconds Config::maxRecordingNoiseTime() const { return m_maxRecordingNoiseTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }
@@ -128,15 +135,11 @@ std::string Config::logDir() const { return m_logsDirectory; }
 
 uint32_t Config::rtlSdrPpm() const { return m_rtlSdrPpm; }
 float Config::rtlSdrGain() const { return m_rtlSdrGain; }
-Frequency Config::rtlSdrMaxBandwidth() const { return m_rtlSdrMaxBandwidth; }
 int32_t Config::rtlSdrOffset() const { return m_rtlSdrRadioOffset; }
 
 uint32_t Config::hackRfLnaGain() const { return m_hackRfLnaGain; }
 uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
-Frequency Config::hackRfMaxBandwidth() const { return m_hackRfMaxBandwidth; }
 int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
-
-std::string Config::deviceSerial() const { return m_deviceSerial; }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }
 int Config::mqttPort() const { return m_mqttPort; }

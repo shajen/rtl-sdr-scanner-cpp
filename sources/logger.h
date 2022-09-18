@@ -7,7 +7,7 @@ constexpr auto LOGGER_BUFFER_SIZE = 2048;
 
 class Logger {
  public:
-  static void configure(const Config& config);
+  static void configure(const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logDir);
 
   template <typename... Args>
   static void trace(const char* label, const char* fmt, const Args&... args) {

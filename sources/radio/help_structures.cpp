@@ -4,35 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <vector>
-
-std::vector<Frequency> getBandwidths() {
-  std::vector<Frequency> bandwidths;
-  for (int i = 10; i <= 20; ++i) {
-    const Frequency base = 1 << i;
-    Frequency bandwidth = base;
-    Frequency nextBandwidth = bandwidth * 10;
-    bandwidths.push_back({bandwidth});
-    while (bandwidth < nextBandwidth) {
-      bandwidths.push_back({nextBandwidth});
-      bandwidth *= 10;
-      nextBandwidth *= 10;
-    }
-  }
-  std::sort(bandwidths.begin(), bandwidths.end());
-  return bandwidths;
-}
-
-Frequency fitSampleRate(Frequency sampleRate, Frequency maxBandwidth) {
-  if (maxBandwidth == 0) {
-    return 0;
-  }
-  const static auto bandwidts = getBandwidths();
-  const auto it = std::lower_bound(bandwidts.cbegin(), bandwidts.cend(), sampleRate);
-  if (maxBandwidth < *it) {
-    throw std::runtime_error("can not fit bandwidth, invalid range or max bandwidth");
-  }
-  return *it;
-}
+#include <string.h>
 
 std::string frequencyToString(const Frequency &frequency, const std::string &label) {
   char buf[1024];
@@ -69,8 +41,8 @@ std::string powerToString(const Power &power) {
 
 std::string Signal::toString() const { return frequencyToString(frequency) + ", " + powerToString(power); }
 
-FrequencyRange::FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency maxBandwidth)
-    : start(_start), stop(_stop), step(_step), sampleRate(fitSampleRate(_stop - _start, maxBandwidth)), bandwidth(sampleRate) {}
+FrequencyRange::FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency _sampleRate)
+    : start(_start), stop(_stop), step(_step), sampleRate(_sampleRate), bandwidth(_sampleRate) {}
 
 std::string FrequencyRange::toString() const {
   char buf[1024];
@@ -90,4 +62,7 @@ uint32_t FrequencyRange::fftSize() const { return bandwidth / step; }
 
 bool FrequencyRange::operator==(const FrequencyRange &rhs) const { return start == rhs.start && stop == rhs.stop && step == rhs.step && sampleRate == rhs.sampleRate && bandwidth == rhs.bandwidth; }
 
-bool FrequencyRange::operator<(const FrequencyRange &rhs) const { return start < rhs.start || stop < rhs.stop || step < rhs.step || sampleRate < rhs.sampleRate || bandwidth < rhs.bandwidth; }
+bool FrequencyRange::operator<(const FrequencyRange &rhs) const {
+  return start < rhs.start || (start == rhs.start && stop < rhs.stop) || (stop == rhs.stop && step < rhs.step) || (step == rhs.step && sampleRate < rhs.sampleRate) ||
+         (sampleRate == rhs.sampleRate && bandwidth < rhs.bandwidth);
+}

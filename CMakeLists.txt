@@ -11,6 +11,7 @@ find_package(spdlog REQUIRED)
 find_package(rtlsdr REQUIRED)
 find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(GTest REQUIRED)
 
 find_library(LIQUID_LIB liquid)
 if(NOT LIQUID_LIB)
@@ -27,16 +28,20 @@ if(NOT HACKRF_LIB)
   message(FATAL_ERROR "hackrf library not found")
 endif()
 
-file(GLOB_RECURSE SRC
+file(GLOB_RECURSE SOURCES
     "${PROJECT_SOURCE_DIR}/sources/*.h"
     "${PROJECT_SOURCE_DIR}/sources/*.cpp"
 )
+file(GLOB_RECURSE TEST_SOURCES
+    "${PROJECT_SOURCE_DIR}/tests/*.cpp"
+)
+list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/sources/main.cpp")
+list(REMOVE_ITEM TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/test_main.cpp")
 
 include_directories("${CMAKE_SOURCE_DIR}/sources")
 
-add_executable(auto-sdr ${SRC})
-
-TARGET_LINK_LIBRARIES(auto-sdr
+add_library(auto_sdr_libs STATIC ${SOURCES})
+TARGET_LINK_LIBRARIES(auto_sdr_libs
     spdlog::spdlog
     rtlsdr
     Threads::Threads
@@ -47,4 +52,11 @@ TARGET_LINK_LIBRARIES(auto-sdr
     nlohmann_json::nlohmann_json
 )
 
-install(TARGETS auto-sdr DESTINATION)
+add_executable(auto_sdr "sources/main.cpp")
+target_link_libraries(auto_sdr auto_sdr_libs)
+
+add_executable(auto_sdr_test ${TEST_SOURCES} "tests/test_main.cpp")
+target_link_libraries(auto_sdr_test auto_sdr_libs gtest)
+
+install(TARGETS auto_sdr DESTINATION)
+install(TARGETS auto_sdr_test DESTINATION)

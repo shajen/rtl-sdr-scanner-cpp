@@ -15,5 +15,4 @@ class SdrDevice {
   virtual std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) = 0;
   virtual std::string name() const = 0;
   virtual int32_t offset() const = 0;
-  virtual int32_t maxBandwidth() const = 0;
 };

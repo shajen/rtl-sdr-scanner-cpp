@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <liquid/liquid.h>
 #include <radio/help_structures.h>
 
@@ -22,4 +23,4 @@ void shift(std::vector<std::complex<float>>& samples, const std::vector<std::com
 
 liquid_float_complex* toLiquidComplex(std::complex<float>* ptr);
 
-std::vector<FrequencyRange> splitFrequencyRanges(const Frequency maxBandwidth, const std::vector<FrequencyRange>& frequencyRanges);
+std::vector<FrequencyRange> fitFrequencyRange(const UserDefinedFrequencyRange& userRange);

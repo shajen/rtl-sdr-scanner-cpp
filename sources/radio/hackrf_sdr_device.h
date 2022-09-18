@@ -19,7 +19,6 @@ class HackrfSdrDevice : public SdrDevice {
   void startStream(const FrequencyRange& frequencyRange, Callback&& callback) override;
   std::string name() const override;
   int32_t offset() const override;
-  int32_t maxBandwidth() const override;
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
 
  private:

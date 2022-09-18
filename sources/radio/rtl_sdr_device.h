@@ -13,7 +13,6 @@ class RtlSdrDevice : public SdrDevice {
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
   std::string name() const override;
   int32_t offset() const override;
-  int32_t maxBandwidth() const override;
   static std::vector<std::string> listDevices();
 
  private:

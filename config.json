@@ -1,24 +1,27 @@
 {
   "scanner_frequencies_ranges": [
     {
-      "start": 144000000,
-      "stop": 146000000,
-      "step": 500
+      "device_serial": "auto",
+      "ranges": [
+        {
+          "start": 144000000,
+          "stop": 146000000,
+          "step": 500,
+          "sample_rate": 2048000
+        }
+      ]
     }
   ],
   "devices": {
-    "serial": "auto",
     "rtl_sdr": {
       "ppm_error": 0,
       "tuner_gain": 0.0,
-      "max_bandwidth": 2560000,
       "offset": 0
     },
     "hack_rf": {
       "lna_gain": 0,
       "vga_gain": 0,
       "offset": 0,
-      "max_bandwidth": 25600000
     }
   },
   "recording": {

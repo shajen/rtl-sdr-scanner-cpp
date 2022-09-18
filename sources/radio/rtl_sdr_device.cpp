@@ -39,6 +39,9 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
 
   setupDevice(frequencyRange);
   int read{0};
+  if (m_rawBuffer.size() < samples) {
+    m_rawBuffer.resize(samples);
+  }
   const auto status = rtlsdr_read_sync(m_device, m_rawBuffer.data(), samples, &read);
   if (status != 0) {
     throw std::runtime_error("read samples error");
@@ -61,8 +64,6 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
 std::string RtlSdrDevice::name() const { return {"rtlsdr_" + m_serial}; }
 
 int32_t RtlSdrDevice::offset() const { return m_config.rtlSdrOffset(); }
-
-int32_t RtlSdrDevice::maxBandwidth() const { return m_config.rtlSdrMaxBandwidth(); }
 
 std::vector<std::string> RtlSdrDevice::listDevices() {
   std::vector<std::string> serials;
@@ -104,10 +105,6 @@ void RtlSdrDevice::open() {
   if (m_config.rtlSdrPpm() != 0 && rtlsdr_set_freq_correction(m_device, m_config.rtlSdrPpm()) != 0) {
     throw std::runtime_error("can not set tuner ppm");
   }
-
-  const Frequency maxBandwidth{m_config.rtlSdrMaxBandwidth()};
-  const auto maxSamples = getSamplesCount(maxBandwidth, m_config.frequencyRangeScanningTime());
-  m_rawBuffer.resize(maxSamples);
 }
 
 void RtlSdrDevice::close() {

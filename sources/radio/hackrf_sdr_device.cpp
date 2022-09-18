@@ -8,6 +8,8 @@
 #include <mutex>
 #include <thread>
 
+constexpr uint32_t HACKRF_MIN_SAMPLES_READ_COUNT = 262144;
+
 struct CallbackData {
   CallbackData(uint32_t totalSamples) : buffer(totalSamples), samplesReceived(0) {}
   std::mutex mutex;
@@ -91,7 +93,7 @@ std::vector<std::string> HackrfSdrDevice::listDevices() {
 
 void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback &&callback) {
   setup(frequencyRange);
-  const auto samples = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime());
+  const auto samples = std::max(getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime()), HACKRF_MIN_SAMPLES_READ_COUNT);
   Logger::info("HackRf", "start stream, samples: {}", samples);
   CallbackData callbackData(samples);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
@@ -119,11 +121,9 @@ std::string HackrfSdrDevice::name() const { return {"hackrf_" + m_serial}; }
 
 int32_t HackrfSdrDevice::offset() const { return m_config.hackRfOffset(); }
 
-int32_t HackrfSdrDevice::maxBandwidth() const { return m_config.hackRfMaxBandwidth(); }
-
 std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRange) {
   setup(frequencyRange);
-  const auto samples = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime());
+  const auto samples = std::max(getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime()), HACKRF_MIN_SAMPLES_READ_COUNT);
   Logger::debug("HackRf", "start read data, samples: {}", samples);
   CallbackData callbackData(samples);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {

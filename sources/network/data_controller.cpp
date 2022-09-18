@@ -22,7 +22,7 @@ void add(uint8_t* p, uint64_t& offset, const T* value, int size) {
   offset += sizeof(T) * size;
 }
 
-DataController::DataController(Config& config, Mqtt& mqtt, const std::string& deviceName)
+DataController::DataController(const Config& config, Mqtt& mqtt, const std::string& deviceName)
     : m_config(config), m_mqtt(mqtt), m_spectrogramTopic(std::string("sdr/" + deviceName + "/spectrogram")), m_transmissionsTopic(std::string("sdr/" + deviceName + "/transmission")) {}
 
 DataController::~DataController() = default;

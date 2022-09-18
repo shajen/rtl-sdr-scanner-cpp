@@ -6,12 +6,25 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 
+struct UserDefinedFrequencyRange {
+  const Frequency start;
+  const Frequency stop;
+  const Frequency step;
+  const Frequency sampleRate;
+
+  std::string toString() const;
+};
+
+struct UserDefinedFrequencyRanges {
+  const std::string serial;
+  const std::vector<UserDefinedFrequencyRange> ranges;
+};
+
 class Config {
  public:
   Config(const std::string& path, const std::string& config);
 
-  std::vector<FrequencyRange> scannerFrequencies() const;
-  std::vector<FrequencyRange> ignoredFrequencies() const;
+  std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
 
   std::chrono::milliseconds maxRecordingNoiseTime() const;
   std::chrono::milliseconds minRecordingTime() const;
@@ -30,15 +43,11 @@ class Config {
 
   uint32_t rtlSdrPpm() const;
   float rtlSdrGain() const;
-  Frequency rtlSdrMaxBandwidth() const;
   int32_t rtlSdrOffset() const;
 
   uint32_t hackRfLnaGain() const;
   uint32_t hackRfVgaGain() const;
-  Frequency hackRfMaxBandwidth() const;
   int32_t hackRfOffset() const;
-
-  std::string deviceSerial() const;
 
   std::string mqttHostname() const;
   int mqttPort() const;
@@ -52,7 +61,7 @@ class Config {
  private:
   const nlohmann::json m_json;
 
-  const std::vector<FrequencyRange> m_scannerFrequencies;
+  const std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
 
   const std::chrono::milliseconds m_maxRecordingNoiseTime;
   const std::chrono::milliseconds m_minRecordingTime;
@@ -71,15 +80,11 @@ class Config {
 
   const uint32_t m_rtlSdrPpm;
   const float m_rtlSdrGain;
-  const Frequency m_rtlSdrMaxBandwidth;
   const int32_t m_rtlSdrRadioOffset;
 
   const uint32_t m_hackRfLnaGain;
   const uint32_t m_hackRfVgaGain;
-  const Frequency m_hackRfMaxBandwidth;
   const int32_t m_hackRfRadioOffset;
-
-  const std::string m_deviceSerial;
 
   const std::string m_mqttHostname;
   const int m_mqttPort;

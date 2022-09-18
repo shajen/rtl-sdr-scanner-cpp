@@ -2,12 +2,13 @@
 
 #include <liquid/liquid.h>
 #include <logger.h>
+#include <math.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <numeric>
 #include <stdexcept>
 #include <thread>
-#include <unistd.h>
 
 uint32_t getThreadId() {
   return gettid();
@@ -22,6 +23,7 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
   } else {
     const auto samplesCount = std::lround(sampleRate / (1000.0f / time.count()) * 2);
     if (samplesCount % 512 != 0) {
+      Logger::warn("utils", "samples count {} not fit 512", samplesCount);
       throw std::runtime_error("selected time not fit to sample rate");
     }
     return samplesCount;
@@ -53,24 +55,28 @@ void shift(std::vector<std::complex<float>> &samples, const std::vector<std::com
 
 liquid_float_complex *toLiquidComplex(std::complex<float> *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
 
-std::vector<FrequencyRange> splitFrequencyRanges(const Frequency maxBandwidth, const std::vector<FrequencyRange> &frequencyRanges) {
-  std::vector<FrequencyRange> result;
-  for (const auto &frequencyRange : frequencyRanges) {
-    if (frequencyRange.bandwidth <= maxBandwidth) {
-      result.push_back({frequencyRange.start, frequencyRange.stop, frequencyRange.step, maxBandwidth});
-    } else {
-      Frequency range = 1;
-      while (frequencyRange.step * range * 2 < maxBandwidth) {
-        range = range << 1;
-      }
-      const auto bandwidth = range * frequencyRange.step;
-      const auto factor = std::floor(log10(bandwidth));
-      const auto base = static_cast<Frequency>(pow(10, factor));
-      const auto max = (bandwidth / base) * base;
-      for (Frequency start = frequencyRange.start; start < frequencyRange.stop; start += max) {
-        result.push_back({start, start + max, frequencyRange.step, maxBandwidth});
+std::vector<FrequencyRange> fitFrequencyRange(const UserDefinedFrequencyRange &userRange) {
+  const auto range = userRange.stop - userRange.start;
+  if (userRange.sampleRate < range) {
+    const auto cutDigits = floor(log10(userRange.sampleRate));
+    const auto cutBase = pow(10.0f, cutDigits);
+    const auto firstDigits = floor(userRange.sampleRate / cutBase);
+    Frequency subSampleRate = firstDigits * cutBase;
+    if (range <= subSampleRate) {
+      subSampleRate = range / 2;
+    }
+    std::vector<FrequencyRange> results;
+    for (Frequency i = userRange.start; i < userRange.stop; i += subSampleRate) {
+      for (const auto &range : fitFrequencyRange({i, i + subSampleRate, userRange.step, userRange.sampleRate})) {
+        results.push_back(range);
       }
     }
+    return results;
   }
-  return result;
+  const auto fftSize = userRange.sampleRate / userRange.step;
+  if (fftSize != pow(2.0f, ceil(log2(fftSize)))) {
+    Logger::warn("utils", "range {}, step and sample rate not fit, calculated fft size: {}", userRange.toString(), fftSize);
+    throw std::runtime_error("");
+  }
+  return {{userRange.start, userRange.stop, userRange.step, userRange.sampleRate}};
 }

@@ -2,9 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
 
 env:
   BUILD_TYPE: Release
@@ -17,7 +15,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: sudo apt-get install libspdlog-dev librtlsdr-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev
+      run: sudo apt-get install libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -25,5 +23,8 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j$(nproc)
 
+    - name: Test
+      run: ${{github.workspace}}/build/auto_sdr_test
+
     - name: Run
-      run: ${{github.workspace}}/build/auto-sdr ${{github.workspace}}/config.json
+      run: ${{github.workspace}}/build/auto_sdr ${{github.workspace}}/config.json

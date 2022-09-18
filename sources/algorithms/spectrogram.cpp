@@ -11,7 +11,7 @@ Spectrogram::~Spectrogram() {
   }
 }
 
-std::vector<Signal> Spectrogram::psd(FrequencyRange frequencyRange, std::vector<std::complex<float>>& data, const uint32_t dataSize) {
+std::vector<Signal> Spectrogram::psd(const FrequencyRange& frequencyRange, std::vector<std::complex<float>>& data, const uint32_t dataSize) {
   if (m_spectrograms.count(frequencyRange) == 0) {
     m_spectrograms.insert({frequencyRange, spgramcf_create_default(frequencyRange.fftSize())});
   }
