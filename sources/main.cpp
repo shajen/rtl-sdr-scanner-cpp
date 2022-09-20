@@ -107,6 +107,8 @@ int main(int argc, char* argv[]) {
           scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const ScannerStruct& scanner) { return !scanner.scanner->isRunning(); }), scanners.end());
         }
         if (!reloadConfig) {
+          scanners.clear();
+          std::this_thread::sleep_for(std::chrono::seconds(1));
           break;
         }
       }
