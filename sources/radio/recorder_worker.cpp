@@ -14,33 +14,29 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
       m_isWorking(true),
       m_thread([this]() {
         Logger::info("RecorderWrk", "thread id: {}, start, {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()));
+        std::unique_lock<std::mutex> lock(m_mutex);
         while (m_isWorking) {
-          {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_cv.wait(lock);
-          }
-          while (m_isWorking) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            if (m_samples.empty()) {
-              break;
-            }
+          m_cv.wait(lock);
+          while (m_isWorking && !m_samples.empty()) {
             WorkerInputSamples inputSamples = std::move(m_samples.front());
             m_samples.pop_front();
-            const auto size = m_samples.size();
+            Logger::debug("RecorderWrk", "thread id: {}, processing {} started, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), m_samples.size());
             lock.unlock();
-            Logger::debug("RecorderWrk", "thread id: {}, processing {} started, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), size);
             processSamples(std::move(inputSamples));
+            lock.lock();
             Logger::debug("RecorderWrk", "thread id: {}, processing {} finished", getThreadId(), frequencyToString(m_outputFrequencyRange.center()));
           }
         }
         m_dataController.finishTransmission(m_outputFrequencyRange);
-        std::unique_lock lock(m_mutex);
         Logger::info("RecorderWrk", "thread id: {}, stop, {}, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), m_samples.size());
       }) {}
 
 RecorderWorker::~RecorderWorker() {
   m_isWorking = false;
-  m_cv.notify_all();
+  {
+    std::unique_lock<std::mutex> lock(m_mutex);
+    m_cv.notify_one();
+  }
   m_thread.join();
 }
 

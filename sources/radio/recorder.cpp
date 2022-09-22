@@ -19,21 +19,16 @@ Recorder::Recorder(const Config& config, int32_t offset, DataController& dataCon
       m_isReady(false),
       m_thread([this]() {
         Logger::info("Recorder", "start thread id: {}", getThreadId());
+        std::unique_lock lock(m_dataMutex);
         while (m_isWorking) {
-          {
-            std::unique_lock<std::mutex> lock(m_dataMutex);
-            m_cv.wait(lock);
-          }
-          while (m_isWorking) {
-            std::unique_lock<std::mutex> lock(m_dataMutex);
-            if (m_samples.empty()) {
-              break;
-            }
+          m_cv.wait(lock);
+          while (m_isWorking && !m_samples.empty()) {
             RecorderInputSamples inputSamples = std::move(m_samples.front());
             m_samples.pop_front();
             lock.unlock();
             Logger::debug("Recorder", "pop input samples, size: {}", m_samples.size());
             processSamples(inputSamples.time, inputSamples.frequencyRange, std::move(inputSamples.samples));
+            lock.lock();
           }
         }
         Logger::info("Recorder", "stop thread id: {}", getThreadId());
@@ -41,7 +36,10 @@ Recorder::Recorder(const Config& config, int32_t offset, DataController& dataCon
 
 Recorder::~Recorder() {
   m_isWorking = false;
-  m_cv.notify_all();
+  {
+    std::unique_lock lock(m_dataMutex);
+    m_cv.notify_one();
+  }
   m_thread.join();
 }
 

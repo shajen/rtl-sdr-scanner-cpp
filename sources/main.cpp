@@ -80,8 +80,12 @@ int main(int argc, char* argv[]) {
 #endif
 
   try {
+    bool reloadConfig = false;
     while (isRunning) {
-      bool reloadConfig = false;
+      if (reloadConfig) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+      reloadConfig = false;
       auto f = [&config, &reloadConfig, argc, argv](const std::string& topic, const std::string& message) {
         if (topic == "sdr/config") {
           Logger::info("main", "reload config");
@@ -107,8 +111,6 @@ int main(int argc, char* argv[]) {
           scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const ScannerStruct& scanner) { return !scanner.scanner->isRunning(); }), scanners.end());
         }
         if (!reloadConfig) {
-          scanners.clear();
-          std::this_thread::sleep_for(std::chrono::seconds(1));
           break;
         }
       }

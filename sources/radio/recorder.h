@@ -41,7 +41,6 @@ class Recorder {
 
   std::atomic_bool m_isWorking;
   std::atomic_bool m_isReady;
-  std::thread m_thread;
 
   struct RecorderInputSamples {
     std::chrono::milliseconds time;
@@ -61,4 +60,5 @@ class Recorder {
   std::condition_variable m_cv;
   std::deque<RecorderInputSamples> m_samples;
   std::map<FrequencyRange, std::unique_ptr<RecorderWorkerStruct>> m_workers;
+  std::thread m_thread;
 };
