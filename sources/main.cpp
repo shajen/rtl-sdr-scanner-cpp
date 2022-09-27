@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
   Logger::configure(config->logLevelConsole(), config->logLevelFile(), config->logDir());
 
   Logger::info("main", "start thread id: {}", getThreadId());
-  Logger::info("main", "start app auto-sdr");
+  Logger::info("main", "start app auto_sdr");
 #ifndef NDEBUG
   Logger::info("main", "build type: debug");
 #else
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
   } catch (const std::exception& exception) {
     Logger::error("main", "main exception: {}", exception.what());
   }
-  Logger::info("main", "stop app auto-sdr");
+  Logger::info("main", "stop app auto_sdr");
   Logger::info("main", "stop thread id: {}", getThreadId());
   return 0;
 }
