@@ -25,30 +25,40 @@ nlohmann::json readJsonFromFile(const std::string &path) {
   return {};
 }
 
-nlohmann::json readJsonFromFileAndMerge(const std::string &path, const std::string &data) {
-  nlohmann::json json = readJsonFromFile(path);
+Config::InternalJson getInternalJson(const std::string &path, const std::string &data) {
+  Config::InternalJson internalJson;
+  internalJson.slaveJson = readJsonFromFile(path);
   try {
-    json.update(nlohmann::json::parse(data));
+    internalJson.masterJson = nlohmann::json::parse(data);
   } catch (const nlohmann::json::parse_error &) {
   }
-  return json;
+  return internalJson;
 }
 
 template <typename T>
-T readKey(const nlohmann::json &json, const std::vector<std::string> &keys, const T defaultValue) {
+T readKey(const nlohmann::json &json, const std::vector<std::string> &keys) {
+  nlohmann::json tmp = json;
+  for (const auto &key : keys) {
+    tmp = tmp[key];
+  }
+  return tmp.get<T>();
+}
+
+template <typename T>
+T readKey(const Config::InternalJson &json, const std::vector<std::string> &keys, const T defaultValue) {
   try {
-    nlohmann::json tmp = json;
-    for (const auto &key : keys) {
-      tmp = tmp[key];
-    }
-    return tmp.get<T>();
+    return readKey<T>(json.masterJson, keys);
   } catch (const nlohmann::json::type_error &) {
-    fprintf(stderr, "warning, can not read from config (use default value): ");
-    for (const auto &key : keys) {
-      fprintf(stderr, "%s.", key.c_str());
+    try {
+      return readKey<T>(json.slaveJson, keys);
+    } catch (const nlohmann::json::type_error &) {
+      fprintf(stderr, "warning, can not read from config (use default value): ");
+      for (const auto &key : keys) {
+        fprintf(stderr, "%s.", key.c_str());
+      }
+      fprintf(stderr, "\n");
+      return defaultValue;
     }
-    fprintf(stderr, "\n");
-    return defaultValue;
   }
 }
 
@@ -70,28 +80,36 @@ spdlog::level::level_enum parseLogLevel(const std::string &level) {
 
 std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const nlohmann::json &json, const std::string &key) {
   std::vector<UserDefinedFrequencyRanges> ranges;
-  try {
-    for (const nlohmann::json &value : json[key]) {
-      const auto deviceSerial = value["device_serial"].get<std::string>();
-      std::vector<UserDefinedFrequencyRange> subRanges;
-      for (const nlohmann::json &subValue : value["ranges"]) {
-        const auto start = subValue["start"].get<Frequency>();
-        const auto stop = subValue["stop"].get<Frequency>();
-        const auto step = subValue["step"].get<Frequency>();
-        const auto sampleRate = subValue["sample_rate"].get<Frequency>();
-        subRanges.push_back({start, stop, step, sampleRate});
-      }
-      ranges.push_back({deviceSerial, subRanges});
+  for (const nlohmann::json &value : json[key]) {
+    const auto deviceSerial = value["device_serial"].get<std::string>();
+    std::vector<UserDefinedFrequencyRange> subRanges;
+    for (const nlohmann::json &subValue : value["ranges"]) {
+      const auto start = subValue["start"].get<Frequency>();
+      const auto stop = subValue["stop"].get<Frequency>();
+      const auto step = subValue["step"].get<Frequency>();
+      const auto sampleRate = subValue["sample_rate"].get<Frequency>();
+      subRanges.push_back({start, stop, step, sampleRate});
     }
-  } catch (const nlohmann::json::type_error &) {
-    fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
-    return {{"auto", {{144000000, 146000000, 250, 2048000}}}};
+    ranges.push_back({deviceSerial, subRanges});
   }
   return ranges;
 }
 
+std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::InternalJson &json, const std::string &key) {
+  try {
+    return parseFrequenciesRanges(json.masterJson, key);
+  } catch (const nlohmann::json::type_error &) {
+    try {
+      return parseFrequenciesRanges(json.slaveJson, key);
+    } catch (const nlohmann::json::type_error &) {
+      fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
+      return {{"auto", {{144000000, 146000000, 250, 2048000}}}};
+    }
+  }
+}
+
 Config::Config(const std::string &path, const std::string &config)
-    : m_json(readJsonFromFileAndMerge(path, config)),
+    : m_json(getInternalJson(path, config)),
       m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges")),
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),

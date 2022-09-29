@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
       reloadConfig = false;
       auto f = [&config, &reloadConfig, argc, argv](const std::string& topic, const std::string& message) {
         if (topic == "sdr/config") {
-          Logger::info("main", "reload config");
+          Logger::info("main", "reload config: {}", message);
           if (argc >= 2) {
             config = std::make_unique<Config>(argv[1], message);
           } else {

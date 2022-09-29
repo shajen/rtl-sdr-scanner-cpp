@@ -22,6 +22,11 @@ struct UserDefinedFrequencyRanges {
 
 class Config {
  public:
+  struct InternalJson {
+    nlohmann::json masterJson;
+    nlohmann::json slaveJson;
+  };
+
   Config(const std::string& path, const std::string& config);
 
   std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
@@ -59,7 +64,7 @@ class Config {
   float spectrogramFactor() const;
 
  private:
-  const nlohmann::json m_json;
+  const InternalJson m_json;
 
   const std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
 
