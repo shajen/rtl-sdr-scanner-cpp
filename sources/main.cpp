@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
 #endif
 
   try {
+    signal(SIGINT, handler);
     bool reloadConfig = false;
     while (isRunning) {
       if (reloadConfig) {
@@ -105,7 +106,6 @@ int main(int argc, char* argv[]) {
         Logger::warn("main", "not found sdr devices");
         break;
       } else {
-        signal(SIGINT, handler);
         while (isRunning && !scanners.empty() && !reloadConfig) {
           std::this_thread::sleep_for(std::chrono::milliseconds(10));
           scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const ScannerStruct& scanner) { return !scanner.scanner->isRunning(); }), scanners.end());

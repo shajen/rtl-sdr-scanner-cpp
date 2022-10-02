@@ -50,7 +50,9 @@ HackRfInitializer::HackRfInitializer() {
 
 HackRfInitializer::~HackRfInitializer() {
   Logger::info("HackRf", "exit");
-  hackrf_exit();
+  if (hackrf_exit() != HACKRF_SUCCESS) {
+    Logger::warn("HackRf", "can not exit hackrf");
+  }
 }
 
 HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial) : m_config(config), m_serial(serial) {
@@ -74,13 +76,18 @@ HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial
 
 HackrfSdrDevice::~HackrfSdrDevice() {
   Logger::info("HackRf", "close device, serial: {}", m_serial);
-  hackrf_close(m_device);
+  if (hackrf_close(m_device) != HACKRF_SUCCESS) {
+    Logger::warn("HackRf", "can not close device, serial: {}", m_serial);
+  }
 }
 
 std::vector<std::string> HackrfSdrDevice::listDevices() {
   HackRfInitializer hackRfInitializer;
   std::vector<std::string> serials;
   auto list = hackrf_device_list();
+  if (!list) {
+    throw std::runtime_error("can not read hackrf devices list");
+  }
   for (int i = 0; i < list->devicecount; ++i) {
     if (!list->serial_numbers[i]) {
       throw std::runtime_error("can not read hackrf serial");
