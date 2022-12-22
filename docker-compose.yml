@@ -1,6 +1,6 @@
 services:
   sdr-broker:
-    image: eclipse-mosquitto
+    image: eclipse-mosquitto:latest
     restart: on-failure
     volumes:
       - /etc/timezone:/etc/timezone:ro
@@ -36,7 +36,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: bash -c "python3 manage.py migrate && python3 manage.py collectstatic --no-input"
+    command: python3 manage.py migrate
   sdr-monitor-server:
     image: shajen/sdr-monitor:latest
     restart: on-failure
