@@ -21,7 +21,7 @@
     "hack_rf": {
       "lna_gain": 0,
       "vga_gain": 0,
-      "offset": 0,
+      "offset": 0
     }
   },
   "recording": {
@@ -43,9 +43,9 @@
     "console_log_level": "info"
   },
   "mqtt": {
-    "hostname": "test.mosquitto.org",
+    "hostname": "sdr-broker",
     "port": 1883,
-    "username": "",
-    "password": ""
+    "username": "admin",
+    "password": "password"
   }
 }

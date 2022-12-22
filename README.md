@@ -1,122 +1,91 @@
 # Introduction
 
-This project contains rtl-sdr tool written in `c++` to **scan and record multiple interesting frequencies bandwidth in the same time** (eg. 108 MHz, 144 MHz, 440 Mhz,  etc). This is possible by switching quickly between frequencies bandwidth.
+This project contains sdr scanner written in `c++` to **scan and record multiple interesting frequencies bandwidth in the same time** (eg. 108 MHz, 144 MHz, 440 Mhz,  etc). This is possible by switching quickly between frequencies bandwidth.
 
-[![YouTube video](http://img.youtube.com/vi/TSDbcb7wSjs/0.jpg)](http://www.youtube.com/watch?v=TSDbcb7wSjs "YouTube video")
+Sdr scanner also allows you to record multiple transmissions simultaneously (if they are transmitted on the same band). For example, if one transmission is on 145.200 MHz and the other is on 145.600 MHz, the scanner will record and save both!
 
-This project is a new version of [rtl-sdr-scanner](https://github.com/shajen/rtl-sdr-scanner) which was written in `python`.
+It also provides easy but very powerful **web panel** to explore recordings and spectrograms.
 
-An improvement over the previous version:
-- huge performance boost
-- support long time recordings
-- faster signals detection
-- save recordings as mp3
+# Supported devices
 
-# Run
+- rtl-sdr
+- hackRF
 
-## Prerequisites
+# Sample data collected
 
-You need `gcc`, `cmake` and some libraries to start the work. Install it before continue. For example on Debian based distribution run follow commands:
+[YouTube video](http://www.youtube.com/watch?v=TSDbcb7wSjs)
+
+| Spectrogram | Transmission |
+| - | - |
+| ![](images/spectrograms.png?raw=1) | ![](images/transmissions.png?raw=1) |
+| ![](images/spectrogram.png?raw=1) | ![](images/transmission.png?raw=1) |
+
+# Quickstart
+
+## Install docker
+
+If you do not have `docker` installed, follow the instructions available at [https://docs.docker.com/desktop/](https://docs.docker.com/desktop/) to install `docker` and `docker-compose`.
+
+## Run
+
+Download sample configuration and docker file, then run it. Customize `config.json` to your needs.
+```
+mkdir -p sdr
+cd sdr
+wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/config.json
+wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
+docker-compose up
+```
+
+Wait a moment to collect data and open panel.
+
+## Panel
+
+Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) and wait for data to collect.
+
+# Advanced usage
+
+## Build from sources
+
+### CMake
+
+Build
 
 ```
-sudo apt-get install build-essential cmake libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev
-```
-
-## Build
-
-```
-cmake -B build -DCMAKE_BUILD_TYPE=Release
+sudo apt-get install build-essential cmake ccache libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev
+git clone https://github.com/shajen/rtl-sdr-scanner-cpp sdr-scanner
+cd sdr-scanner
+cmake -B build -DCMAKE_BUILD_TYPE=Release .
 cmake --build build -j$(nproc)
 ```
 
-## Configuration
-
-Edit your configuration in file [config.json](config.json).
-
-## Execute
+Run
 
 ```
 ./build/auto-sdr config.json
 ```
 
-# Run in Docker
+### Docker
 
-## Build image
-
-```
-docker build -t auto-sdr --build-arg URL="https://github.com/shajen/rtl-sdr-scanner-cpp/archive/refs/heads/master.zip" .
-```
-
-## Run image
+Build
 
 ```
-docker run --hostname auto-sdr -it -v $(pwd)/sdr:/sdr -v $(pwd)/config.json:/root/config.json auto-sdr
+git clone https://github.com/shajen/rtl-sdr-scanner-cpp sdr-scanner
+cd sdr-scanner
+docker build -t sdr-scanner-dev -f Dockerfile.dev .
+docker run --rm -v ${PWD}:/git/rtl-sdr-scanner sdr-scanner-dev /bin/bash -c "cmake -B /git/rtl-sdr-scanner/build -DCMAKE_BUILD_TYPE=Release /git/rtl-sdr-scanner && cmake --build /git/rtl-sdr-scanner/build -j$(nproc)"
+docker build -t shajen/sdr-scanner -f Dockerfile.run .
 ```
 
-# Example
-```
-shajen@artemida:~/git/auto-sdr-cpp $ ./build/auto-sdr config.json
-[2022-01-21 03:00:55.105] [auto-sdr] [info]     [main]        start app auto-sdr
-[2022-01-21 03:00:55.105] [auto-sdr] [info]     [main]        build type: release
-[2022-01-21 03:00:55.172] [auto-sdr] [info]     [rtl_sdr]     open device, index: 0, name: Generic RTL2832U OEM, serial: 00000001
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     ignored frequency ranges: 2
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     frequency range, start: 144.100.000 Hz, stop: 144.200.000 Hz, step:   0.000.000 Hz, bandwidth:   0.000.000 Hz
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     frequency range, start: 145.588.000 Hz, stop: 145.608.000 Hz, step:   0.000.000 Hz, bandwidth:   0.000.000 Hz
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     original frequency ranges: 1
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     frequency range, start: 144.000.000 Hz, stop: 146.000.000 Hz, step:   0.000.125 Hz, bandwidth:   2.048.000 Hz
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     splitted frequency ranges: 1
-[2022-01-21 03:00:55.659] [auto-sdr] [info]     [rtl_sdr]     frequency range, start: 144.000.000 Hz, stop: 146.000.000 Hz, step:   0.000.125 Hz, bandwidth:   2.048.000 Hz
-[2022-01-21 04:30:48.280] [auto-sdr] [info]     [rtl_sdr]     recording signal, frequency: 145.821.500 Hz, power:  18.61 dB ##############################
-[2022-01-21 04:30:48.281] [auto-sdr] [info]     [recorder]    start recording frequency: 145.821.500 Hz
-[2022-01-21 04:30:48.487] [auto-sdr] [info]     [rtl_sdr]     start stream
-[2022-01-21 04:30:49.105] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.205] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.297] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.389] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.501] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.595] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.688] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.782] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.898] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:49.994] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.088] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.182] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.299] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.393] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.490] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.516] [auto-sdr] [info]     [rtl_sdr]     cancel stream
-[2022-01-21 04:30:50.582] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.695] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:50.793] [auto-sdr] [info]     [recorder]    no signal
-[2022-01-21 04:30:51.534] [auto-sdr] [info]     [rtl_sdr]     stop stream
-[2022-01-21 04:30:51.536] [auto-sdr] [info]     [recorder]    stop recording
-[2022-01-21 04:30:51.539] [auto-sdr] [info]     [mp3]         recording time: 0.00 s, too short, removing
-```
-
-Recordings are stored in `sdr/recordings/` directory by default.
-
-# Waterfall
-
-Repository contains additional helpful tools to work with waterfall plot based on data from `rtl-sdr-scanner` module.
-
-## Live waterfall plot
-
-Open [waterfall live/index.html](waterfall%20live/index.html) in your web browser. Based on [https://github.com/jledet/waterfall](https://github.com/jledet/waterfall) sources.
-
-It produces waterfall plot in real time.
-
-![waterfall_live.png](images/waterfall_live.png "waterfall_live.png")
-
-## Image waterfall plot
+Run
 
 ```
-pip3 install --user -r 'waterfall store/requirements.txt'
-python3 'waterfall store/main.py'
+docker run --rm -it -v ${PWD}/config.json:/config.json shajen/sdr-scanner
 ```
 
-It produces waterfall plot to `sdr/waterfalls` directory every 10 minutes by default.
+## Distributed application system
 
-![waterfall.png](images/waterfall.png "waterfall.png")
+It is possible to run every module (`sdr-broker`, `sdr-scanner` and `sdr-monitor`) on different machines and connect them. Please familiar with [docker-compose.yml](docker-compose.yml) to do it.
 
 # Contributing
 

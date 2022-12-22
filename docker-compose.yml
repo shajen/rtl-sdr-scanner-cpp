@@ -1,0 +1,68 @@
+services:
+  sdr-broker:
+    image: eclipse-mosquitto
+    restart: on-failure
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "listener 1883" > /mosquitto/config/mosquitto.conf
+        echo "allow_anonymous false" >> /mosquitto/config/mosquitto.conf
+        echo "password_file /mosquitto/config/password.txt" >> /mosquitto/config/mosquitto.conf
+        echo "admin:password" > /mosquitto/config/password.txt
+        mosquitto_passwd -U /mosquitto/config/password.txt
+        mosquitto -c /mosquitto/config/mosquitto.conf
+  sdr-scanner:
+    image: shajen/sdr-scanner:latest
+    restart: on-failure
+    depends_on:
+      - sdr-broker
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./config.json:/config.json
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+  sdr-monitor-setup:
+    image: shajen/sdr-monitor:latest
+    restart: on-failure
+    depends_on:
+      - sdr-broker
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - monitor_db:/usr/src/sdr-panel/db
+      - monitor_data:/usr/src/sdr-panel/public/media
+    command: bash -c "python3 manage.py migrate && python3 manage.py collectstatic --no-input"
+  sdr-monitor-server:
+    image: shajen/sdr-monitor:latest
+    restart: on-failure
+    depends_on:
+      sdr-monitor-setup:
+        condition: service_completed_successfully
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - monitor_db:/usr/src/sdr-panel/db
+      - monitor_data:/usr/src/sdr-panel/public/media
+    command: python3 manage.py runserver 0.0.0.0:8000
+    ports:
+      - 8000:8000
+  sdr-monitor-reader:
+    image: shajen/sdr-monitor:latest
+    restart: on-failure
+    depends_on:
+      sdr-monitor-setup:
+        condition: service_completed_successfully
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - monitor_db:/usr/src/sdr-panel/db
+      - monitor_data:/usr/src/sdr-panel/public/media
+    command: python3 manage.py runscript mqtt_reader
+volumes:
+  monitor_db:
+  monitor_data:

@@ -1,0 +1,45 @@
+name: main
+
+on:
+  push:
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up docker cache
+        uses: actions/cache@v3
+        with:
+          path: /var/lib/docker
+          key: ${{ runner.os }}-docker
+      - name: Set up ccache
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.ccache
+          key: ${{ runner.os }}-ccache
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Docker info
+        run: docker info
+      - name: Build devel docker image
+        run: docker build -t sdr-scanner-dev -f Dockerfile.dev .
+      - name: Build sdr-scanner
+        run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner -v /tmp/.ccache:/root/.cache/ccache sdr-scanner-dev /bin/bash -c "cmake -B /git/rtl-sdr-scanner/build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release /git/rtl-sdr-scanner && cmake --build /git/rtl-sdr-scanner/build -j$(nproc)"
+      - name: Test sdr-scanner
+        run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner sdr-scanner-dev /git/rtl-sdr-scanner/build/auto_sdr_test
+      - name: Run sdr-scanner
+        run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner sdr-scanner-dev /git/rtl-sdr-scanner/build/auto_sdr /git/rtl-sdr-scanner/config.json
+      - name: Build runtime docker image
+        run: docker build -t shajen/sdr-scanner -f Dockerfile.run .
+      - name: Deploy sdr-scanner latest
+        if: github.ref_name == 'raw'
+        run: |
+          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} docker.io
+          docker image tag shajen/sdr-scanner docker.io/shajen/sdr-scanner
+          docker push docker.io/shajen/sdr-scanner
+      - name: Deploy sdr-scanner tag
+        if: github.ref_type == 'tag'
+        run: |
+          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} docker.io
+          docker image tag shajen/sdr-scanner docker.io/shajen/sdr-scanner:$GITHUB_REF_NAME
+          docker push docker.io/shajen/sdr-scanner:$GITHUB_REF_NAME
