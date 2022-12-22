@@ -31,12 +31,6 @@ jobs:
         run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner sdr-scanner-dev /git/rtl-sdr-scanner/build/auto_sdr /git/rtl-sdr-scanner/config.json
       - name: Build runtime docker image
         run: docker build -t shajen/sdr-scanner -f Dockerfile.run .
-      - name: Deploy sdr-scanner latest
-        if: github.ref_name == 'raw'
-        run: |
-          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} docker.io
-          docker image tag shajen/sdr-scanner docker.io/shajen/sdr-scanner
-          docker push docker.io/shajen/sdr-scanner
       - name: Deploy sdr-scanner tag
         if: github.ref_type == 'tag'
         run: |
