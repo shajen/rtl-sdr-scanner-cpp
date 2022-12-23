@@ -46,7 +46,9 @@ docker compose pull
 
 ## Panel
 
-Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) and wait for data to collect.
+Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) and wait for data to collect.
+
+Admin panel available at [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/). Username: `admin`, password: `password`.
 
 # Config
 

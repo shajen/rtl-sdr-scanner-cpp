@@ -2,9 +2,6 @@ services:
   sdr-broker:
     image: eclipse-mosquitto:latest
     restart: on-failure
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
     command:
       - /bin/sh
       - -c
@@ -36,7 +33,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: python3 manage.py migrate
+    command: bash -c "python3 manage.py migrate && DJANGO_SUPERUSER_PASSWORD=password python3 manage.py createsuperuser --noinput --username admin --email admin@local.local || true"
   sdr-monitor-server:
     image: shajen/sdr-monitor:latest
     restart: on-failure

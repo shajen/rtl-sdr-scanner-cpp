@@ -1,4 +1,5 @@
 FROM ubuntu:22.04
 
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
-    apt-get install -y build-essential cmake ccache libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev
+    apt-get install -y build-essential cmake ccache libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev tzdata
