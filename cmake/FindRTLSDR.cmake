@@ -21,6 +21,7 @@ FIND_LIBRARY(RTLSDR_LIBRARY
   PATHS ${RTLSDR_DIR}/libs
   "${RTLSDR_DIR}\\win32\\lib"
   /usr/pkgs64/lib
+  /usr/lib/x86_64-linux-gnu
   /usr/lib64
   /usr/lib
   /usr/local/lib
