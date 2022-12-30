@@ -34,7 +34,6 @@ class Config {
   std::chrono::milliseconds maxRecordingNoiseTime() const;
   std::chrono::milliseconds minRecordingTime() const;
   Frequency minRecordingSampleRate() const;
-  uint8_t maxConcurrentTransmissions() const;
 
   Frequency frequencyGroupingSize() const;
   std::chrono::milliseconds frequencyRangeScanningTime() const;
@@ -54,6 +53,8 @@ class Config {
   uint32_t hackRfVgaGain() const;
   int32_t hackRfOffset() const;
 
+  uint8_t cores() const;
+
   std::string mqttHostname() const;
   int mqttPort() const;
   std::string mqttUsername() const;
@@ -71,7 +72,6 @@ class Config {
   const std::chrono::milliseconds m_maxRecordingNoiseTime;
   const std::chrono::milliseconds m_minRecordingTime;
   const Frequency m_minRecordingSampleRate;
-  const uint8_t m_maxConcurrentTransmissions;
 
   const Frequency m_frequencyGroupingSize;
   const std::chrono::milliseconds m_frequencyRangeScanningTime;
@@ -90,6 +90,8 @@ class Config {
   const uint32_t m_hackRfLnaGain;
   const uint32_t m_hackRfVgaGain;
   const int32_t m_hackRfRadioOffset;
+
+  const uint8_t m_cores;
 
   const std::string m_mqttHostname;
   const int m_mqttPort;

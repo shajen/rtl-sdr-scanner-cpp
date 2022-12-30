@@ -16,6 +16,11 @@ find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(GTest REQUIRED)
 
+find_library(FFTW_LIB fftw3)
+if(NOT FFTW_LIB)
+  message(FATAL_ERROR "fftw3 library not found")
+endif()
+
 find_library(LIQUID_LIB liquid)
 if(NOT LIQUID_LIB)
   message(FATAL_ERROR "liquid library not found")
@@ -48,6 +53,8 @@ TARGET_LINK_LIBRARIES(auto_sdr_libs
     spdlog::spdlog
     rtlsdr
     Threads::Threads
+    fftw3_threads
+    fftw3f_threads
     liquid
     mosquitto
     hackrf

@@ -120,7 +120,6 @@ Config::Config(const std::string &path, const std::string &config)
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
-      m_maxConcurrentTransmissions(readKey(m_json, {"recording", "max_concurrent_recordings"}, 10)),
       m_frequencyGroupingSize(readKey(m_json, {"detection", "frequency_grouping_size"}, 10000)),
       m_frequencyRangeScanningTime(std::chrono::milliseconds(readKey(m_json, {"detection", "frequency_range_scanning_time_ms"}, 100))),
       m_noiseLearningTime(std::chrono::seconds(readKey(m_json, {"detection", "noise_learning_time_seconds"}, 10))),
@@ -135,6 +134,7 @@ Config::Config(const std::string &path, const std::string &config)
       m_hackRfLnaGain(readKey(m_json, {"devices", "hack_rf", "lna_gain"}, 0)),
       m_hackRfVgaGain(readKey(m_json, {"devices", "hack_rf", "vga_gain"}, 0)),
       m_hackRfRadioOffset(readKey(m_json, {"devices", "hack_rf", "offset"}, 0)),
+      m_cores(readKey(m_json, {"cores"}, 4)),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
@@ -145,7 +145,6 @@ std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() con
 std::chrono::milliseconds Config::maxRecordingNoiseTime() const { return m_maxRecordingNoiseTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }
 Frequency Config::minRecordingSampleRate() const { return m_minRecordingSampleRate; }
-uint8_t Config::maxConcurrentTransmissions() const { return m_maxConcurrentTransmissions; }
 
 std::chrono::milliseconds Config::frequencyRangeScanningTime() const { return m_frequencyRangeScanningTime; }
 Frequency Config::frequencyGroupingSize() const { return m_frequencyGroupingSize; }
@@ -164,6 +163,8 @@ int32_t Config::rtlSdrOffset() const { return m_rtlSdrRadioOffset; }
 uint32_t Config::hackRfLnaGain() const { return m_hackRfLnaGain; }
 uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
 int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
+
+uint8_t Config::cores() const { return m_cores; }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }
 int Config::mqttPort() const { return m_mqttPort; }

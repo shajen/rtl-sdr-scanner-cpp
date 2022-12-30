@@ -27,8 +27,7 @@
   "recording": {
     "max_noise_time_ms": 500,
     "min_time_ms": 2000,
-    "min_sample_rate": 16000,
-    "max_concurrent_recordings": 10
+    "min_sample_rate": 16000
   },
   "detection": {
     "frequency_grouping_size": 10000,
@@ -42,6 +41,7 @@
     "file_log_level": "info",
     "console_log_level": "info"
   },
+  "cores": 4,
   "mqtt": {
     "hostname": "sdr-broker",
     "port": 1883,

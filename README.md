@@ -227,7 +227,7 @@ Please note that `sample_rate` must be greather than (`stop frequency range` - `
 Build
 
 ```
-sudo apt-get install build-essential cmake ccache libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev
+sudo apt-get install build-essential cmake ccache libfftw3-dev libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev
 git clone https://github.com/shajen/rtl-sdr-scanner-cpp sdr-scanner
 cd sdr-scanner
 cmake -B build -DCMAKE_BUILD_TYPE=Release .

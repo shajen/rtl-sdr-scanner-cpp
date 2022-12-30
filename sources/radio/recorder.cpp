@@ -126,7 +126,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
       m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
     }
     if (m_workers.count(transmissionSampleRate) == 0) {
-      if (m_config.maxConcurrentTransmissions() <= m_workers.size()) {
+      if (m_config.cores() <= m_workers.size()) {
         Logger::warn("Recorder", "reached concurrent transmissions limit, skip {}", frequencyToString(transmissionSampleRate.center()));
         continue;
       }

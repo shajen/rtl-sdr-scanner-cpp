@@ -2,7 +2,7 @@ FROM ubuntu:22.04 as build
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
-    apt-get install -y curl git zip build-essential cmake ccache tzdata libspdlog-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev libusb-1.0-0-dev
+    apt-get install -y curl git zip build-essential cmake ccache tzdata libspdlog-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev libusb-1.0-0-dev libfftw3-dev
 
 # Hacked rtl-sdr drivers
 RUN git clone --depth 1 -b v0.8.0 https://github.com/krakenrf/librtlsdr /tmp/librtlsdr && \
@@ -20,7 +20,7 @@ RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release /root/auto-sdr && \
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
-    apt-get install -y tzdata libspdlog1 libhackrf0 libliquid2d nlohmann-json3-dev libmosquitto1 libusb-1.0-0 && \
+    apt-get install -y tzdata libspdlog1 libhackrf0 libliquid2d nlohmann-json3-dev libmosquitto1 libusb-1.0-0 libfftw3-bin && \
     apt-get autoremove -y && \
     apt-get clean all && \
     rm -rf /var/lib/apt/lists/
