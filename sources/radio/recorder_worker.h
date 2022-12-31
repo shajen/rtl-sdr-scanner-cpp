@@ -16,7 +16,7 @@
 
 struct WorkerInputSamples {
   std::chrono::milliseconds time;
-  std::vector<std::complex<float>> samples;
+  std::shared_ptr<std::vector<std::complex<float>>> samples;
   FrequencyRange frequencyRange;
   bool isActive;
 };
@@ -35,6 +35,7 @@ class RecorderWorker {
   const FrequencyRange m_outputFrequencyRange;
   DataController &m_dataController;
 
+  std::vector<std::complex<float>> m_samplesData;
   std::vector<std::complex<float>> m_shiftData;
   std::vector<std::complex<float>> m_decimatorBuffer;
   std::unique_ptr<Decimator> m_decimator;

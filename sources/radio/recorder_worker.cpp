@@ -42,13 +42,16 @@ RecorderWorker::~RecorderWorker() {
 }
 
 void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
-  Logger::debug("RecorderWrk", "thread id: {}, processing started, samples: {}", getThreadId(), inputSamples.samples.size());
+  Logger::debug("RecorderWrk", "thread id: {}, processing started, samples: {}", getThreadId(), inputSamples.samples->size());
   const auto sampleRate = inputSamples.frequencyRange.sampleRate;
   const auto decimateRate(sampleRate / (m_outputFrequencyRange.stop - m_outputFrequencyRange.start));
-  const auto rawBufferSamples = inputSamples.samples.size();
+  const auto rawBufferSamples = inputSamples.samples->size();
   const auto downSamples = rawBufferSamples / decimateRate;
   const auto center = inputSamples.frequencyRange.center();
 
+  if (m_samplesData.size() < rawBufferSamples) {
+    m_samplesData.resize(rawBufferSamples);
+  }
   if (m_shiftData.size() < rawBufferSamples) {
     m_shiftData = getShiftData(center - m_outputFrequencyRange.center(), sampleRate, rawBufferSamples);
     Logger::debug("RecorderWrk", "thread id: {}, shift data resized, size: {}", getThreadId(), m_shiftData.size());
@@ -61,9 +64,10 @@ void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
     m_decimator = std::make_unique<Decimator>(m_config, decimateRate);
   }
 
-  shift(inputSamples.samples, m_shiftData, rawBufferSamples);
+  std::copy(inputSamples.samples->begin(), inputSamples.samples->end(), m_samplesData.begin());
+  shift(m_samplesData, m_shiftData, rawBufferSamples);
   Logger::trace("RecorderWrk", "thread id: {}, shift finished", getThreadId());
-  m_decimator->decimate(inputSamples.samples.data(), downSamples, m_decimatorBuffer.data());
+  m_decimator->decimate(m_samplesData.data(), downSamples, m_decimatorBuffer.data());
   Logger::trace("RecorderWrk", "thread id: {}, decimate finished", getThreadId());
 
   m_dataController.pushTransmission(inputSamples.time, m_outputFrequencyRange, m_decimatorBuffer, inputSamples.isActive);

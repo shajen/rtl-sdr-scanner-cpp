@@ -122,6 +122,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
       Logger::info("Recorder", "erase worker {}, total workers: {}, queue size: {}", frequencyToString(frequencyRange.center()), m_workers.size(), m_samples.size());
     }
   }
+  std::shared_ptr<std::vector<std::complex<float>>> sharedSamples;
   for (const auto& [transmissionSampleRate, isActive] : activeTransmissions) {
     if (isActive) {
       m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
@@ -142,7 +143,17 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     }
     auto& rws = m_workers.at(transmissionSampleRate);
     std::unique_lock<std::mutex> lock(rws->mutex);
-    rws->samples.push_back({time, {m_rawBuffer.begin(), m_rawBuffer.begin() + rawBufferSamples}, frequencyRange, isActive});
+    if (!sharedSamples) {
+      if (isMemoryLimitReached(m_config.memoryLimit())) {
+        Logger::warn("Recorder", "reached memory limit, skipping samples");
+        break;
+      } else {
+        sharedSamples = std::make_shared<std::vector<std::complex<float>>>(std::move(m_rawBuffer));
+        sharedSamples->resize(rawBufferSamples);
+        m_rawBuffer = {};
+      }
+    }
+    rws->samples.push_back({time, sharedSamples, frequencyRange, isActive});
     rws->cv.notify_one();
     Logger::debug("Recorder", "push worker input samples, queue size: {}", rws->samples.size());
   }
