@@ -96,6 +96,7 @@ int main(int argc, char* argv[]) {
 
   try {
     signal(SIGINT, handler);
+    signal(SIGTERM, handler);
     bool reloadConfig = false;
     while (isRunning) {
       if (reloadConfig) {
