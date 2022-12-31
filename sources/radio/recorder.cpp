@@ -19,6 +19,7 @@ Recorder::Recorder(const Config& config, int32_t offset, DataController& dataCon
       m_isReady(false),
       m_thread([this]() {
         Logger::info("Recorder", "start thread id: {}", getThreadId());
+        setThreadParams("recorder", PRIORITY::HIGH);
         std::unique_lock lock(m_dataMutex);
         while (m_isWorking) {
           m_cv.wait(lock);

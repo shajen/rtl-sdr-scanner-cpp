@@ -9,6 +9,10 @@
 #include <optional>
 #include <vector>
 
+enum class PRIORITY : int { LOW = 0, MEDIUM = 5, HIGH = 19 };
+
+void setThreadParams(const std::string& name, PRIORITY priority = PRIORITY::LOW);
+
 uint32_t getThreadId();
 
 uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time);

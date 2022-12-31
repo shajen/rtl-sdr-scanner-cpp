@@ -28,6 +28,7 @@ SdrScanner::SdrScanner(const Config& config, const std::vector<UserDefinedFreque
 
   m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
     Logger::info("Scanner", "start thread id: {}", getThreadId());
+    setThreadParams("scanner", PRIORITY::HIGH);
     try {
       if (splittedFrequencyRanges.size() == 1) {
         startStream(splittedFrequencyRanges.front(), true);
@@ -54,8 +55,8 @@ SdrScanner::~SdrScanner() {
 bool SdrScanner::isRunning() const { return m_isRunning; }
 
 void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForever) {
-  auto f = [this, frequencyRange, runForever](uint8_t* buf, uint32_t len) {
-    m_recorder.appendSamples(time(), frequencyRange, std::vector<uint8_t>({buf, buf + len}));
+  auto f = [this, frequencyRange, runForever](std::vector<uint8_t>&& data) {
+    m_recorder.appendSamples(time(), frequencyRange, std::move(data));
     return m_isRunning && (runForever || m_recorder.isTransmissionInProgress());
   };
   m_recorder.clear();

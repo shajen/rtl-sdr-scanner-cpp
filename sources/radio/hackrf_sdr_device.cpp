@@ -108,15 +108,13 @@ void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback
   }
 
   while (true) {
-    std::vector<uint8_t> buffer;
-    {
-      std::unique_lock lock(callbackData.mutex);
-      callbackData.cv.wait(lock);
-      buffer = callbackData.buffer;
-    }
-    if (!callback(callbackData.buffer.data(), callbackData.buffer.size())) {
+    std::unique_lock lock(callbackData.mutex);
+    callbackData.cv.wait(lock);
+    if (!callback(std::move(callbackData.buffer))) {
       break;
     }
+    callbackData.buffer = {};
+    callbackData.buffer.resize(samples);
   }
   Logger::info("HackRf", "stop stream");
   if (hackrf_stop_rx(m_device) != HACKRF_SUCCESS) {

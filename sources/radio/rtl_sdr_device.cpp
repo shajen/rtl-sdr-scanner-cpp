@@ -4,8 +4,8 @@
 #include <rtl-sdr.h>
 #include <utils.h>
 
-#include <thread>
 #include <chrono>
+#include <thread>
 
 int getDeviceIndex(const std::string& serial) { return rtlsdr_get_index_by_serial(serial.c_str()); }
 
@@ -22,7 +22,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
     StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
     RtlSdrDevice* device = std::get<0>(*data);
     Callback* callback = std::get<1>(*data);
-    if (!(*callback)(buf, len)) {
+    if (!(*callback)(std::vector<uint8_t>(buf, buf + len))) {
       Logger::info("RtlSdr", "cancel stream");
       rtlsdr_cancel_async(device->m_device);
     }

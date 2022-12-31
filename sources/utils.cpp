@@ -3,6 +3,9 @@
 #include <liquid/liquid.h>
 #include <logger.h>
 #include <math.h>
+#include <string.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -10,9 +13,12 @@
 #include <stdexcept>
 #include <thread>
 
-uint32_t getThreadId() {
-  return gettid();
+void setThreadParams(const std::string &name, PRIORITY priority) {
+  pthread_setname_np(pthread_self(), name.c_str());
+  setpriority(PRIO_PROCESS, 0, static_cast<int>(priority));
 }
+
+uint32_t getThreadId() { return gettid(); }
 
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {

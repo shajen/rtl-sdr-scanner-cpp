@@ -13,7 +13,8 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
       m_samples(inSamples),
       m_isWorking(true),
       m_thread([this]() {
-        Logger::info("RecorderWrk", "thread id: {}, start, {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()));
+        Logger::info("RecorderWrk", "start thread id: {}, {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()));
+        setThreadParams("recorder_worker", PRIORITY::MEDIUM);
         std::unique_lock<std::mutex> lock(m_mutex);
         while (m_isWorking) {
           m_cv.wait(lock);
@@ -28,7 +29,7 @@ RecorderWorker::RecorderWorker(const Config &config, DataController &dataControl
           }
         }
         m_dataController.finishTransmission(m_outputFrequencyRange);
-        Logger::info("RecorderWrk", "thread id: {}, stop, {}, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), m_samples.size());
+        Logger::info("RecorderWrk", "stop thread id: {}, {}, queue size: {}", getThreadId(), frequencyToString(m_outputFrequencyRange.center()), m_samples.size());
       }) {}
 
 RecorderWorker::~RecorderWorker() {

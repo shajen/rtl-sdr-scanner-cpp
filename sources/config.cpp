@@ -164,7 +164,7 @@ uint32_t Config::hackRfLnaGain() const { return m_hackRfLnaGain; }
 uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
 int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
 
-uint8_t Config::cores() const { return m_cores; }
+uint8_t Config::cores() const { return std::max(uint8_t(1), m_cores); }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }
 int Config::mqttPort() const { return m_mqttPort; }
