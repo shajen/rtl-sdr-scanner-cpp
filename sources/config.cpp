@@ -135,6 +135,7 @@ Config::Config(const std::string &path, const std::string &config)
       m_hackRfVgaGain(readKey(m_json, {"devices", "hack_rf", "vga_gain"}, 0)),
       m_hackRfRadioOffset(readKey(m_json, {"devices", "hack_rf", "offset"}, 0)),
       m_cores(readKey(m_json, {"cores"}, 4)),
+      m_memoryLimit(readKey(m_json, {"memory_limit_mb"}, 0)),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
@@ -165,6 +166,7 @@ uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
 int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
 
 uint8_t Config::cores() const { return std::max(uint8_t(1), m_cores); }
+uint64_t Config::memoryLimit() const { return m_memoryLimit; }
 
 std::string Config::mqttHostname() const { return m_mqttHostname; }
 int Config::mqttPort() const { return m_mqttPort; }

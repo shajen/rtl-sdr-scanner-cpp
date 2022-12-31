@@ -3,6 +3,7 @@
 #include <liquid/liquid.h>
 #include <logger.h>
 #include <math.h>
+#include <proc/readproc.h>
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/time.h>
@@ -19,6 +20,20 @@ void setThreadParams(const std::string &name, PRIORITY priority) {
 }
 
 uint32_t getThreadId() { return gettid(); }
+
+bool isMemoryLimitReached(uint64_t limit) {
+  if (limit == 0) {
+    return false;
+  } else {
+    struct proc_t usage;
+    look_up_our_self(&usage);
+    constexpr auto factor = 1024 * 1024;
+    const uint64_t total = usage.vsize / factor;
+    const uint64_t rss = usage.rss * sysconf(_SC_PAGE_SIZE) / factor;
+    Logger::debug("memory", "total: {} MB, rss: {} MB", total, rss);
+    return limit <= rss;
+  }
+}
 
 uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
   if (time.count() >= 1000) {

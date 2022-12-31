@@ -15,6 +15,8 @@ void setThreadParams(const std::string& name, PRIORITY priority = PRIORITY::LOW)
 
 uint32_t getThreadId();
 
+bool isMemoryLimitReached(uint64_t limit);
+
 uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time);
 
 void toComplex(const uint8_t* rawBuffer, std::vector<std::complex<float>>& buffer, uint32_t samplesCount);

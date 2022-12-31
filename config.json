@@ -42,6 +42,7 @@
     "console_log_level": "info"
   },
   "cores": 4,
+  "memory_limit_mb": 0,
   "mqtt": {
     "hostname": "sdr-broker",
     "port": 1883,

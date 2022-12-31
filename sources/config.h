@@ -54,6 +54,7 @@ class Config {
   int32_t hackRfOffset() const;
 
   uint8_t cores() const;
+  uint64_t memoryLimit() const;
 
   std::string mqttHostname() const;
   int mqttPort() const;
@@ -92,6 +93,7 @@ class Config {
   const int32_t m_hackRfRadioOffset;
 
   const uint8_t m_cores;
+  const uint64_t m_memoryLimit;
 
   const std::string m_mqttHostname;
   const int m_mqttPort;
