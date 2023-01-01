@@ -253,7 +253,7 @@ docker build -t shajen/sdr-scanner -f Dockerfile .
 Run
 
 ```
-docker run --rm -it -v ${PWD}/config.json:/config.json shajen/sdr-scanner
+docker run --rm -it -v ${PWD}/config.json:/config.json --device /dev/bus/usb:/dev/bus/usb shajen/sdr-scanner
 ```
 
 ## Distributed application system
