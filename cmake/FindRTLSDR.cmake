@@ -16,17 +16,7 @@ FIND_PATH(RTLSDR_INCLUDE_DIR rtl-sdr.h
   /usr/local/include
 )
 
-FIND_LIBRARY(RTLSDR_LIBRARY
-  NAMES rtlsdr
-  PATHS ${RTLSDR_DIR}/libs
-  "${RTLSDR_DIR}\\win32\\lib"
-  /usr/pkgs64/lib
-  /usr/lib/x86_64-linux-gnu
-  /usr/lib64
-  /usr/lib
-  /usr/local/lib
-  NO_DEFAULT_PATH
-)
+FIND_LIBRARY(RTLSDR_LIBRARY NAMES rtlsdr)
 
 IF (RTLSDR_LIBRARY AND RTLSDR_INCLUDE_DIR)
   SET(RTLSDR_LIBRARIES ${RTLSDR_LIBRARY})
