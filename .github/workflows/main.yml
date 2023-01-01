@@ -21,16 +21,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Docker info
         run: docker info
-      - name: Build devel docker image
-        run: docker build -t sdr-scanner-dev -f Dockerfile.dev .
-      - name: Build sdr-scanner
-        run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner -v /tmp/.ccache:/root/.cache/ccache sdr-scanner-dev /bin/bash -c "cmake -B /git/rtl-sdr-scanner/build -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_BUILD_TYPE=Release /git/rtl-sdr-scanner && cmake --build /git/rtl-sdr-scanner/build -j$(nproc)"
+      - name: Build docker image
+        run: docker build -t shajen/sdr-scanner -f Dockerfile .
       - name: Test sdr-scanner
-        run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner sdr-scanner-dev /git/rtl-sdr-scanner/build/auto_sdr_test
+        run: docker run --rm shajen/sdr-scanner /usr/bin/auto_sdr_test
       - name: Run sdr-scanner
-        run: docker run --rm -v ${{ github.workspace }}:/git/rtl-sdr-scanner sdr-scanner-dev /git/rtl-sdr-scanner/build/auto_sdr /git/rtl-sdr-scanner/config.json
-      - name: Build runtime docker image
-        run: docker build -t shajen/sdr-scanner -f Dockerfile.run .
+        run: docker run --rm shajen/sdr-scanner
       - name: Deploy sdr-scanner tag
         if: github.ref_type == 'tag'
         run: |

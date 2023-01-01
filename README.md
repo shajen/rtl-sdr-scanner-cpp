@@ -247,9 +247,7 @@ Build
 ```
 git clone https://github.com/shajen/rtl-sdr-scanner-cpp sdr-scanner
 cd sdr-scanner
-docker build -t sdr-scanner-dev -f Dockerfile.dev .
-docker run --rm -v ${PWD}:/git/rtl-sdr-scanner sdr-scanner-dev /bin/bash -c "cmake -B /git/rtl-sdr-scanner/build -DCMAKE_BUILD_TYPE=Release /git/rtl-sdr-scanner && cmake --build /git/rtl-sdr-scanner/build -j$(nproc)"
-docker build -t shajen/sdr-scanner -f Dockerfile.run .
+docker build -t shajen/sdr-scanner -f Dockerfile .
 ```
 
 Run
