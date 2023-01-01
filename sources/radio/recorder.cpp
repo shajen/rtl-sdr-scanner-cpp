@@ -72,7 +72,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
     Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
   }
 
-  toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
+  toComplex(samples.data(), m_rawBuffer, samples.size());
   Logger::trace("Recorder", "uint8 to complex finished");
   shift(m_rawBuffer, m_shiftData, rawBufferSamples);
   Logger::trace("Recorder", "shift finished");
@@ -97,7 +97,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     m_shiftData = getShiftData(m_offset, frequencyRange.sampleRate, rawBufferSamples);
     Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
   }
-  toComplex(samples.data(), m_rawBuffer, rawBufferSamples);
+  toComplex(samples.data(), m_rawBuffer, samples.size());
   Logger::trace("Recorder", "uint8 to complex finished");
   shift(m_rawBuffer, m_shiftData, rawBufferSamples);
   Logger::trace("Recorder", "shift finished");

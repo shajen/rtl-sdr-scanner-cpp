@@ -52,8 +52,20 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
 }
 
 void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffer, uint32_t samplesCount) {
+  static std::array<float, 256> cache;
+  static bool cacheInitialized = false;
+  if (!cacheInitialized) {
+    cacheInitialized = true;
+    for (int i = 0; i < 256; ++i) {
+      cache[i] = (static_cast<float>(i) - 127.5f) / 127.5f;
+    }
+  }
+  float *p1 = reinterpret_cast<float *>(buffer.data());
+  uint8_t *p2 = const_cast<uint8_t *>(rawBuffer);
   for (uint32_t i = 0; i < samplesCount; ++i) {
-    buffer[i] = std::complex<float>((rawBuffer[2 * i] - 127.5f) / 127.5f, (rawBuffer[2 * i + 1] - 127.5f) / 127.5f);
+    *p1 = cache[*p2];
+    ++p1;
+    ++p2;
   }
 }
 
