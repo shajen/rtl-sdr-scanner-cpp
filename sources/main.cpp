@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
         }
       };
 
-      FftwInitializer fftwInitializer(config->cores());
+      // FftwInitializer fftwInitializer(config->cores());
       Mqtt mqtt(*config);
       mqtt.setMessageCallback(f);
       auto scanners = createScanners(*config, mqtt);

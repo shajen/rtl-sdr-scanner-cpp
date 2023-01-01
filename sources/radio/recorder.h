@@ -1,10 +1,10 @@
 #pragma once
 
 #include <algorithms/decimator.h>
-#include <algorithms/spectrogram.h>
 #include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
 #include <radio/recorder_worker.h>
+#include <radio/samples_processor.h>
 #include <utils.h>
 
 #include <complex>
@@ -33,9 +33,8 @@ class Recorder {
   const int32_t m_offset;
   DataController& m_dataController;
   TransmissionDetector m_transmissionDetector;
-  Spectrogram m_spectrogram;
+  SamplesProcessor m_samplesProcessor;
   std::vector<std::complex<float>> m_rawBuffer;
-  std::vector<std::complex<float>> m_shiftData;
   std::chrono::milliseconds m_lastDataTime;
   std::chrono::milliseconds m_lastActiveDataTime;
 

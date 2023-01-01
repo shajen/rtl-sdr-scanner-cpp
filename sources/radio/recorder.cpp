@@ -12,7 +12,7 @@ Recorder::Recorder(const Config& config, int32_t offset, DataController& dataCon
       m_offset(offset),
       m_dataController(dataController),
       m_transmissionDetector(config),
-      m_spectrogram(config),
+      m_samplesProcessor(config),
       m_lastDataTime(0),
       m_lastActiveDataTime(0),
       m_isWorking(true),
@@ -61,23 +61,7 @@ void Recorder::appendSamples(const std::chrono::milliseconds& time, const Freque
 }
 
 bool Recorder::isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
-  const auto rawBufferSamples = samples.size() / 2;
-
-  if (m_rawBuffer.size() < rawBufferSamples) {
-    m_rawBuffer.resize(rawBufferSamples);
-    Logger::debug("Recorder", "raw buffer resized, size: {}", m_rawBuffer.size());
-  }
-  if (m_shiftData.size() < rawBufferSamples) {
-    m_shiftData = getShiftData(m_offset, frequencyRange.sampleRate, rawBufferSamples);
-    Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
-  }
-
-  toComplex(samples.data(), m_rawBuffer, samples.size());
-  Logger::trace("Recorder", "uint8 to complex finished");
-  shift(m_rawBuffer, m_shiftData, rawBufferSamples);
-  Logger::trace("Recorder", "shift finished");
-  const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
-  Logger::trace("Recorder", "psd finished");
+  const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
   Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
   m_dataController.sendSignals(time, frequencyRange, signals);
@@ -86,23 +70,9 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
-  Logger::debug("Recorder", "samples processing started, workers: {}", m_workers.size());
+  Logger::debug("Recorder", "samples processing started");
+  const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
   const auto rawBufferSamples = samples.size() / 2;
-
-  if (m_rawBuffer.size() < rawBufferSamples) {
-    m_rawBuffer.resize(rawBufferSamples);
-    Logger::debug("Recorder", "raw buffer resized, size: {}", m_rawBuffer.size());
-  }
-  if (m_shiftData.size() < rawBufferSamples) {
-    m_shiftData = getShiftData(m_offset, frequencyRange.sampleRate, rawBufferSamples);
-    Logger::debug("Recorder", "shift data resized, size: {}", m_shiftData.size());
-  }
-  toComplex(samples.data(), m_rawBuffer, samples.size());
-  Logger::trace("Recorder", "uint8 to complex finished");
-  shift(m_rawBuffer, m_shiftData, rawBufferSamples);
-  Logger::trace("Recorder", "shift finished");
-  const auto signals = m_spectrogram.psd(frequencyRange, m_rawBuffer, rawBufferSamples);
-  Logger::trace("Recorder", "psd finished");
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
   Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
   m_dataController.sendSignals(time, frequencyRange, signals);

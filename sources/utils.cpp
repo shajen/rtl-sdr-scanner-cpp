@@ -51,7 +51,7 @@ uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::millise
   }
 }
 
-void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffer, uint32_t samplesCount) {
+void toComplex(const uint8_t *rawBuffer, std::complex<float> *buffer, uint32_t samplesCount) {
   static std::array<float, 256> cache;
   static bool cacheInitialized = false;
   if (!cacheInitialized) {
@@ -60,7 +60,7 @@ void toComplex(const uint8_t *rawBuffer, std::vector<std::complex<float>> &buffe
       cache[i] = (static_cast<float>(i) - 127.5f) / 127.5f;
     }
   }
-  float *p1 = reinterpret_cast<float *>(buffer.data());
+  float *p1 = reinterpret_cast<float *>(buffer);
   uint8_t *p2 = const_cast<uint8_t *>(rawBuffer);
   for (uint32_t i = 0; i < samplesCount; ++i) {
     *p1 = cache[*p2];
@@ -80,7 +80,7 @@ std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency
   return data;
 }
 
-void shift(std::vector<std::complex<float>> &samples, const std::vector<std::complex<float>> &factors, uint32_t samplesCount) {
+void shift(std::complex<float> *samples, const std::vector<std::complex<float>> &factors, uint32_t samplesCount) {
   for (uint32_t i = 0; i < samplesCount; ++i) {
     samples[i] *= factors[i];
   }

@@ -11,8 +11,10 @@ Spectrogram::~Spectrogram() {
   }
 }
 
-std::vector<Signal> Spectrogram::psd(const FrequencyRange& frequencyRange, std::vector<std::complex<float>>& data, const uint32_t dataSize) {
+std::vector<Signal> Spectrogram::psd(const FrequencyRange& frequencyRange, std::complex<float>* data, const uint32_t dataSize) {
   if (m_spectrograms.count(frequencyRange) == 0) {
+    static std::mutex mutex;  // because fftw_plan is not thread safe
+    std::unique_lock<std::mutex> lock(mutex);
     m_spectrograms.insert({frequencyRange, spgramcf_create_default(frequencyRange.fftSize())});
   }
 
@@ -27,7 +29,7 @@ std::vector<Signal> Spectrogram::psd(const FrequencyRange& frequencyRange, std::
   }
 
   spgramcf_reset(spectrogram);
-  spgramcf_write(spectrogram, toLiquidComplex(data.data()), correctedSize);
+  spgramcf_write(spectrogram, toLiquidComplex(data), correctedSize);
   spgramcf_get_psd(spectrogram, m_buffer.data());
 
   const auto cuttedSize = (frequencyRange.stop - frequencyRange.start) / frequencyRange.step + 1;
