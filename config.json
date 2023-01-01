@@ -33,7 +33,7 @@
     "frequency_grouping_size": 10000,
     "frequency_range_scanning_time_ms": 64,
     "noise_learning_time_seconds": 30,
-    "noise_detection_margin": 20,
+    "noise_detection_margin": 10,
     "torn_transmission_learning_time_seconds": 60
   },
   "output": {
