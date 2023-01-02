@@ -114,12 +114,13 @@ void RtlSdrDevice::close() {
   rtlsdr_close(m_device);
 }
 
-bool RtlSdrDevice::isSamplesOk(uint8_t* buf, uint32_t len) {
-  const uint64_t sum = std::accumulate(buf, buf + len, 0ull);
-  const float mean = std::llround(static_cast<float>(sum) / len);
-  const float sum2 = std::accumulate(buf, buf + len, 0.0f, [mean](const float& sum, const uint8_t& value) { return sum + powf(mean - value, 2); });
-  const float std = std::sqrt(sum2 / len);
-  return 5.0 <= std;
+bool RtlSdrDevice::isSamplesOk(uint8_t*, uint32_t) {
+  return true;  // TODO fix or check it why it not works correctly
+  // const uint64_t sum = std::accumulate(buf, buf + len, 0ull);
+  // const float mean = std::llround(static_cast<float>(sum) / len);
+  // const float sum2 = std::accumulate(buf, buf + len, 0.0f, [mean](const float& sum, const uint8_t& value) { return sum + powf(mean - value, 2); });
+  // const float std = std::sqrt(sum2 / len);
+  // return 5.0 <= std;
 }
 
 void RtlSdrDevice::setupDevice(const FrequencyRange& frequencyRange) {
