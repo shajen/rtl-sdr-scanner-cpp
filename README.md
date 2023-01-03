@@ -20,6 +20,29 @@ It also provides easy but very powerful **web panel** to explore recordings and 
 | ![](images/spectrograms.png?raw=1) | ![](images/transmissions.png?raw=1) |
 | ![](images/spectrogram.png?raw=1) | ![](images/transmission.png?raw=1) |
 
+# Important
+
+## Blacklist kernel modules
+
+If you use `rtl-sdr` remember to blacklist `rtl2832` modules. Then reboot system.
+
+```
+sudo nano /etc/modprobe.d/blacklist-rtl2832.conf
+```
+
+```
+blacklist rtl2832
+blacklist dvb_usb_rtl28xxu
+blacklist rtl2832_sdr
+blacklist rtl8xxxu
+```
+
+## Required resources
+
+Using this software with `HackRF` and `sample rate` `10 MHz` and above needs strong PC. In most casies, `Raspberry Pi` will not be enough.
+
+For example, `HackRF` with `sample rate` `20 Mhz` generates about `40 MB` of data every second, and processing it in real-time needs a strong CPU with multiple cores and some memory resources.
+
 # Quickstart
 
 ## Install docker
@@ -48,7 +71,7 @@ docker compose pull
 
 Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) and wait for data to collect.
 
-Admin panel available at [http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/). Username: `admin`, password: `password`.
+Admin panel available at [http://localhost:8000/admin/](http://localhost:8000/admin/). Username: `admin`, password: `password`.
 
 # Config
 
@@ -217,6 +240,16 @@ The most popular values:
 Please note that `rtl-sdr` do not support `sample_rate` greather than `2500000`.
 
 Please note that `sample_rate` must be greather than (`stop frequency range` - `start frequency range`).
+
+# Debugging
+
+If you have some problems with this software follow the steps to get debug log.
+
+Set `"file_log_level": "trace"` in `config.json`.
+
+Append `./logs:/sdr/logs` to `volumes` list of `sdr-scanner` service in `docker-compose.yml`
+
+Then run app normally by `docker compose up` and in `logs` directory you will find log files. Please attach the log files if you create a new issue.
 
 # Advanced usage
 
