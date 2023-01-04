@@ -17,6 +17,7 @@ Recorder::Recorder(const Config& config, int32_t offset, DataController& dataCon
       m_lastActiveDataTime(0),
       m_isWorking(true),
       m_isReady(false),
+      m_performanceLogger("Recorder"),
       m_thread([this]() {
         Logger::info("Recorder", "start thread id: {}", getThreadId());
         setThreadParams("recorder", PRIORITY::HIGH);
@@ -71,6 +72,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
   Logger::debug("Recorder", "samples processing started");
+  m_performanceLogger.newSample();
   const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
   const auto rawBufferSamples = samples.size() / 2;
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);

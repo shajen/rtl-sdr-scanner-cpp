@@ -3,6 +3,7 @@
 #include <algorithms/decimator.h>
 #include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
+#include <performance_logger.h>
 #include <radio/recorder_worker.h>
 #include <radio/samples_processor.h>
 #include <utils.h>
@@ -54,6 +55,7 @@ class Recorder {
     std::unique_ptr<RecorderWorker> worker;
   };
 
+  PerformanceLogger m_performanceLogger;
   mutable std::mutex m_processingMutex;
   std::mutex m_dataMutex;
   std::condition_variable m_cv;

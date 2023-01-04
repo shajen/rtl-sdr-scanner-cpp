@@ -9,7 +9,7 @@
 
 int getDeviceIndex(const std::string& serial) { return rtlsdr_get_index_by_serial(serial.c_str()); }
 
-RtlSdrDevice::RtlSdrDevice(const Config& config, const std::string& serial) : m_config(config), m_serial(serial), m_deviceIndex(getDeviceIndex(serial)) { open(); }
+RtlSdrDevice::RtlSdrDevice(const Config& config, const std::string& serial) : SdrDevice("RtlSdr"), m_config(config), m_serial(serial), m_deviceIndex(getDeviceIndex(serial)) { open(); }
 
 RtlSdrDevice::~RtlSdrDevice() { close(); }
 
@@ -22,6 +22,7 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange, Callback&& 
     StreamCallbackData* data = reinterpret_cast<StreamCallbackData*>(ctx);
     RtlSdrDevice* device = std::get<0>(*data);
     Callback* callback = std::get<1>(*data);
+    device->m_performanceLogger.newSample();
     if (!(*callback)(std::vector<uint8_t>(buf, buf + len))) {
       Logger::info("RtlSdr", "cancel stream");
       rtlsdr_cancel_async(device->m_device);
@@ -50,6 +51,7 @@ std::vector<uint8_t> RtlSdrDevice::readData(const FrequencyRange& frequencyRange
   } else {
     Logger::debug("RtlSdr", "read bytes: {}", samples);
     if (isSamplesOk(m_rawBuffer.data(), samples)) {
+      m_performanceLogger.newSample();
       return {m_rawBuffer.begin(), m_rawBuffer.begin() + samples};
     } else {
       Logger::warn("RtlSdr", "samples not ok, {}", frequencyRange.toString());

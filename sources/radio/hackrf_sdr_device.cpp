@@ -11,11 +11,12 @@
 constexpr uint32_t HACKRF_MIN_SAMPLES_READ_COUNT = 262144;
 
 struct CallbackData {
-  CallbackData(uint32_t totalSamples) : buffer(totalSamples), samplesReceived(0) {}
+  CallbackData(uint32_t totalSamples, PerformanceLogger &performanceLogger) : buffer(totalSamples), samplesReceived(0), performanceLogger(performanceLogger) {}
   std::mutex mutex;
   std::condition_variable cv;
   std::vector<uint8_t> buffer;
   uint32_t samplesReceived;
+  PerformanceLogger &performanceLogger;
 };
 
 int HackRfCallbackStream(hackrf_transfer *transfer) {
@@ -27,6 +28,7 @@ int HackRfCallbackStream(hackrf_transfer *transfer) {
   callbackData->samplesReceived += transfer->valid_length;
   if (callbackData->buffer.size() <= callbackData->samplesReceived) {
     Logger::debug("HackRf", "total read bytes: {}", callbackData->samplesReceived);
+    callbackData->performanceLogger.newSample();
     callbackData->samplesReceived = 0;
     callbackData->cv.notify_all();
   }
@@ -55,7 +57,7 @@ HackRfInitializer::~HackRfInitializer() {
   }
 }
 
-HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial) : m_config(config), m_serial(serial) {
+HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial) : SdrDevice("HackRF"), m_config(config), m_serial(serial) {
   Logger::info("HackRf", "open device, serial: {}", m_serial);
   if (hackrf_open_by_serial(m_serial.c_str(), &m_device) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not open hackrf device");
@@ -102,7 +104,7 @@ void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback
   setup(frequencyRange);
   const auto samples = std::max(getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime()), HACKRF_MIN_SAMPLES_READ_COUNT);
   Logger::info("HackRf", "start stream, samples: {}", samples);
-  CallbackData callbackData(samples);
+  CallbackData callbackData(samples, m_performanceLogger);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start stream");
   }
@@ -130,7 +132,7 @@ std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRa
   setup(frequencyRange);
   const auto samples = std::max(getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime()), HACKRF_MIN_SAMPLES_READ_COUNT);
   Logger::debug("HackRf", "start read data, samples: {}", samples);
-  CallbackData callbackData(samples);
+  CallbackData callbackData(samples, m_performanceLogger);
   if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start read data");
   }

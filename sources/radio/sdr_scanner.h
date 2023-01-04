@@ -3,6 +3,7 @@
 #include <algorithms/spectrogram.h>
 #include <config.h>
 #include <network/data_controller.h>
+#include <performance_logger.h>
 #include <radio/recorder.h>
 #include <radio/sdr_device.h>
 
@@ -25,6 +26,7 @@ class SdrScanner {
   const Config& m_config;
   SdrDevice& m_device;
   Recorder m_recorder;
+  PerformanceLogger m_performanceLogger;
   std::atomic_bool m_isRunning;
   std::unique_ptr<std::thread> m_thread;
 };
