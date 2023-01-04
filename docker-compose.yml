@@ -33,7 +33,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: bash -c "python3 manage.py migrate && DJANGO_SUPERUSER_PASSWORD=password python3 manage.py createsuperuser --noinput --username admin --email admin@local.local || true"
+    command: bash -c "python3 manage.py migrate && DJANGO_SUPERUSER_PASSWORD=password python3 manage.py createsuperuser --noinput --username admin --email admin@local.local &> /dev/null || true"
   sdr-monitor-server:
     image: shajen/sdr-monitor:latest
     restart: on-failure
