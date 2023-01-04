@@ -3,6 +3,7 @@
 #include <config.h>
 #include <libhackrf/hackrf.h>
 #include <radio/sdr_device.h>
+#include <ring_buffer.h>
 
 class HackRfInitializer {
  public:
@@ -30,4 +31,6 @@ class HackrfSdrDevice : public SdrDevice {
   hackrf_device* m_device;
   Frequency m_frequency;
   Frequency m_sampleRate;
+  RingBuffer m_buffer;
+  std::mutex m_mutex;
 };

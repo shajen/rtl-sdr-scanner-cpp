@@ -9,28 +9,33 @@
 #include <thread>
 
 constexpr uint32_t HACKRF_MIN_SAMPLES_READ_COUNT = 262144;
+constexpr uint32_t HACKRF_BUFFER_SIZE = 40 * 1024 * 1024;  // 40MB
 
 struct CallbackData {
-  CallbackData(uint32_t totalSamples, PerformanceLogger &performanceLogger) : buffer(totalSamples), samplesReceived(0), performanceLogger(performanceLogger) {}
-  std::mutex mutex;
+  CallbackData(uint32_t windowSize, RingBuffer &buffer, PerformanceLogger &performanceLogger)
+      : windowSize(windowSize), readSize(0), buffer(buffer), performanceLogger(performanceLogger), initialized(false) {}
+  uint32_t windowSize;
+  uint32_t readSize;
   std::condition_variable cv;
-  std::vector<uint8_t> buffer;
-  uint32_t samplesReceived;
+  RingBuffer &buffer;
   PerformanceLogger &performanceLogger;
+  bool initialized;
 };
 
 int HackRfCallbackStream(hackrf_transfer *transfer) {
-  Logger::debug("HackRf", "read bytes: {}", transfer->valid_length);
-  CallbackData *callbackData = reinterpret_cast<CallbackData *>(transfer->rx_ctx);
-
-  std::unique_lock<std::mutex> lock(callbackData->mutex);
-  memcpy(callbackData->buffer.data() + callbackData->samplesReceived, transfer->buffer, transfer->valid_length);
-  callbackData->samplesReceived += transfer->valid_length;
-  if (callbackData->buffer.size() <= callbackData->samplesReceived) {
-    Logger::debug("HackRf", "total read bytes: {}", callbackData->samplesReceived);
-    callbackData->performanceLogger.newSample();
-    callbackData->samplesReceived = 0;
-    callbackData->cv.notify_all();
+  Logger::trace("HackRf", "read samples: {}", transfer->valid_length);
+  CallbackData *data = reinterpret_cast<CallbackData *>(transfer->rx_ctx);
+  if (!data->initialized) {
+    data->initialized = true;
+    setThreadParams("hackrf_reader", PRIORITY::MEDIUM);
+  }
+  data->buffer.push(transfer->buffer, transfer->valid_length);
+  data->readSize += transfer->valid_length;
+  if (data->windowSize <= data->readSize && data->windowSize <= data->buffer.availableDataSize()) {
+    Logger::trace("HackRf", "read samples: window completed");
+    data->performanceLogger.newSample();
+    data->readSize -= data->windowSize;
+    data->cv.notify_one();
   }
   return 0;
 }
@@ -57,7 +62,7 @@ HackRfInitializer::~HackRfInitializer() {
   }
 }
 
-HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial) : SdrDevice("HackRF"), m_config(config), m_serial(serial) {
+HackrfSdrDevice::HackrfSdrDevice(const Config &config, const std::string &serial) : SdrDevice("HackRF"), m_config(config), m_serial(serial), m_buffer(HACKRF_BUFFER_SIZE) {
   Logger::info("HackRf", "open device, serial: {}", m_serial);
   if (hackrf_open_by_serial(m_serial.c_str(), &m_device) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not open hackrf device");
@@ -104,19 +109,19 @@ void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange, Callback
   setup(frequencyRange);
   const auto samples = std::max(getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime()), HACKRF_MIN_SAMPLES_READ_COUNT);
   Logger::info("HackRf", "start stream, samples: {}", samples);
-  CallbackData callbackData(samples, m_performanceLogger);
-  if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
+  CallbackData data(samples, m_buffer, m_performanceLogger);
+  if (hackrf_start_rx(m_device, HackRfCallbackStream, &data) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start stream");
   }
 
   while (true) {
-    std::unique_lock lock(callbackData.mutex);
-    callbackData.cv.wait(lock);
-    if (!callback(std::move(callbackData.buffer))) {
-      break;
+    std::unique_lock lock(m_mutex);
+    data.cv.wait(lock);
+    if (samples <= data.buffer.availableDataSize()) {
+      if (!callback(data.buffer.pop(samples))) {
+        break;
+      }
     }
-    callbackData.buffer = {};
-    callbackData.buffer.resize(samples);
   }
   Logger::info("HackRf", "stop stream");
   if (hackrf_stop_rx(m_device) != HACKRF_SUCCESS) {
@@ -132,18 +137,20 @@ std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRa
   setup(frequencyRange);
   const auto samples = std::max(getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime()), HACKRF_MIN_SAMPLES_READ_COUNT);
   Logger::debug("HackRf", "start read data, samples: {}", samples);
-  CallbackData callbackData(samples, m_performanceLogger);
-  if (hackrf_start_rx(m_device, HackRfCallbackStream, &callbackData) != HACKRF_SUCCESS) {
+  CallbackData data(samples, m_buffer, m_performanceLogger);
+  if (hackrf_start_rx(m_device, HackRfCallbackStream, &data) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start read data");
   }
 
-  std::unique_lock lock(callbackData.mutex);
-  callbackData.cv.wait(lock);
+  while (data.buffer.availableDataSize() < samples) {
+    std::unique_lock lock(m_mutex);
+    data.cv.wait(lock);
+  }
   Logger::debug("HackRf", "stop read data");
   if (hackrf_stop_rx(m_device) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not stop read data");
   }
-  return callbackData.buffer;
+  return data.buffer.pop(samples);
 }
 
 void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
@@ -161,4 +168,5 @@ void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
     }
     m_frequency = frequencyRange.center();
   }
+  m_buffer.clear();
 }
