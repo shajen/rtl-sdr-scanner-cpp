@@ -86,6 +86,8 @@ int main(int argc, char* argv[]) {
     config = std::make_unique<Config>("", "");
   }
   Logger::configure(config->logLevelConsole(), config->logLevelFile(), config->logDir());
+  Logger::info("main", "git commit: {}", GIT_COMMIT);
+  Logger::info("main", "git tag: {}", GIT_TAG);
 
 #ifndef NDEBUG
   Logger::info("main", "build type: debug");
