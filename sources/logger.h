@@ -11,43 +11,55 @@ class Logger {
   template <typename... Args>
   static void trace(const char* label, const char* fmt, const Args&... args) {
     char buf[LOGGER_BUFFER_SIZE];
-    fit(buf, label, fmt, 5);
-    Logger::_logger->trace(buf, args...);
+    buf[0] = 0;
+    strcat(buf, "[{:11}] ");
+    strcat(buf, fmt);
+    Logger::_logger->trace(buf, label, args...);
   }
 
   template <typename... Args>
   static void debug(const char* label, const char* fmt, const Args&... args) {
     char buf[LOGGER_BUFFER_SIZE];
-    fit(buf, label, fmt, 5);
-    Logger::_logger->debug(buf, args...);
+    buf[0] = 0;
+    strcat(buf, "[{:11}] ");
+    strcat(buf, fmt);
+    Logger::_logger->debug(buf, label, args...);
   }
 
   template <typename... Args>
   static void info(const char* label, const char* fmt, const Args&... args) {
     char buf[LOGGER_BUFFER_SIZE];
-    fit(buf, label, fmt, 4);
-    Logger::_logger->info(buf, args...);
+    buf[0] = 0;
+    strcat(buf, "[{:11}] ");
+    strcat(buf, fmt);
+    Logger::_logger->info(buf, label, args...);
   }
 
   template <typename... Args>
   static void warn(const char* label, const char* fmt, const Args&... args) {
     char buf[LOGGER_BUFFER_SIZE];
-    fit(buf, label, fmt, 7);
-    Logger::_logger->warn(buf, args...);
+    buf[0] = 0;
+    strcat(buf, "[{:11}] ");
+    strcat(buf, fmt);
+    Logger::_logger->warn(buf, label, args...);
   }
 
   template <typename... Args>
   static void error(const char* label, const char* fmt, const Args&... args) {
     char buf[LOGGER_BUFFER_SIZE];
-    fit(buf, label, fmt, 5);
-    Logger::_logger->error(buf, args...);
+    buf[0] = 0;
+    strcat(buf, "[{:11}] ");
+    strcat(buf, fmt);
+    Logger::_logger->error(buf, label, args...);
   }
 
   template <typename... Args>
   static void critical(const char* label, const char* fmt, const Args&... args) {
     char buf[LOGGER_BUFFER_SIZE];
-    fit(buf, label, fmt, 8);
-    Logger::_logger->critical(buf, args...);
+    buf[0] = 0;
+    strcat(buf, "[{:11}] ");
+    strcat(buf, fmt);
+    Logger::_logger->critical(buf, label, args...);
   }
 
  private:
@@ -55,5 +67,4 @@ class Logger {
   ~Logger() = delete;
 
   inline static std::shared_ptr<spdlog::logger> _logger = nullptr;
-  static void fit(char* buf, const char* label, const char* fmt, uint8_t n);
 };
