@@ -1,9 +1,8 @@
 #pragma once
 
-#include <config.h>
 #include <spdlog/spdlog.h>
 
-constexpr auto LOGGER_BUFFER_SIZE = 2048;
+constexpr auto LOGGER_BUFFER_SIZE = 1024;
 
 class Logger {
  public:

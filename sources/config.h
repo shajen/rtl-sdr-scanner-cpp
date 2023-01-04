@@ -28,6 +28,7 @@ class Config {
   };
 
   Config(const std::string& path, const std::string& config);
+  void log();
 
   std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
 

@@ -8,6 +8,7 @@
 #include <radio/rtl_sdr_device.h>
 #include <radio/sdr_scanner.h>
 #include <signal.h>
+#include <version.h>
 
 volatile bool isRunning{true};
 
@@ -86,14 +87,15 @@ int main(int argc, char* argv[]) {
   }
   Logger::configure(config->logLevelConsole(), config->logLevelFile(), config->logDir());
 
-  Logger::info("main", "start thread id: {}", getThreadId());
-  Logger::info("main", "start app auto_sdr");
 #ifndef NDEBUG
   Logger::info("main", "build type: debug");
 #else
   Logger::info("main", "build type: release");
 #endif
 
+  config->log();
+  Logger::info("main", "start app auto_sdr");
+  Logger::info("main", "start thread id: {}", getThreadId());
   try {
     signal(SIGINT, handler);
     signal(SIGTERM, handler);
@@ -111,6 +113,7 @@ int main(int argc, char* argv[]) {
           } else {
             config = std::make_unique<Config>("", message);
           }
+          config->log();
           reloadConfig = true;
         }
       };

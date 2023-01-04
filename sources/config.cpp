@@ -1,5 +1,7 @@
 #include "config.h"
 
+#include <logger.h>
+
 // experts only
 constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
@@ -140,6 +142,18 @@ Config::Config(const std::string &path, const std::string &config)
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
       m_mqttPassword(readKey(m_json, {"mqtt", "password"}, std::string(""))) {}
+
+void Config::log() {
+  auto removeCredentials = [](const nlohmann::json &json) {
+    auto copy(json);
+    if (copy.contains("mqtt")) {
+      copy.erase("mqtt");
+    }
+    return copy;
+  };
+  Logger::info("config", "data: {}", removeCredentials(m_json.masterJson).dump());
+  Logger::info("config", "file: {}", removeCredentials(m_json.slaveJson).dump());
+}
 
 std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() const { return m_userDefinedFrequencyRanges; }
 
