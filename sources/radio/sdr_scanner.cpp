@@ -55,17 +55,21 @@ SdrScanner::~SdrScanner() {
 bool SdrScanner::isRunning() const { return m_isRunning; }
 
 void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForever) {
-  auto f = [this, frequencyRange, runForever](std::vector<uint8_t>&& data) {
-    m_performanceLogger.newSample();
-    if (isMemoryLimitReached(m_config.memoryLimit())) {
-      Logger::warn("Scanner", "reached memory limit, skipping samples");
-    } else {
-      m_recorder.appendSamples(time(), frequencyRange, std::move(data));
-    }
-    return m_isRunning && (runForever || m_recorder.isTransmissionInProgress());
-  };
   m_recorder.clear();
-  m_device.startStream(frequencyRange, std::move(f));
+  m_device.startStream(frequencyRange);
+  while (m_isRunning && (runForever || m_recorder.isTransmissionInProgress())) {
+    m_device.waitForData();
+    while (m_device.isDataAvailable()) {
+      auto data = m_device.getStreamData();
+      m_performanceLogger.newSample();
+      if (isMemoryLimitReached(m_config.memoryLimit())) {
+        Logger::warn("Scanner", "reached memory limit, skipping samples");
+      } else {
+        m_recorder.appendSamples(time(), frequencyRange, std::move(data));
+      }
+    }
+  }
+  m_device.stopStream();
   m_recorder.clear();
 }
 

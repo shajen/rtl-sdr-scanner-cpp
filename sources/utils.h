@@ -17,7 +17,7 @@ uint32_t getThreadId();
 
 bool isMemoryLimitReached(uint64_t limit);
 
-uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time);
+uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time, const uint32_t minSamplesCount);
 
 void toComplex(const uint8_t* rawBuffer, std::complex<float>* buffer, uint32_t samplesCount);
 

@@ -35,19 +35,19 @@ bool isMemoryLimitReached(uint64_t limit) {
   }
 }
 
-uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time) {
+uint32_t getSamplesCount(const Frequency &sampleRate, const std::chrono::milliseconds &time, const uint32_t minSamplesCount) {
   if (time.count() >= 1000) {
     if (time.count() * sampleRate % 1000 != 0) {
       throw std::runtime_error("selected time not fit to sample rate");
     }
-    return 2 * time.count() * sampleRate / 1000;
+    return std::max(static_cast<uint32_t>(2 * time.count() * sampleRate / 1000), minSamplesCount);
   } else {
     const auto samplesCount = std::lround(sampleRate / (1000.0f / time.count()) * 2);
     if (samplesCount % 512 != 0) {
       Logger::warn("utils", "samples count {} not fit 512", samplesCount);
       throw std::runtime_error("selected time not fit to sample rate");
     }
-    return samplesCount;
+    return std::max(static_cast<uint32_t>(samplesCount), minSamplesCount);
   }
 }
 
