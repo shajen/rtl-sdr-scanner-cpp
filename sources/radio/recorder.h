@@ -23,24 +23,20 @@ class Recorder {
   ~Recorder();
 
   void clear();
-  void appendSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
   bool isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
   bool isTransmissionInProgress() const;
-
- private:
   void processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
 
+ private:
   const Config& m_config;
   const int32_t m_offset;
   DataController& m_dataController;
   TransmissionDetector m_transmissionDetector;
   SamplesProcessor m_samplesProcessor;
+  PerformanceLogger m_performanceLogger;
   std::vector<std::complex<float>> m_rawBuffer;
   std::chrono::milliseconds m_lastDataTime;
   std::chrono::milliseconds m_lastActiveDataTime;
-
-  std::atomic_bool m_isWorking;
-  std::atomic_bool m_isReady;
 
   struct RecorderInputSamples {
     std::chrono::milliseconds time;
@@ -55,11 +51,5 @@ class Recorder {
     std::unique_ptr<RecorderWorker> worker;
   };
 
-  PerformanceLogger m_performanceLogger;
-  mutable std::mutex m_processingMutex;
-  std::mutex m_dataMutex;
-  std::condition_variable m_cv;
-  std::deque<RecorderInputSamples> m_samples;
   std::map<FrequencyRange, std::unique_ptr<RecorderWorkerStruct>> m_workers;
-  std::thread m_thread;
 };
