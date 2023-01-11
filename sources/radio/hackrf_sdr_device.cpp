@@ -65,6 +65,9 @@ int HackrfSdrDevice::callbackStream(hackrf_transfer *transfer) {
     device->m_threadInitialized = true;
     setThreadParams("hackrf_reader", PRIORITY::MEDIUM);
   }
+  for (int i = 0; i < transfer->valid_length; ++i) {
+    transfer->buffer[i] = (transfer->buffer[i] ^ 0b10000000);
+  }
   device->m_buffer.push(transfer->buffer, transfer->valid_length);
   device->m_readSize += transfer->valid_length;
   if (device->m_samplesSize <= device->m_readSize && device->m_samplesSize <= device->m_buffer.availableDataSize()) {
