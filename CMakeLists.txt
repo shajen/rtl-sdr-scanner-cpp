@@ -59,7 +59,9 @@ TARGET_LINK_LIBRARIES(auto_sdr_libs
     rtlsdr
     Threads::Threads
     fftw3_threads
+    fftw3
     fftw3f_threads
+    fftw3f
     liquid
     mosquitto
     hackrf

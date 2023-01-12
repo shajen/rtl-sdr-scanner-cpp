@@ -1,10 +1,11 @@
 #include "help_structures.h"
 
+#include <string.h>
+
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <vector>
-#include <string.h>
 
 std::string frequencyToString(const Frequency &frequency, const std::string &label) {
   char buf[1024];
@@ -29,8 +30,8 @@ std::string frequencyToString(const Frequency &frequency, const std::string &lab
 }
 
 std::string powerToString(const Power &power) {
-  constexpr auto MIN_POWER = -30.0f;
-  constexpr auto MAX_POWER = 10.0f;
+  constexpr auto MIN_POWER = -70.0f;
+  constexpr auto MAX_POWER = -10.0f;
   constexpr auto BAR_SIZE = 30;
 
   const auto p = std::lround(std::min(std::max((power - MIN_POWER) / (MAX_POWER - MIN_POWER), 0.0f), 1.0f) * BAR_SIZE);

@@ -1,7 +1,7 @@
 #pragma once
 
+#include <algorithms/fft.h>
 #include <config.h>
-#include <liquid/liquid.h>
 #include <utils.h>
 
 #include <complex>
@@ -11,10 +11,11 @@ class Spectrogram {
  public:
   Spectrogram(const Config& config);
   virtual ~Spectrogram();
+
   std::vector<Signal> psd(const FrequencyRange& frequencyRange, std::complex<float>* data, const uint32_t dataSize);
 
  private:
   const Config& m_config;
   std::vector<float> m_buffer;
-  std::map<FrequencyRange, spgramcf> m_spectrograms;
+  std::unordered_map<uint32_t, std::unique_ptr<Fft>> m_fft;
 };
