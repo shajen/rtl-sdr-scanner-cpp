@@ -2,8 +2,14 @@
 
 #include <logger.h>
 
-RecorderWorker::RecorderWorker(const Config &config, DataController &dataController, const FrequencyRange &inputFrequencyRange, const FrequencyRange &outputFrequency, std::mutex &inMutex,
-                               std::condition_variable &inCv, std::deque<WorkerInputSamples> &inSamples)
+RecorderWorker::RecorderWorker(
+    const Config &config,
+    DataController &dataController,
+    const FrequencyRange &inputFrequencyRange,
+    const FrequencyRange &outputFrequency,
+    std::mutex &inMutex,
+    std::condition_variable &inCv,
+    std::deque<WorkerInputSamples> &inSamples)
     : m_config(config),
       m_inputFrequencyRange(inputFrequencyRange),
       m_outputFrequencyRange(outputFrequency),

@@ -23,8 +23,14 @@ struct WorkerInputSamples {
 
 class RecorderWorker {
  public:
-  RecorderWorker(const Config &config, DataController &dataController, const FrequencyRange &inputFrequencyRange, const FrequencyRange &outputFrequency, std::mutex &inMutex,
-                 std::condition_variable &inCv, std::deque<WorkerInputSamples> &inSamples);
+  RecorderWorker(
+      const Config &config,
+      DataController &dataController,
+      const FrequencyRange &inputFrequencyRange,
+      const FrequencyRange &outputFrequency,
+      std::mutex &inMutex,
+      std::condition_variable &inCv,
+      std::deque<WorkerInputSamples> &inSamples);
   ~RecorderWorker();
 
  private:

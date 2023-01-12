@@ -1,7 +1,7 @@
 #pragma once
 
-#include <mosquitto.h>
 #include <config.h>
+#include <mosquitto.h>
 
 #include <atomic>
 #include <mutex>

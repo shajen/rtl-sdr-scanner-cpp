@@ -1,2 +1,5 @@
 BasedOnStyle: Google
 ColumnLimit: 200
+AlignAfterOpenBracket: AlwaysBreak
+BinPackArguments: false
+BinPackParameters: false
