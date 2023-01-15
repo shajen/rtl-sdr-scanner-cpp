@@ -18,50 +18,28 @@ void handler(int) {
   isRunning = false;
 }
 
-struct ScannerStruct {
-  std::unique_ptr<SdrDevice> device;
-  std::unique_ptr<DataController> dataController;
-  std::unique_ptr<SdrScanner> scanner;
-};
-
 template <typename T>
-ScannerStruct createScanner(const Config& config, Mqtt& mqtt, const std::string& serial, const std::vector<UserDefinedFrequencyRange>& ranges) {
-  auto device = std::make_unique<T>(config, serial);
-  auto dataController = std::make_unique<DataController>(config, mqtt, device->name());
-  auto scanner = std::make_unique<SdrScanner>(config, ranges, *device, *dataController);
-  ScannerStruct st{std::move(device), std::move(dataController), std::move(scanner)};
-  return st;
-}
-
-template <typename T>
-std::vector<ScannerStruct> createScanners(const Config& config, Mqtt& mqtt) {
-  std::vector<ScannerStruct> scanners;
-
+void createScanners(const Config& config, Mqtt& mqtt, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
   for (const auto& id : T::listDevices()) {
     for (const auto& range : config.userDefinedFrequencyRanges()) {
       if (range.serial == id) {
-        scanners.push_back(createScanner<T>(config, mqtt, id, range.ranges));
+        scanners.push_back(std::make_unique<SdrScanner>(config, range.ranges, std::make_unique<T>(config, id), mqtt));
         break;
       }
     }
     for (const auto& range : config.userDefinedFrequencyRanges()) {
       if (range.serial == "auto") {
-        scanners.push_back(createScanner<T>(config, mqtt, id, range.ranges));
+        scanners.push_back(std::make_unique<SdrScanner>(config, range.ranges, std::make_unique<T>(config, id), mqtt));
         break;
       }
     }
   }
-  return scanners;
 }
 
-std::vector<ScannerStruct> createScanners(const Config& config, Mqtt& mqtt) {
-  std::vector<ScannerStruct> scanners;
-  for (auto& scanner : createScanners<RtlSdrDevice>(config, mqtt)) {
-    scanners.push_back(std::move(scanner));
-  }
-  for (auto& scanner : createScanners<HackrfSdrDevice>(config, mqtt)) {
-    scanners.push_back(std::move(scanner));
-  }
+std::vector<std::unique_ptr<SdrScanner>> createScanners(const Config& config, Mqtt& mqtt) {
+  std::vector<std::unique_ptr<SdrScanner>> scanners;
+  createScanners<HackrfSdrDevice>(config, mqtt, scanners);
+  createScanners<RtlSdrDevice>(config, mqtt, scanners);
   return scanners;
 }
 
@@ -117,7 +95,7 @@ int main(int argc, char* argv[]) {
       } else {
         while (isRunning && !scanners.empty() && !reloadConfig) {
           std::this_thread::sleep_for(std::chrono::milliseconds(10));
-          scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const ScannerStruct& scanner) { return !scanner.scanner->isRunning(); }), scanners.end());
+          scanners.erase(std::remove_if(scanners.begin(), scanners.end(), [](const std::unique_ptr<SdrScanner>& scanner) { return !scanner->isRunning(); }), scanners.end());
         }
         if (!reloadConfig) {
           break;

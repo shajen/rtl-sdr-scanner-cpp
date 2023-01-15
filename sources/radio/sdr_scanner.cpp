@@ -3,8 +3,13 @@
 #include <logger.h>
 #include <utils.h>
 
-SdrScanner::SdrScanner(const Config& config, const std::vector<UserDefinedFrequencyRange>& ranges, SdrDevice& device, DataController& dataController)
-    : m_config(config), m_device(device), m_recorder(config, m_device.offset(), dataController), m_performanceLogger("Scanner"), m_isRunning(true) {
+SdrScanner::SdrScanner(const Config& config, const std::vector<UserDefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt)
+    : m_config(config),
+      m_device(std::move(device)),
+      m_dataController(config, mqtt, m_device->name()),
+      m_recorder(config, m_device->offset(), m_dataController),
+      m_performanceLogger("Scanner"),
+      m_isRunning(true) {
   Logger::info("Scanner", "original frequency ranges: {}", ranges.size());
   for (const auto& range : ranges) {
     Logger::info("Scanner", "frequency range {}", range.toString());
@@ -56,20 +61,20 @@ bool SdrScanner::isRunning() const { return m_isRunning; }
 
 void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForever) {
   m_recorder.clear();
-  m_device.startStream(frequencyRange);
+  m_device->startStream(frequencyRange);
   while (m_isRunning && (runForever || m_recorder.isTransmissionInProgress())) {
-    m_device.waitForData();
-    while (m_device.isDataAvailable()) {
+    m_device->waitForData();
+    while (m_device->isDataAvailable()) {
       m_performanceLogger.newSample();
-      m_recorder.processSamples(time(), frequencyRange, m_device.getStreamData());
+      m_recorder.processSamples(time(), frequencyRange, m_device->getStreamData());
     }
   }
-  m_device.stopStream();
+  m_device->stopStream();
   m_recorder.clear();
 }
 
 void SdrScanner::readSamples(const FrequencyRange& frequencyRange) {
-  auto data = m_device.readData(frequencyRange);
+  auto data = m_device->readData(frequencyRange);
   m_performanceLogger.newSample();
   if (!data.empty() && m_recorder.isTransmission(time(), frequencyRange, std::move(data))) {
     startStream(frequencyRange, false);

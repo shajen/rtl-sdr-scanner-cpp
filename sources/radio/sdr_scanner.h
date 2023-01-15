@@ -14,7 +14,7 @@
 
 class SdrScanner {
  public:
-  SdrScanner(const Config& config, const std::vector<UserDefinedFrequencyRange>& ranges, SdrDevice& device, DataController& dataController);
+  SdrScanner(const Config& config, const std::vector<UserDefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt);
   ~SdrScanner();
 
   bool isRunning() const;
@@ -24,7 +24,8 @@ class SdrScanner {
   void readSamples(const FrequencyRange& frequencyRange);
 
   const Config& m_config;
-  SdrDevice& m_device;
+  std::unique_ptr<SdrDevice> m_device;
+  DataController m_dataController;
   Recorder m_recorder;
   PerformanceLogger m_performanceLogger;
   std::atomic_bool m_isRunning;
