@@ -1,3 +1,4 @@
+#include <algorithms/fftw_initializer.h>
 #include <algorithms/spectrogram.h>
 #include <config.h>
 #include <fftw3.h>
@@ -63,20 +64,6 @@ std::vector<ScannerStruct> createScanners(const Config& config, Mqtt& mqtt) {
   }
   return scanners;
 }
-
-class FftwInitializer {
- public:
-  FftwInitializer(uint8_t cores) {
-    fftw_init_threads();
-    fftwf_init_threads();
-    fftw_plan_with_nthreads(cores);
-    fftwf_plan_with_nthreads(cores);
-  }
-  ~FftwInitializer() {
-    fftw_cleanup_threads();
-    fftwf_cleanup_threads();
-  }
-};
 
 int main(int argc, char* argv[]) {
   std::unique_ptr<Config> config;
