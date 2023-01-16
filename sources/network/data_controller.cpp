@@ -6,8 +6,6 @@
 #include <cstdlib>
 #include <memory>
 
-constexpr auto QUEUE_MAX_SIZE = 1000;
-
 template <typename T>
 void add(uint8_t* p, uint64_t& offset, const T& value) {
   auto tmp = reinterpret_cast<T*>(p + offset);
@@ -27,7 +25,7 @@ DataController::DataController(const Config& config, Mqtt& mqtt, const std::stri
 
 DataController::~DataController() = default;
 
-void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive) {
+void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples, bool isActive) {
   std::unique_lock lock(m_mutex);
   if (m_transmissions.count(frequencyRange) == 0) {
     if (isActive) {
@@ -42,8 +40,17 @@ void DataController::pushTransmission(const std::chrono::milliseconds time, cons
   if (isActive) {
     container.lastActive = std::max(container.lastActive, time);
   }
-  container.queue.push({time, samples, isActive});
+  container.queue.push({time, std::move(samples), isActive});
   flushTransmission(frequencyRange);
+}
+
+void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive) {
+  std::vector<uint8_t> data(samples.size() * 2);
+  for (uint32_t i = 0; i < samples.size(); ++i) {
+    data[2 * i] = samples[i].real() * 127.5f + 127.5f;
+    data[2 * i + 1] = samples[i].imag() * 127.5f + 127.5f;
+  }
+  pushTransmission(time, frequencyRange, std::move(data), isActive);
 }
 
 void DataController::finishTransmission(const FrequencyRange& frequencyRange) {
@@ -78,16 +85,13 @@ void DataController::flushTransmission(const FrequencyRange& frequencyRange) {
 }
 
 void DataController::sendTransmission(const FrequencyRange& frequencyRange, const Transmission& transmission) {
-  std::vector<uint8_t> data(sizeof(uint64_t) + 2 * sizeof(Frequency) + sizeof(uint32_t) + sizeof(uint8_t) * 2 * transmission.samples.size());
+  std::vector<uint8_t> data(sizeof(uint64_t) + 2 * sizeof(Frequency) + sizeof(uint32_t) + transmission.samples.size());
   uint64_t offset = 0;
   add(data.data(), offset, static_cast<uint64_t>(transmission.time.count()));
   add(data.data(), offset, frequencyRange.start);
   add(data.data(), offset, frequencyRange.stop);
   add(data.data(), offset, static_cast<uint32_t>(2 * transmission.samples.size()));
-  for (const auto& value : transmission.samples) {
-    add(data.data(), offset, static_cast<uint8_t>(value.real() * 127.5 + 127.5));
-    add(data.data(), offset, static_cast<uint8_t>(value.imag() * 127.5 + 127.5));
-  }
+  add(data.data(), offset, transmission.samples.data(), transmission.samples.size());
   m_mqtt.publish(m_transmissionsTopic, std::move(data));
 }
 

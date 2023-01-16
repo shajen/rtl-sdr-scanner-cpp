@@ -23,6 +23,7 @@ class SdrDevice {
   std::vector<uint8_t> getStreamData();
 
   virtual std::string name() const = 0;
+  virtual std::string serial() const = 0;
   virtual int32_t offset() const = 0;
 
  protected:

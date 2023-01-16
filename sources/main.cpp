@@ -72,7 +72,12 @@ int main(int argc, char* argv[]) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
       }
       reloadConfig = false;
-      auto f = [&config, &reloadConfig, argc, argv](const std::string& topic, const std::string& message) {
+
+      // FftwInitializer fftwInitializer(config->cores());
+      Mqtt mqtt(*config);
+      auto scanners = createScanners(*config, mqtt);
+
+      auto f = [&config, &reloadConfig, &scanners, argc, argv](const std::string& topic, const std::string& message) {
         if (topic == "sdr/config") {
           Logger::info("main", "reload config: {}", message);
           if (argc >= 2) {
@@ -82,13 +87,25 @@ int main(int argc, char* argv[]) {
           }
           config->log();
           reloadConfig = true;
+        } else if (topic == "sdr/manual_recording") {
+          try {
+            const auto data = nlohmann::json::parse(message);
+            const auto serial = data["serial"].get<std::string>();
+            const auto frequency = data["frequency"].get<Frequency>();
+            const auto sampleRate = data["sample_rate"].get<Frequency>();
+            const auto seconds = std::chrono::seconds(data["seconds"].get<uint32_t>());
+            for (auto& scanner : scanners) {
+              if (scanner->deviceSerial() == serial) {
+                scanner->manualRecording({frequency - sampleRate / 2, frequency + sampleRate / 2, 0, sampleRate}, seconds);
+              }
+            }
+          } catch (const nlohmann::json::parse_error& e) {
+            Logger::warn("main", "can not make manual recording: {}", e.what());
+          }
         }
       };
-
-      // FftwInitializer fftwInitializer(config->cores());
-      Mqtt mqtt(*config);
       mqtt.setMessageCallback(f);
-      auto scanners = createScanners(*config, mqtt);
+
       if (scanners.empty()) {
         Logger::warn("main", "not found sdr devices");
         break;

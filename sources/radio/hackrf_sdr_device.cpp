@@ -123,6 +123,8 @@ std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRa
 
 std::string HackrfSdrDevice::name() const { return {"hackrf_" + m_serial}; }
 
+std::string HackrfSdrDevice::serial() const { return m_serial; }
+
 int32_t HackrfSdrDevice::offset() const { return m_config.hackRfOffset(); }
 
 void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {

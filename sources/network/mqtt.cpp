@@ -4,9 +4,10 @@
 #include <utils.h>
 
 constexpr auto KEEP_ALIVE = 60;
-constexpr auto LOOP_TIMEOUT_MS = 1;
+constexpr auto LOOP_TIMEOUT_MS = 100;
 constexpr auto QOS = 0;
-constexpr auto TOPIC = "sdr/config";
+constexpr auto TOPIC_CONFIG = "sdr/config";
+constexpr auto TOPIC_MANUAL_RECORDING = "sdr/manual_recording";
 constexpr auto RECONNECT_INTERVAL = std::chrono::seconds(1);
 constexpr auto QUEUE_MAX_SIZE = 1000;
 
@@ -66,7 +67,8 @@ void Mqtt::setMessageCallback(std::function<void(const std::string &, const std:
 
 void Mqtt::onConnect() {
   Logger::info("Mqtt", "connected");
-  mosquitto_subscribe(m_client, nullptr, TOPIC, QOS);
+  mosquitto_subscribe(m_client, nullptr, TOPIC_CONFIG, QOS);
+  mosquitto_subscribe(m_client, nullptr, TOPIC_MANUAL_RECORDING, QOS);
 }
 
 void Mqtt::onDisconnect() {

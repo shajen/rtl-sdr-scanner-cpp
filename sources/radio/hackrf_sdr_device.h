@@ -25,6 +25,7 @@ class HackrfSdrDevice : public SdrDevice {
   std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
 
   std::string name() const override;
+  std::string serial() const override;
   int32_t offset() const override;
 
  private:
