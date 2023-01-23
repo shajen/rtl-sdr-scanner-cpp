@@ -16,11 +16,6 @@ find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(GTest REQUIRED)
 
-find_library(PROCPS_LIB procps)
-if(NOT PROCPS_LIB)
-  message(FATAL_ERROR "procps library not found")
-endif()
-
 find_library(FFTW_LIB fftw3)
 if(NOT FFTW_LIB)
   message(FATAL_ERROR "fftw3 library not found")
@@ -67,7 +62,6 @@ TARGET_LINK_LIBRARIES(auto_sdr_libs
     hackrf
     stdc++fs
     nlohmann_json::nlohmann_json
-    procps
 )
 
 add_executable(auto_sdr "sources/main.cpp")

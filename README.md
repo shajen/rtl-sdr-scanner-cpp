@@ -274,7 +274,7 @@ Then run app normally by `docker compose up`. After the error run `docker compos
 Build
 
 ```
-sudo apt-get install build-essential cmake ccache libprocps-dev libfftw3-dev libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev
+sudo apt-get install build-essential cmake ccache libfftw3-dev libspdlog-dev librtlsdr-dev libhackrf-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev
 git clone https://github.com/shajen/rtl-sdr-scanner-cpp sdr-scanner
 cd sdr-scanner
 cmake -B build -DCMAKE_BUILD_TYPE=Release .

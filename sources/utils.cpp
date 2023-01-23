@@ -3,13 +3,13 @@
 #include <liquid/liquid.h>
 #include <logger.h>
 #include <math.h>
-#include <proc/readproc.h>
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <fstream>
 #include <numeric>
 #include <stdexcept>
 #include <thread>
@@ -25,13 +25,14 @@ bool isMemoryLimitReached(uint64_t limit) {
   if (limit == 0) {
     return false;
   } else {
-    struct proc_t usage;
-    look_up_our_self(&usage);
-    constexpr auto factor = 1024 * 1024;
-    const uint64_t total = usage.vsize / factor;
-    const uint64_t rss = usage.rss * sysconf(_SC_PAGE_SIZE) / factor;
-    Logger::debug("memory", "total: {} MB, rss: {} MB", total, rss);
-    return limit <= rss;
+    std::ifstream statm("/proc/self/statm", std::ios_base::in);
+    uint64_t vmSize, vmRss;
+    statm >> vmSize >> vmRss;
+    statm.close();
+    vmSize = vmSize * sysconf(_SC_PAGE_SIZE) / 1024 / 1024;
+    vmRss = vmRss * sysconf(_SC_PAGE_SIZE) / 1024 / 1024;
+    Logger::info("memory", "total: {} MB, rss: {} MB", vmSize, vmRss);
+    return limit <= vmRss;
   }
 }
 
