@@ -38,11 +38,25 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   Logger::debug("Recorder", "samples processing started");
   m_performanceLogger.newSample();
   const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
+  {
+    if (m_config.frequencyRangeScanningTime() < std::chrono::seconds(1)) {
+      if (m_signalMediators.count(frequencyRange) == 0) {
+        const auto agg = std::ceil(static_cast<float>(1000) / m_config.frequencyRangeScanningTime().count());
+        m_signalMediators[frequencyRange] = std::make_unique<SignalMediator>(agg);
+      }
+      const auto averagedSignals = m_signalMediators[frequencyRange]->append(signals);
+      if (!averagedSignals.empty()) {
+        m_dataController.sendSignals(time, frequencyRange, averagedSignals);
+        Logger::trace("Recorder", "signal sent");
+      }
+    } else {
+      m_dataController.sendSignals(time, frequencyRange, signals);
+      Logger::trace("Recorder", "signal sent");
+    }
+  }
   const auto rawBufferSamples = samples.size() / 2;
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
   Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
-  m_dataController.sendSignals(time, frequencyRange, signals);
-  Logger::trace("Recorder", "signal sent");
 
   m_lastDataTime = std::max(m_lastDataTime, time);
   for (auto it = m_workers.begin(); it != m_workers.end();) {

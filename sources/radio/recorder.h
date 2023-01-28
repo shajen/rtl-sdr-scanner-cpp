@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithms/decimator.h>
+#include <algorithms/signal_mediator.h>
 #include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
 #include <performance_logger.h>
@@ -52,4 +53,5 @@ class Recorder {
   };
 
   std::map<FrequencyRange, std::unique_ptr<RecorderWorkerStruct>> m_workers;
+  std::map<FrequencyRange, std::unique_ptr<SignalMediator>> m_signalMediators;
 };
