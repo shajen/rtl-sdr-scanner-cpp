@@ -12,6 +12,7 @@
       ]
     }
   ],
+  "ignored_frequencies": [],
   "devices": {
     "rtl_sdr": {
       "ppm_error": 0,

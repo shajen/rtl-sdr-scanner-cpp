@@ -23,8 +23,21 @@ std::vector<std::pair<FrequencyRange, bool>> TransmissionDetector::getTransmissi
 
 void TransmissionDetector::updateTransmissionLastSignalTime(const std::chrono::milliseconds& time, std::vector<Signal>&& signals) {
   std::sort(signals.begin(), signals.end(), [](const Signal& s1, const Signal& s2) { return s1.power > s2.power; });
+  auto isIgnored = [this](const Signal& signal) {
+    for (const auto& ignoredFrequencyRange : m_config.ignoredFrequencyRanges()) {
+      if (ignoredFrequencyRange.start <= signal.frequency && signal.frequency <= ignoredFrequencyRange.stop) {
+        return true;
+      }
+    }
+    return false;
+  };
   for (const auto& signal : signals) {
-    Logger::debug("SigMatcher", "strong {}", signal.toString());
+    if (isIgnored(signal)) {
+      Logger::debug("SigMatcher", "strong {} - ignored", signal.toString());
+      continue;
+    } else {
+      Logger::debug("SigMatcher", "strong {}", signal.toString());
+    }
     const auto frequencyRange = getTransmission(signal.frequency);
     auto it = m_transmissions.find(frequencyRange);
     if (it == m_transmissions.end()) {

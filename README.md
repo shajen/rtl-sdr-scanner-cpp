@@ -169,6 +169,24 @@ To set `lna` to `16` and `gain` to `42`:
 }
 ```
 
+## Ignored frequencies
+
+To ignore annoying frequency that you are not interested use `ignored_frequencies`. For example to ignore frequency `144 Mhz` with width `20 kHz` and `145.350 Mhz` with width `50 kHz` use:
+```
+{
+  "ignored_frequencies": [
+    {
+      "frequency": 144000000,
+      "bandwidth": 20000
+    },
+    {
+      "frequency": 145350000,
+      "bandwidth": 50000
+    }
+  ]
+}
+```
+
 ## Use multipe devices
 
 To use two dongles with serials `11111111` and `22222222`:

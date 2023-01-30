@@ -116,9 +116,36 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::Int
   }
 }
 
+IgnoredFrequencies parseIgnoredFrequencies(const nlohmann::json &json, const std::string &key) {
+  if (!json.contains(key) || json[key].empty()) {
+    throw std::runtime_error("parseFrequenciesRanges exception: empty value");
+  }
+  IgnoredFrequencies ignoredFrequencies;
+  for (const nlohmann::json &value : json[key]) {
+    const auto frequency = value["frequency"].get<Frequency>();
+    const auto bandwidth = value["bandwidth"].get<Frequency>();
+    ignoredFrequencies.push_back({frequency - bandwidth / 2, frequency + bandwidth / 2, 0, 0});
+  }
+  return ignoredFrequencies;
+}
+
+IgnoredFrequencies parseIgnoredFrequencies(const Config::InternalJson &json, const std::string &key) {
+  try {
+    return parseIgnoredFrequencies(json.masterJson, key);
+  } catch (const std::exception &) {
+    try {
+      return parseIgnoredFrequencies(json.slaveJson, key);
+    } catch (const std::exception &) {
+      fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
+      return {};
+    }
+  }
+}
+
 Config::Config(const std::string &path, const std::string &config)
     : m_json(getInternalJson(path, config)),
       m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges")),
+      m_ignoredFrequencies(parseIgnoredFrequencies(m_json, "ignored_frequencies")),
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
       m_minRecordingSampleRate(readKey(m_json, {"recording", "min_sample_rate"}, 64000)),
@@ -156,6 +183,7 @@ void Config::log() {
 }
 
 std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() const { return m_userDefinedFrequencyRanges; }
+IgnoredFrequencies Config::ignoredFrequencyRanges() const { return m_ignoredFrequencies; }
 
 std::chrono::milliseconds Config::maxRecordingNoiseTime() const { return m_maxRecordingNoiseTime; }
 std::chrono::milliseconds Config::minRecordingTime() const { return m_minRecordingTime; }

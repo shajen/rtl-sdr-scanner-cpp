@@ -20,6 +20,8 @@ struct UserDefinedFrequencyRanges {
   const std::vector<UserDefinedFrequencyRange> ranges;
 };
 
+using IgnoredFrequencies = std::vector<FrequencyRange>;
+
 class Config {
  public:
   struct InternalJson {
@@ -31,6 +33,7 @@ class Config {
   void log();
 
   std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
+  IgnoredFrequencies ignoredFrequencyRanges() const;
 
   std::chrono::milliseconds maxRecordingNoiseTime() const;
   std::chrono::milliseconds minRecordingTime() const;
@@ -70,6 +73,7 @@ class Config {
   const InternalJson m_json;
 
   const std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
+  const IgnoredFrequencies m_ignoredFrequencies;
 
   const std::chrono::milliseconds m_maxRecordingNoiseTime;
   const std::chrono::milliseconds m_minRecordingTime;

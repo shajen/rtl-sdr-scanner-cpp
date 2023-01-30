@@ -75,6 +75,9 @@ int main(int argc, char* argv[]) {
 
       // FftwInitializer fftwInitializer(config->cores());
       Mqtt mqtt(*config);
+      for (const auto& ignoredFrequencyRange : config->ignoredFrequencyRanges()) {
+        Logger::info("main", "ignored frequency, {}", ignoredFrequencyRange.toString());
+      }
       auto scanners = createScanners(*config, mqtt);
 
       auto f = [&config, &reloadConfig, &scanners, argc, argv](const std::string& topic, const std::string& message) {
