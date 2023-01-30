@@ -15,6 +15,7 @@ find_package(RTLSDR REQUIRED)
 find_package(Threads REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(GTest REQUIRED)
+find_package(Boost REQUIRED)
 
 find_library(FFTW_LIB fftw3)
 if(NOT FFTW_LIB)

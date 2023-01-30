@@ -1,8 +1,9 @@
 #include "sdr_device.h"
 
-constexpr auto BUFFER_SIZE = 40 * 1024 * 1024;
+constexpr auto DATA_BUFFER_SIZE = 40 * 1024 * 1024;
+constexpr auto TIME_BUFFER_SIZE = 1000;
 
-SdrDevice::SdrDevice(const std::string& name) : m_performanceLogger(name), m_buffer(BUFFER_SIZE) {}
+SdrDevice::SdrDevice(const std::string& name) : m_performanceLogger(name), m_dataBuffer(DATA_BUFFER_SIZE), m_timeBuffer(TIME_BUFFER_SIZE) {}
 
 void SdrDevice::waitForData() {
   while (true) {
@@ -14,6 +15,10 @@ void SdrDevice::waitForData() {
   }
 }
 
-bool SdrDevice::isDataAvailable() { return m_samplesSize <= m_buffer.availableDataSize(); }
+bool SdrDevice::isDataAvailable() { return m_samplesSize <= m_dataBuffer.availableDataSize(); }
 
-std::vector<uint8_t> SdrDevice::getStreamData() { return m_buffer.pop(m_samplesSize); }
+SdrDevice::Samples SdrDevice::getStreamData() {
+  const auto timestamp = m_timeBuffer.front();
+  m_timeBuffer.pop_front();
+  return {timestamp, m_dataBuffer.pop(m_samplesSize)};
+}

@@ -75,7 +75,8 @@ void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForev
     m_device->waitForData();
     while (m_device->isDataAvailable()) {
       m_performanceLogger.newSample();
-      m_recorder.processSamples(time(), frequencyRange, m_device->getStreamData());
+      auto&& samples = m_device->getStreamData();
+      m_recorder.processSamples(samples.time, frequencyRange, std::move(samples.data));
     }
   }
   m_device->stopStream();
@@ -83,9 +84,9 @@ void SdrScanner::startStream(const FrequencyRange& frequencyRange, bool runForev
 }
 
 void SdrScanner::readSamples(const FrequencyRange& frequencyRange) {
-  auto data = m_device->readData(frequencyRange);
+  auto&& samples = m_device->readData(frequencyRange);
   m_performanceLogger.newSample();
-  if (!data.empty() && m_recorder.isTransmission(time(), frequencyRange, std::move(data))) {
+  if (!samples.data.empty() && m_recorder.isTransmission(time(), frequencyRange, std::move(samples.data))) {
     startStream(frequencyRange, false);
   }
 }
@@ -102,7 +103,8 @@ void SdrScanner::checkManualRecording() {
       m_device->waitForData();
       while (m_isRunning && m_device->isDataAvailable()) {
         m_performanceLogger.newSample();
-        m_dataController.pushTransmission(time(), frequencyRange, m_device->getStreamData(), true);
+        auto&& samples = m_device->getStreamData();
+        m_dataController.pushTransmission(samples.time, frequencyRange, std::move(samples.data), true);
       }
     }
     Logger::info("Scanner", "finish manual recording: {}", frequencyRange.toString());

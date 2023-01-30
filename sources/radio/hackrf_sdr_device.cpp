@@ -68,9 +68,12 @@ int HackrfSdrDevice::callbackStream(hackrf_transfer *transfer) {
   for (int i = 0; i < transfer->valid_length; ++i) {
     transfer->buffer[i] = (transfer->buffer[i] ^ 0b10000000);
   }
-  device->m_buffer.push(transfer->buffer, transfer->valid_length);
+  if (device->m_readSize == 0) {
+    device->m_timeBuffer.push_back(time());
+  }
+  device->m_dataBuffer.push(transfer->buffer, transfer->valid_length);
   device->m_readSize += transfer->valid_length;
-  if (device->m_samplesSize <= device->m_readSize && device->m_samplesSize <= device->m_buffer.availableDataSize()) {
+  if (device->m_samplesSize <= device->m_readSize && device->m_samplesSize <= device->m_dataBuffer.availableDataSize()) {
     Logger::trace("HackRf", "read samples: completed");
     device->m_performanceLogger.newSample();
     device->m_readSize -= device->m_samplesSize;
@@ -113,12 +116,12 @@ void HackrfSdrDevice::stopStream() {
   }
 }
 
-std::vector<uint8_t> HackrfSdrDevice::readData(const FrequencyRange &frequencyRange) {
+SdrDevice::Samples HackrfSdrDevice::readData(const FrequencyRange &frequencyRange) {
   startStream(frequencyRange);
   waitForData();
-  auto data = getStreamData();
+  auto &&samples = getStreamData();
   stopStream();
-  return data;
+  return samples;
 }
 
 std::string HackrfSdrDevice::name() const { return {"hackrf_" + m_serial}; }
@@ -131,7 +134,8 @@ void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
   const auto samples = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime(), HACKRF_MIN_SAMPLES_READ_COUNT);
   m_samplesSize = samples;
   m_readSize = 0;
-  m_buffer.clear();
+  m_dataBuffer.clear();
+  m_timeBuffer.clear();
 
   if (frequencyRange.sampleRate != m_sampleRate) {
     Logger::debug("HackRf", "set sample rate {}", frequencyToString(frequencyRange.sampleRate, "sample rate"));

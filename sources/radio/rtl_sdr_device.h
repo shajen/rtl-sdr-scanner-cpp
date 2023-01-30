@@ -16,7 +16,7 @@ class RtlSdrDevice : public SdrDevice {
   void startStream(const FrequencyRange& frequencyRange) override;
   void stopStream() override;
 
-  std::vector<uint8_t> readData(const FrequencyRange& frequencyRange) override;
+  SdrDevice::Samples readData(const FrequencyRange& frequencyRange) override;
 
   std::string name() const override;
   std::string serial() const override;
