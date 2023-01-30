@@ -90,7 +90,7 @@ void DataController::sendTransmission(const FrequencyRange& frequencyRange, cons
   add(data.data(), offset, static_cast<uint64_t>(transmission.time.count()));
   add(data.data(), offset, frequencyRange.start);
   add(data.data(), offset, frequencyRange.stop);
-  add(data.data(), offset, static_cast<uint32_t>(2 * transmission.samples.size()));
+  add(data.data(), offset, static_cast<uint32_t>(transmission.samples.size()));
   add(data.data(), offset, transmission.samples.data(), transmission.samples.size());
   m_mqtt.publish(m_transmissionsTopic, std::move(data));
 }
