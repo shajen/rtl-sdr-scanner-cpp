@@ -9,8 +9,8 @@
 struct UserDefinedFrequencyRange {
   const Frequency start;
   const Frequency stop;
-  const Frequency step;
   const Frequency sampleRate;
+  const Frequency fft;
 
   std::string toString() const;
 };

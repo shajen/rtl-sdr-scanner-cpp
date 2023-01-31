@@ -7,7 +7,7 @@ constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
 
 std::string UserDefinedFrequencyRange::toString() const {
-  return frequencyToString(start, "start") + ", " + frequencyToString(stop, "stop") + ", " + frequencyToString(step, "step") + ", " + frequencyToString(sampleRate, "sample rate");
+  return frequencyToString(start, "start") + ", " + frequencyToString(stop, "stop") + ", " + frequencyToString(sampleRate, "sample rate") + ", fft: " + std::to_string(fft);
 }
 
 nlohmann::json readJsonFromFile(const std::string &path) {
@@ -94,9 +94,9 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const nlohmann::j
     for (const nlohmann::json &subValue : value["ranges"]) {
       const auto start = subValue["start"].get<Frequency>();
       const auto stop = subValue["stop"].get<Frequency>();
-      const auto step = subValue["step"].get<Frequency>();
       const auto sampleRate = subValue["sample_rate"].get<Frequency>();
-      subRanges.push_back({start, stop, step, sampleRate});
+      const auto fft = subValue.contains("fft") ? subValue["fft"].get<Frequency>() : 0;
+      subRanges.push_back({start, stop, sampleRate, fft});
     }
     ranges.push_back({deviceSerial, subRanges});
   }

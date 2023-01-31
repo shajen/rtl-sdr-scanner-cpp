@@ -102,7 +102,7 @@ void DataController::sendSignals(const std::chrono::milliseconds time, const Fre
   add(data.data(), offset, static_cast<uint64_t>(time.count()));
   add(data.data(), offset, frequencyRange.start);
   add(data.data(), offset, frequencyRange.stop);
-  add(data.data(), offset, frequencyRange.step);
+  add(data.data(), offset, frequencyRange.step());
   add(data.data(), offset, static_cast<uint32_t>(signals.size()));
   for (const auto& signal : signals) {
     add(data.data(), offset, static_cast<int8_t>(signal.power));

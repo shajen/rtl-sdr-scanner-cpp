@@ -17,18 +17,17 @@ struct Signal {
 };
 
 struct FrequencyRange {
-  FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency _sampleRate);
+  FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _sampleRate, const uint32_t _fft);
   std::string toString() const;
 
   Frequency center() const;
-  uint32_t fftSize() const;
+  Frequency step() const;
 
   bool operator==(const FrequencyRange& rhs) const;
   bool operator<(const FrequencyRange& rhs) const;
 
   const Frequency start;
   const Frequency stop;
-  const Frequency step;
   const Frequency sampleRate;
-  const Frequency bandwidth;
+  const uint32_t fft;
 };

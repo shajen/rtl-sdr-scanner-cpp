@@ -101,16 +101,19 @@ std::vector<FrequencyRange> fitFrequencyRange(const UserDefinedFrequencyRange &u
     }
     std::vector<FrequencyRange> results;
     for (Frequency i = userRange.start; i < userRange.stop; i += subSampleRate) {
-      for (const auto &range : fitFrequencyRange({i, i + subSampleRate, userRange.step, userRange.sampleRate})) {
+      for (const auto &range : fitFrequencyRange({i, i + subSampleRate, userRange.sampleRate, userRange.fft})) {
         results.push_back(range);
       }
     }
     return results;
   }
-  const auto fftSize = userRange.sampleRate / userRange.step;
-  if (fftSize != pow(2.0f, ceil(log2(fftSize)))) {
-    Logger::warn("utils", "range {}, step and sample rate not fit, calculated fft size: {}", userRange.toString(), fftSize);
-    throw std::runtime_error("");
+  return {{userRange.start, userRange.stop, userRange.sampleRate, userRange.fft}};
+}
+
+uint32_t countFft(const Frequency sampleRate) {
+  uint32_t newFft = 1;
+  while (2000 <= sampleRate / newFft) {
+    newFft = newFft << 1;
   }
-  return {{userRange.start, userRange.stop, userRange.step, userRange.sampleRate}};
+  return newFft;
 }

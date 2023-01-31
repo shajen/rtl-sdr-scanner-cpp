@@ -1,6 +1,7 @@
 #include "help_structures.h"
 
 #include <string.h>
+#include <utils.h>
 
 #include <algorithm>
 #include <cmath>
@@ -42,28 +43,21 @@ std::string powerToString(const Power &power) {
 
 std::string Signal::toString() const { return frequencyToString(frequency) + ", " + powerToString(power); }
 
-FrequencyRange::FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _step, const Frequency _sampleRate)
-    : start(_start), stop(_stop), step(_step), sampleRate(_sampleRate), bandwidth(_sampleRate) {}
+FrequencyRange::FrequencyRange(const Frequency _start, const Frequency _stop, const Frequency _sampleRate, const uint32_t _fft)
+    : start(_start), stop(_stop), sampleRate(_sampleRate), fft(_fft == 0 ? countFft(sampleRate) : _fft) {}
 
 std::string FrequencyRange::toString() const {
   char buf[1024];
-  auto offset = sprintf(buf, "%s, %s", frequencyToString(start, "start").c_str(), frequencyToString(stop, "stop").c_str());
-  if (step != 0) {
-    offset += sprintf(buf + offset, ", %s", frequencyToString(step, "step").c_str());
-  }
-  if (bandwidth != 0) {
-    offset += sprintf(buf + offset, ", %s", frequencyToString(bandwidth, "bandwidth").c_str());
-  }
+  sprintf(buf, "%s, %s, fft: %d", frequencyToString(start, "start").c_str(), frequencyToString(stop, "stop").c_str(), fft);
   return std::string(buf);
 }
 
 Frequency FrequencyRange::center() const { return (start + stop) / 2; }
 
-uint32_t FrequencyRange::fftSize() const { return bandwidth / step; }
+uint32_t FrequencyRange::step() const { return sampleRate / fft; }
 
-bool FrequencyRange::operator==(const FrequencyRange &rhs) const { return start == rhs.start && stop == rhs.stop && step == rhs.step && sampleRate == rhs.sampleRate && bandwidth == rhs.bandwidth; }
+bool FrequencyRange::operator==(const FrequencyRange &rhs) const { return start == rhs.start && stop == rhs.stop && sampleRate == rhs.sampleRate && fft == rhs.fft; }
 
 bool FrequencyRange::operator<(const FrequencyRange &rhs) const {
-  return start < rhs.start || (start == rhs.start && stop < rhs.stop) || (stop == rhs.stop && step < rhs.step) || (step == rhs.step && sampleRate < rhs.sampleRate) ||
-         (sampleRate == rhs.sampleRate && bandwidth < rhs.bandwidth);
+  return start < rhs.start || (start == rhs.start && stop < rhs.stop) || (stop == rhs.stop && sampleRate < rhs.sampleRate) || (sampleRate == rhs.sampleRate && fft < rhs.fft);
 }

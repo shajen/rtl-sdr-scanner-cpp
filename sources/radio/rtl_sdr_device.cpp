@@ -124,7 +124,7 @@ void RtlSdrDevice::waitForDeviceAvailable() {
 
 void RtlSdrDevice::setupDevice(const FrequencyRange& frequencyRange) {
   const auto centerFrequency = frequencyRange.center();
-  const auto bandwidth = frequencyRange.bandwidth;
+  const auto bandwidth = frequencyRange.sampleRate;
   const auto sampleRate = frequencyRange.sampleRate;
   const auto samples = getSamplesCount(sampleRate, m_config.frequencyRangeScanningTime(), RTLSDR_MIN_SAMPLES_READ_COUNT);
   m_samplesSize = samples;

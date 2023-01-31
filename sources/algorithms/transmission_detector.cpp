@@ -42,7 +42,7 @@ void TransmissionDetector::updateTransmissionLastSignalTime(const std::chrono::m
     auto it = m_transmissions.find(frequencyRange);
     if (it == m_transmissions.end()) {
       auto add = [](FrequencyRange frequencyRange, int frequency) {
-        return FrequencyRange(frequencyRange.start + frequency, frequencyRange.stop + frequency, frequencyRange.step, frequencyRange.sampleRate);
+        return FrequencyRange(frequencyRange.start + frequency, frequencyRange.stop + frequency, frequencyRange.sampleRate, frequencyRange.fft);
       };
       for (int i = 1; i <= 2; ++i) {
         if (it != m_transmissions.end()) {

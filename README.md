@@ -107,7 +107,6 @@ To scan single frequency range:
         {
           "start": 144000000,
           "stop": 146000000,
-          "step": 1000,
           "sample_rate": 2048000
         }
       ]
@@ -145,7 +144,6 @@ To scan single frequency range:
         {
           "start": 430000000,
           "stop": 450000000,
-          "step": 2500,
           "sample_rate": 20480000
         }
       ]
@@ -199,7 +197,6 @@ To use two dongles with serials `11111111` and `22222222`:
         {
           "start": 144000000,
           "stop": 146000000,
-          "step": 1000,
           "sample_rate": 2048000
         }
       ]
@@ -210,7 +207,6 @@ To use two dongles with serials `11111111` and `22222222`:
         {
           "start": 440000000,
           "stop": 442000000,
-          "step": 1000,
           "sample_rate": 2048000
         }
       ]
@@ -233,13 +229,11 @@ To scan `144 Mhz - 146 Mhz` and `440 Mhz - 442 Mhz` in the same time:
         {
           "start": 144000000,
           "stop": 146000000,
-          "step": 1000,
           "sample_rate": 2048000
         },
         {
           "start": 440000000,
           "stop": 442000000,
-          "step": 1000,
           "sample_rate": 2048000
         }
       ]
@@ -248,32 +242,26 @@ To scan `144 Mhz - 146 Mhz` and `440 Mhz - 442 Mhz` in the same time:
 }
 ```
 
-## Custom sample rate, step and frequency range
+## Custom fft
 
-Please note that `sample_rate` must fit to `step`. You should meet the following equation `sample_rate / step = 2 ^ n`.
-
-The smaller the step, the more accurate the spectrogram, but the larger the file size and the higher the CPU consumption.
-
-The most popular values:
-
-| `sample_rate` | `step` |
-| - | - |
-| 1024000 | 250 |
-| 1024000 | 500 |
-| 1024000 | 1000 |
-| 2048000 | 250 |
-| 2048000 | 500 |
-| 2048000 | 1000 |
-| 10240000 | 625 |
-| 10240000 | 1250 |
-| 10240000 | 2500 |
-| 20480000 | 625 |
-| 20480000 | 1250 |
-| 20480000 | 2500 |
-
-Please note that `rtl-sdr` do not support `sample_rate` greather than `2500000`.
-
-Please note that `sample_rate` must be greather than (`stop frequency range` - `start frequency range`).
+It is possible to set custom fft on spectrogram.
+```
+{
+  "scanner_frequencies_ranges": [
+    {
+      "device_serial": "auto",
+      "ranges": [
+        {
+          "start": 144000000,
+          "stop": 146000000,
+          "sample_rate": 2048000,
+          "fft": 16384
+        }
+      ]
+    }
+  ]
+}
+```
 
 # Debugging
 
