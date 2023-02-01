@@ -29,6 +29,7 @@ class Recorder {
   void processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples);
 
  private:
+  void processSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
   const Config& m_config;
   const int32_t m_offset;
   DataController& m_dataController;
