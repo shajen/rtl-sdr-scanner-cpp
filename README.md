@@ -13,7 +13,7 @@ It also provides easy but very powerful **web panel** to explore recordings and 
 
 # Sample data collected
 
-[YouTube video](http://www.youtube.com/watch?v=TSDbcb7wSjs)
+[YouTube video](http://www.youtube.com/watch?v=TSDbcb7wSjs) (old version)
 
 | Spectrogram | Transmission |
 | - | - |
@@ -37,12 +37,12 @@ wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
 docker compose up
 ```
 
-Wait a moment to collect data and open panel.
-
 To update docker images to latest version type:
 ```
 docker compose pull
 ```
+
+Also remember to update `docker-compose.yml` and `config.json`.
 
 ## Panel
 
@@ -270,6 +270,13 @@ If you have some problems with this software follow the steps to get debug log.
 Set `"console_log_level": "trace"` in `config.json`.
 
 Then run app normally by `docker compose up`. After the error run `docker compose logs > logs.txt`. Please attach `logs.txt` if you create a new issue. Do not paste logs directly to issue. Upload it to any file host service ([https://file.io/](https://file.io/), [https://pastebin.com/](https://pastebin.com/) or any you like).
+
+# Timezone
+
+If timezone detection not work correctly and it seems to use `UTC` instead your timezone please set timezone in host system. To set `Europe/Warsaw` type:
+```
+echo "Europe/Warsaw" > /etc/timezone
+```
 
 # Advanced usage
 
