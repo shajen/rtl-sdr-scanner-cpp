@@ -67,6 +67,14 @@ blacklist rtl2832_sdr
 blacklist rtl8xxxu
 ```
 
+## RaspberryPi
+
+Docker version should work on `RaspberryPi`, but keep in mind that `RaspberryPi` is **not powefull machine** and is **not good** for sdr data processing. `sdr` device can produce **40 megabytes per second**! It's a lot of data for `RaspberryPi` to processing in real time. It's a lot of data even for some desktop computers.
+
+If you still want to do this, please replace the `SD` card with a fast one and make sure you have a strong version of `RaspberryPi`.
+
+Better idea is to build `sdr-scanner` from sources via `cmake` and run natively on `RaspberryPi`. Next run `sdr-monitor` and `mqtt-broker` on any other machine (even in the cloud) and connect `sdr-scanner` to them (you have to set valid mqtt data in `config.json` and maybe manipulate in `docker-compose.yml`).
+
 ## Noise learner
 
 To auto-detect transmissions, sdr scanner has to learn noise level every run. It takes first `n` seconds (defined in `config.json` as `noise_learning_time_seconds` default is `30` seconds). So if any transmission will appear in this period it's may not be detected by scanner later.
