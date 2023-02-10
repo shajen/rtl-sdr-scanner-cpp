@@ -94,7 +94,7 @@ sudo rmmod rtl8xxxu
 
 ## RaspberryPi
 
-Docker version should work on `RaspberryPi`, but keep in mind that `RaspberryPi` is **not powefull machine** and is **not good** for sdr data processing. `sdr` device can produce **40 megabytes per second**! It's a lot of data for `RaspberryPi` to processing in real time. It's a lot of data even for some desktop computers.
+Docker version should work on `RaspberryPi`, but keep in mind that `RaspberryPi` is **not a powerful machine** and is **not good** for sdr data processing. `sdr` device can produce **40 megabytes per second**! It's a lot of data for `RaspberryPi` to processing in real time. It's a lot of data even for some desktop computers.
 
 If you still want to do this, please replace the `SD` card with a fast one and make sure you have a strong version of `RaspberryPi`.
 
