@@ -111,7 +111,7 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::Int
       return parseFrequenciesRanges(json.slaveJson, key);
     } catch (const std::exception &) {
       fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
-      return {{"auto", {{144000000, 146000000, 250, 2048000}}}};
+      return {{"auto", {{144000000, 146000000, 2048000, 2048}}}};
     }
   }
 }
