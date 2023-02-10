@@ -117,7 +117,7 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::Int
 }
 
 IgnoredFrequencies parseIgnoredFrequencies(const nlohmann::json &json, const std::string &key) {
-  if (!json.contains(key) || json[key].empty()) {
+  if (!json.contains(key) || !json[key].is_array()) {
     throw std::runtime_error("parseFrequenciesRanges exception: empty value");
   }
   IgnoredFrequencies ignoredFrequencies;
