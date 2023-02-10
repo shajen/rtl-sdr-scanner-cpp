@@ -52,19 +52,42 @@ Admin panel available at [http://localhost:8000/admin/](http://localhost:8000/ad
 
 # Important
 
-## Blacklist kernel modules
+### Blacklist kernel modules
 
-If you use `rtl-sdr` remember to blacklist `rtl2832` modules. Then reboot system.
+If you use `rtl-sdr` remember to blacklist `rtl2832` modules so that the host operating system doesn't attach the devices and instead allows the devices to be claimed by the docker guest instance.
 
+Copy and run this entire section of script at once. Note that one may need to explicitly press enter after pasting to get it to run.
 ```
-sudo nano /etc/modprobe.d/blacklist-rtl2832.conf
-```
-
-```
-blacklist rtl2832
+sudo tee /etc/modprobe.d/blacklist-rtlsdr.conf > /dev/null <<TEXT1
+# Blacklist host from loading modules for RTL-SDRs to ensure they
+# are left available for the Docker guest
+blacklist dvb_core
+blacklist dvb_usb_rtl2832u
 blacklist dvb_usb_rtl28xxu
+blacklist dvb_usb_v2
+blacklist r820t
+blacklist rtl2830
+blacklist rtl2832
 blacklist rtl2832_sdr
+blacklist rtl2838
 blacklist rtl8xxxu
+TEXT1
+
+```
+
+### Unload any RTL-SDR modules that may have been loaded
+```
+sudo rmmod dvb_core
+sudo rmmod dvb_usb_rtl2832u
+sudo rmmod dvb_usb_rtl28xxu
+sudo rmmod dvb_usb_v2
+sudo rmmod r820t
+sudo rmmod rtl2830
+sudo rmmod rtl2832
+sudo rmmod rtl2832_sdr
+sudo rmmod rtl2838
+sudo rmmod rtl8xxxu
+
 ```
 
 ## RaspberryPi
