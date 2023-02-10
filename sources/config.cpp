@@ -11,6 +11,10 @@ std::string UserDefinedFrequencyRange::toString() const {
 }
 
 nlohmann::json readJsonFromFile(const std::string &path) {
+  if (path.empty()) {
+    Logger::warn("config", "no config file provided, using default config");
+    return {};
+  }
   constexpr auto BUFFER_SIZE = 1024 * 1024;
   FILE *file = fopen(path.c_str(), "r");
 
@@ -20,11 +24,14 @@ nlohmann::json readJsonFromFile(const std::string &path) {
     fclose(file);
     try {
       return nlohmann::json::parse(std::string{buffer, size});
-    } catch (const nlohmann::json::parse_error &) {
+    } catch (const nlohmann::json::parse_error &exception) {
+      Logger::warn("config", "can not parse {}: not valid json format (fix your config), using default config", path);
       return {};
     }
+  } else {
+    Logger::warn("config", "can not read {}: file not found, using default config", path);
+    return {};
   }
-  return {};
 }
 
 Config::InternalJson getInternalJson(const std::string &path, const std::string &data) {
@@ -57,11 +64,14 @@ T readKey(const Config::InternalJson &json, const std::vector<std::string> &keys
     try {
       return readKey<T>(json.slaveJson, keys);
     } catch (const std::runtime_error &) {
-      fprintf(stderr, "warning, can not read from config (use default value): ");
+      constexpr auto SIZE = 2048;
+      char tmp[SIZE];
+      int offset = 0;
+      offset += snprintf(tmp + offset, SIZE - offset, "can not read: ");
       for (const auto &key : keys) {
-        fprintf(stderr, "%s.", key.c_str());
+        offset += snprintf(tmp + offset, SIZE - offset, "%s.", key.c_str());
       }
-      fprintf(stderr, "\n");
+      Logger::warn("config", tmp);
       return defaultValue;
     }
   }
@@ -110,7 +120,7 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::Int
     try {
       return parseFrequenciesRanges(json.slaveJson, key);
     } catch (const std::exception &) {
-      fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
+      Logger::warn("config", "can not read: {}", key);
       return {{"auto", {{144000000, 146000000, 2048000, 2048}}}};
     }
   }
@@ -136,7 +146,7 @@ IgnoredFrequencies parseIgnoredFrequencies(const Config::InternalJson &json, con
     try {
       return parseIgnoredFrequencies(json.slaveJson, key);
     } catch (const std::exception &) {
-      fprintf(stderr, "warning, can not read from config (use default value): %s\n", key.c_str());
+      Logger::warn("config", "can not read: {}", key);
       return {};
     }
   }

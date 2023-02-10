@@ -44,6 +44,7 @@ std::vector<std::unique_ptr<SdrScanner>> createScanners(const Config& config, Mq
 }
 
 int main(int argc, char* argv[]) {
+  Logger::configure(spdlog::level::info, spdlog::level::off, "");
   std::unique_ptr<Config> config;
   if (argc >= 2) {
     config = std::make_unique<Config>(argv[1], "");
