@@ -369,7 +369,9 @@ NOTE: Be sure to merge the **latest** from **upstream** before making a pull req
 
 If you enjoy this project and want to thanks, please use follow link:
 
-[![Support via PayPal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/pp-acceptance-medium.png)](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
+- [Revolut](https://revolut.me/borysm2b) (best way)
+
+- [PayPal](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
 
 # License
 
