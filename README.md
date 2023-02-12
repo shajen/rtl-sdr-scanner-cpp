@@ -308,7 +308,7 @@ Then run app normally by `docker compose up`. After the error run `docker compos
 
 If timezone detection not work correctly and it seems to use `UTC` instead your timezone please set timezone in host system. To set `Europe/Warsaw` type:
 ```
-echo "Europe/Warsaw" > /etc/timezone
+echo "Europe/Warsaw" | sudo tee /etc/timezone
 ```
 
 # Advanced usage
