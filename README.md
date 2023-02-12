@@ -11,9 +11,13 @@ It also provides easy but very powerful **web panel** to explore recordings and 
 - `rtl-sdr`
 - `HackRF`
 
-# Sample data collected
+# YouTube
 
-[YouTube video](http://www.youtube.com/watch?v=TSDbcb7wSjs) (old version)
+[introduction video](https://www.youtube.com/watch?v=YzQ2N0VkKvE) - thanks to **Tech Minds**!
+
+[introduction video](http://www.youtube.com/watch?v=TSDbcb7wSjs) - old version
+
+# Sample data collected
 
 | Spectrogram | Transmission |
 | - | - |
