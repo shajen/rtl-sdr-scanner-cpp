@@ -70,6 +70,7 @@ blacklist rtl2830
 blacklist rtl2832
 blacklist rtl2832_sdr
 blacklist rtl2838
+blacklist rtl8192cu
 blacklist rtl8xxxu
 TEXT1
 
@@ -86,6 +87,7 @@ sudo rmmod rtl2830
 sudo rmmod rtl2832
 sudo rmmod rtl2832_sdr
 sudo rmmod rtl2838
+sudo rmmod rtl8192cu
 sudo rmmod rtl8xxxu
 
 ```
