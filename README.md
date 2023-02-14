@@ -11,6 +11,11 @@ It also provides easy but very powerful **web panel** to explore recordings and 
 - `rtl-sdr`
 - `HackRF`
 
+# Supported modulation
+
+- `FM`
+- `AM`
+
 # YouTube
 
 [introduction video](https://www.youtube.com/watch?v=YzQ2N0VkKvE) - thanks to **Tech Minds**!
