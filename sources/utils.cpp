@@ -31,7 +31,11 @@ bool isMemoryLimitReached(uint64_t limit) {
     statm.close();
     vmSize = vmSize * sysconf(_SC_PAGE_SIZE) / 1024 / 1024;
     vmRss = vmRss * sysconf(_SC_PAGE_SIZE) / 1024 / 1024;
-    Logger::info("memory", "total: {} MB, rss: {} MB", vmSize, vmRss);
+    if (limit <= vmRss) {
+      Logger::warn("memory", "total: {} MB, rss: {} MB", vmSize, vmRss);
+    } else {
+      Logger::debug("memory", "total: {} MB, rss: {} MB", vmSize, vmRss);
+    }
     return limit <= vmRss;
   }
 }

@@ -25,10 +25,10 @@ void RtlSdrDevice::startStream(const FrequencyRange& frequencyRange) {
       device->m_cv.notify_one();
       device->m_performanceLogger.newSample();
     };
-    Logger::info("RtlSdr", "start stream");
+    Logger::debug("RtlSdr", "start stream");
     setThreadParams("rtlsdr_reader", PRIORITY::MEDIUM);
     rtlsdr_read_async(m_device, f, this, 0, 0);
-    Logger::info("RtlSdr", "stop stream");
+    Logger::debug("RtlSdr", "stop stream");
   });
 }
 

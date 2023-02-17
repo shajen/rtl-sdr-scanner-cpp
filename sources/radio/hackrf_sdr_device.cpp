@@ -103,14 +103,14 @@ void HackrfSdrDevice::startStream(const FrequencyRange &frequencyRange) {
   setup(frequencyRange);
   m_threadInitialized = false;
   const auto samples = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime(), HACKRF_MIN_SAMPLES_READ_COUNT);
-  Logger::info("HackRf", "start stream, samples: {}", samples);
+  Logger::debug("HackRf", "start stream, samples: {}", samples);
   if (hackrf_start_rx(m_device, callbackStream, this) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not start stream");
   }
 }
 
 void HackrfSdrDevice::stopStream() {
-  Logger::info("HackRf", "stop stream");
+  Logger::debug("HackRf", "stop stream");
   if (hackrf_stop_rx(m_device) != HACKRF_SUCCESS) {
     throw std::runtime_error("can not stop stream");
   }
