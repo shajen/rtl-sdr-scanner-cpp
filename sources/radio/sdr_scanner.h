@@ -4,6 +4,7 @@
 #include <config.h>
 #include <network/data_controller.h>
 #include <performance_logger.h>
+#include <core_manager.h>
 #include <radio/recorder.h>
 #include <radio/sdr_device.h>
 
@@ -20,7 +21,7 @@ struct ManualRecording {
 
 class SdrScanner {
  public:
-  SdrScanner(const Config& config, const std::vector<UserDefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt);
+  SdrScanner(const Config& config, CoreManager& coreManager, const std::vector<UserDefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt);
   ~SdrScanner();
 
   bool isRunning() const;

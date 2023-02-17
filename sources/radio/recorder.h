@@ -5,6 +5,7 @@
 #include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
 #include <performance_logger.h>
+#include <core_manager.h>
 #include <radio/recorder_worker.h>
 #include <radio/samples_processor.h>
 #include <utils.h>
@@ -20,7 +21,7 @@
 
 class Recorder {
  public:
-  Recorder(const Config& config, int32_t offset, DataController& dataController);
+  Recorder(const Config& config, CoreManager& coreManager, int32_t offset, DataController& dataController);
   ~Recorder();
 
   void clear();
@@ -31,6 +32,7 @@ class Recorder {
  private:
   void processSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
   const Config& m_config;
+  CoreManager& m_coreManager;
   const int32_t m_offset;
   DataController& m_dataController;
   TransmissionDetector m_transmissionDetector;

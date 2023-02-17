@@ -1,6 +1,7 @@
 #include <algorithms/fftw_initializer.h>
 #include <algorithms/spectrogram.h>
 #include <config.h>
+#include <core_manager.h>
 #include <fftw3.h>
 #include <logger.h>
 #include <network/data_controller.h>
@@ -19,27 +20,27 @@ void handler(int) {
 }
 
 template <typename T>
-void createScanners(const Config& config, Mqtt& mqtt, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
+void createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
   for (const auto& id : T::listDevices()) {
     for (const auto& range : config.userDefinedFrequencyRanges()) {
       if (range.serial == id) {
-        scanners.push_back(std::make_unique<SdrScanner>(config, range.ranges, std::make_unique<T>(config, id), mqtt));
+        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, id), mqtt));
         break;
       }
     }
     for (const auto& range : config.userDefinedFrequencyRanges()) {
       if (range.serial == "auto") {
-        scanners.push_back(std::make_unique<SdrScanner>(config, range.ranges, std::make_unique<T>(config, id), mqtt));
+        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, id), mqtt));
         break;
       }
     }
   }
 }
 
-std::vector<std::unique_ptr<SdrScanner>> createScanners(const Config& config, Mqtt& mqtt) {
+std::vector<std::unique_ptr<SdrScanner>> createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager) {
   std::vector<std::unique_ptr<SdrScanner>> scanners;
-  createScanners<HackrfSdrDevice>(config, mqtt, scanners);
-  createScanners<RtlSdrDevice>(config, mqtt, scanners);
+  createScanners<HackrfSdrDevice>(config, mqtt, coreManager, scanners);
+  createScanners<RtlSdrDevice>(config, mqtt, coreManager, scanners);
   return scanners;
 }
 
@@ -76,10 +77,11 @@ int main(int argc, char* argv[]) {
 
       // FftwInitializer fftwInitializer(config->cores());
       Mqtt mqtt(*config);
+      CoreManager coreManager(config->cores());
       for (const auto& ignoredFrequencyRange : config->ignoredFrequencyRanges()) {
         Logger::info("main", "ignored frequency, {}", ignoredFrequencyRange.toString());
       }
-      auto scanners = createScanners(*config, mqtt);
+      auto scanners = createScanners(*config, mqtt, coreManager);
 
       auto f = [&config, &reloadConfig, &scanners, argc, argv](const std::string& topic, const std::string& message) {
         if (topic == "sdr/config") {

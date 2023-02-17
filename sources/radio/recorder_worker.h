@@ -4,6 +4,7 @@
 #include <algorithms/spectrogram.h>
 #include <algorithms/transmission_detector.h>
 #include <network/data_controller.h>
+#include <core_manager.h>
 #include <utils.h>
 
 #include <condition_variable>
@@ -25,6 +26,7 @@ class RecorderWorker {
  public:
   RecorderWorker(
       const Config &config,
+      std::unique_ptr<CoreManager::Core> core,
       DataController &dataController,
       const FrequencyRange &inputFrequencyRange,
       const FrequencyRange &outputFrequency,
@@ -37,6 +39,7 @@ class RecorderWorker {
   void processSamples(WorkerInputSamples &&inputSamples);
 
   const Config &m_config;
+  std::unique_ptr<CoreManager::Core> m_core;
   const FrequencyRange m_inputFrequencyRange;
   const FrequencyRange m_outputFrequencyRange;
   DataController &m_dataController;

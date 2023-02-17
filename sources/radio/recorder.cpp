@@ -7,8 +7,9 @@
 
 #include <map>
 
-Recorder::Recorder(const Config& config, int32_t offset, DataController& dataController)
+Recorder::Recorder(const Config& config, CoreManager& coreManager, int32_t offset, DataController& dataController)
     : m_config(config),
+      m_coreManager(coreManager),
       m_offset(offset),
       m_dataController(dataController),
       m_transmissionDetector(config),
@@ -60,13 +61,14 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
       m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
     }
     if (m_workers.count(transmissionSampleRate) == 0) {
-      if (m_config.cores() <= m_workers.size()) {
+      auto core = m_coreManager.getCore();
+      if (!core) {
         Logger::warn("Recorder", "reached concurrent transmissions limit, skip {}", frequencyToString(transmissionSampleRate.center()));
         continue;
       }
       { Logger::info("Recorder", "create worker {}, total workers: {}", frequencyToString(transmissionSampleRate.center()), m_workers.size() + 1); }
       auto rws = std::make_unique<RecorderWorkerStruct>();
-      auto worker = std::make_unique<RecorderWorker>(m_config, m_dataController, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
+      auto worker = std::make_unique<RecorderWorker>(m_config, std::move(core), m_dataController, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
       rws->worker = std::move(worker);
       m_workers.insert({transmissionSampleRate, std::move(rws)});
     }
