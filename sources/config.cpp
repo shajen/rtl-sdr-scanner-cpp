@@ -2,6 +2,8 @@
 
 #include <logger.h>
 
+#include <thread>
+
 // experts only
 constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
@@ -152,6 +154,14 @@ IgnoredFrequencies parseIgnoredFrequencies(const Config::InternalJson &json, con
   }
 }
 
+uint8_t getCores(uint8_t cores) {
+  if (cores == 0) {
+    return std::thread::hardware_concurrency();
+  } else {
+    return cores;
+  }
+}
+
 Config::Config(const std::string &path, const std::string &config)
     : m_json(getInternalJson(path, config)),
       m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges")),
@@ -173,7 +183,7 @@ Config::Config(const std::string &path, const std::string &config)
       m_hackRfLnaGain(readKey(m_json, {"devices", "hack_rf", "lna_gain"}, 0)),
       m_hackRfVgaGain(readKey(m_json, {"devices", "hack_rf", "vga_gain"}, 0)),
       m_hackRfRadioOffset(readKey(m_json, {"devices", "hack_rf", "offset"}, 0)),
-      m_cores(readKey(m_json, {"cores"}, 4)),
+      m_cores(getCores(readKey(m_json, {"cores"}, 0))),
       m_memoryLimit(readKey(m_json, {"memory_limit_mb"}, 0)),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
       m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),

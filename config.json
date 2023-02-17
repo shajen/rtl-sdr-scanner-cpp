@@ -41,7 +41,7 @@
     "file_log_level": "info",
     "console_log_level": "info"
   },
-  "cores": 4,
+  "cores": 0,
   "memory_limit_mb": 0,
   "mqtt": {
     "hostname": "sdr-broker",
