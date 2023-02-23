@@ -6,9 +6,8 @@
 #include <logger.h>
 #include <network/data_controller.h>
 #include <network/mqtt.h>
-#include <radio/hackrf_sdr_device.h>
-#include <radio/rtl_sdr_device.h>
 #include <radio/sdr_scanner.h>
+#include <radio/soapy_sdr_device.h>
 #include <signal.h>
 #include <version.h>
 
@@ -23,14 +22,14 @@ template <typename T>
 void createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
   for (const auto& id : T::listDevices()) {
     for (const auto& range : config.userDefinedFrequencyRanges()) {
-      if (range.serial == id) {
-        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, id), mqtt));
+      if (removeZerosFromBegging(range.serial) == removeZerosFromBegging(id)) {
+        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, id, range.offset, range.gains), mqtt));
         break;
       }
     }
     for (const auto& range : config.userDefinedFrequencyRanges()) {
       if (range.serial == "auto") {
-        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, id), mqtt));
+        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, id, range.offset, range.gains), mqtt));
         break;
       }
     }
@@ -39,13 +38,17 @@ void createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager, 
 
 std::vector<std::unique_ptr<SdrScanner>> createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager) {
   std::vector<std::unique_ptr<SdrScanner>> scanners;
-  createScanners<HackrfSdrDevice>(config, mqtt, coreManager, scanners);
-  createScanners<RtlSdrDevice>(config, mqtt, coreManager, scanners);
+  createScanners<SoapySdrDevice>(config, mqtt, coreManager, scanners);
   return scanners;
 }
 
 int main(int argc, char* argv[]) {
   Logger::configure(spdlog::level::info, spdlog::level::off, "");
+  dup2(fileno(fopen("/dev/null", "w")), fileno(stderr));
+  if (2 <= argc && (strcmp(argv[1], "--list") == 0 || strcmp(argv[1], "-l") == 0)) {
+    SoapySdrDevice::listDevices();
+    return 0;
+  }
   std::unique_ptr<Config> config;
   if (argc >= 2) {
     config = std::make_unique<Config>(argv[1], "");
@@ -53,6 +56,7 @@ int main(int argc, char* argv[]) {
     config = std::make_unique<Config>("", "");
   }
   Logger::configure(config->logLevelConsole(), config->logLevelFile(), config->logDir());
+  SoapySdrDevice::setLogLevel();
   Logger::info("main", "git commit: {}", GIT_COMMIT);
   Logger::info("main", "git tag: {}", GIT_TAG);
 

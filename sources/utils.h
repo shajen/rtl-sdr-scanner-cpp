@@ -15,6 +15,8 @@ void setThreadParams(const std::string& name, PRIORITY priority = PRIORITY::LOW)
 
 uint32_t getThreadId();
 
+std::string removeZerosFromBegging(const std::string& string);
+
 bool isMemoryLimitReached(uint64_t limit);
 
 uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time, const uint32_t minSamplesCount);

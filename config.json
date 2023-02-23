@@ -12,18 +12,6 @@
     }
   ],
   "ignored_frequencies": [],
-  "devices": {
-    "rtl_sdr": {
-      "ppm_error": 0,
-      "tuner_gain": 0.0,
-      "offset": 0
-    },
-    "hack_rf": {
-      "lna_gain": 0,
-      "vga_gain": 0,
-      "offset": 0
-    }
-  },
   "recording": {
     "max_noise_time_ms": 500,
     "min_time_ms": 2000,

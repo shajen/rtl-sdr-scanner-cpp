@@ -21,6 +21,14 @@ void setThreadParams(const std::string &name, PRIORITY priority) {
 
 uint32_t getThreadId() { return gettid(); }
 
+std::string removeZerosFromBegging(const std::string &string) {
+  uint32_t i = 0;
+  while (i < string.length() && string[i] == '0') {
+    i++;
+  }
+  return string.substr(i, string.length() - i);
+}
+
 bool isMemoryLimitReached(uint64_t limit) {
   if (limit == 0) {
     return false;

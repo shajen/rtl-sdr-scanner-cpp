@@ -17,7 +17,7 @@ class SdrDevice {
     std::vector<uint8_t> data;
   };
 
-  SdrDevice(const std::string& name);
+  SdrDevice(const std::string serial, const int32_t offset);
   virtual ~SdrDevice() = default;
 
   virtual SdrDevice::Samples readData(const FrequencyRange& frequencyRange) = 0;
@@ -29,12 +29,13 @@ class SdrDevice {
   Samples getStreamData();
 
   virtual std::string name() const = 0;
-  virtual std::string serial() const = 0;
-  virtual int32_t offset() const = 0;
+  virtual std::string serial() const;
+  int32_t offset() const;
 
  protected:
+  const std::string m_serial;
+  const int32_t m_offset;
   uint32_t m_samplesSize;
-  uint32_t m_readSize;
   PerformanceLogger m_performanceLogger;
   RingBuffer m_dataBuffer;
   boost::circular_buffer<std::chrono::milliseconds> m_timeBuffer;

@@ -102,6 +102,13 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const nlohmann::j
   std::vector<UserDefinedFrequencyRanges> ranges;
   for (const nlohmann::json &value : json[key]) {
     const auto deviceSerial = value["device_serial"].get<std::string>();
+    const auto deviceOffset = value.contains("device_offset") ? value["device_offset"].get<std::int32_t>() : 0;
+    std::map<std::string, float> gains;
+    if (value.contains("device_gains")) {
+      for (const auto &[key, value] : value["device_gains"].items()) {
+        gains[key] = value;
+      }
+    }
     std::vector<UserDefinedFrequencyRange> subRanges;
     for (const nlohmann::json &subValue : value["ranges"]) {
       const auto start = subValue["start"].get<Frequency>();
@@ -110,7 +117,7 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const nlohmann::j
       const auto fft = subValue.contains("fft") ? subValue["fft"].get<Frequency>() : 0;
       subRanges.push_back({start, stop, sampleRate, fft});
     }
-    ranges.push_back({deviceSerial, subRanges});
+    ranges.push_back({deviceSerial, deviceOffset, gains, subRanges});
   }
   return ranges;
 }
@@ -123,7 +130,7 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::Int
       return parseFrequenciesRanges(json.slaveJson, key);
     } catch (const std::exception &) {
       Logger::warn("config", "can not read: {}", key);
-      return {{"auto", {{144000000, 146000000, 2048000, 2048}}}};
+      return {{"auto", 0, {}, {{144000000, 146000000, 2048000, 2048}}}};
     }
   }
 }
@@ -177,12 +184,6 @@ Config::Config(const std::string &path, const std::string &config)
       m_logsDirectory(readKey(m_json, {"output", "logs"}, std::string("sdr/logs"))),
       m_consoleLogLevel(parseLogLevel(readKey(m_json, {"output", "console_log_level"}, std::string("info")))),
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
-      m_rtlSdrPpm(readKey(m_json, {"devices", "rtl_sdr", "ppm_error"}, 0)),
-      m_rtlSdrGain(readKey(m_json, {"devices", "rtl_sdr", "tuner_gain"}, 0.0)),
-      m_rtlSdrRadioOffset(readKey(m_json, {"devices", "rtl_sdr", "offset"}, 0)),
-      m_hackRfLnaGain(readKey(m_json, {"devices", "hack_rf", "lna_gain"}, 0)),
-      m_hackRfVgaGain(readKey(m_json, {"devices", "hack_rf", "vga_gain"}, 0)),
-      m_hackRfRadioOffset(readKey(m_json, {"devices", "hack_rf", "offset"}, 0)),
       m_cores(getCores(readKey(m_json, {"cores"}, 0))),
       m_memoryLimit(readKey(m_json, {"memory_limit_mb"}, 0)),
       m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
@@ -218,14 +219,6 @@ std::chrono::seconds Config::tornTransmissionLearningTime() const { return m_tor
 spdlog::level::level_enum Config::logLevelFile() const { return m_fileLogLevel; }
 spdlog::level::level_enum Config::logLevelConsole() const { return m_consoleLogLevel; }
 std::string Config::logDir() const { return m_logsDirectory; }
-
-uint32_t Config::rtlSdrPpm() const { return m_rtlSdrPpm; }
-float Config::rtlSdrGain() const { return m_rtlSdrGain; }
-int32_t Config::rtlSdrOffset() const { return m_rtlSdrRadioOffset; }
-
-uint32_t Config::hackRfLnaGain() const { return m_hackRfLnaGain; }
-uint32_t Config::hackRfVgaGain() const { return m_hackRfVgaGain; }
-int32_t Config::hackRfOffset() const { return m_hackRfRadioOffset; }
 
 uint8_t Config::cores() const { return std::max(uint8_t(1), m_cores); }
 uint64_t Config::memoryLimit() const { return m_memoryLimit; }

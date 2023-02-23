@@ -17,6 +17,8 @@ struct UserDefinedFrequencyRange {
 
 struct UserDefinedFrequencyRanges {
   const std::string serial;
+  const int32_t offset;
+  const std::map<std::string, float> gains;
   const std::vector<UserDefinedFrequencyRange> ranges;
 };
 
@@ -49,14 +51,6 @@ class Config {
   spdlog::level::level_enum logLevelFile() const;
   std::string logDir() const;
 
-  uint32_t rtlSdrPpm() const;
-  float rtlSdrGain() const;
-  int32_t rtlSdrOffset() const;
-
-  uint32_t hackRfLnaGain() const;
-  uint32_t hackRfVgaGain() const;
-  int32_t hackRfOffset() const;
-
   uint8_t cores() const;
   uint64_t memoryLimit() const;
 
@@ -88,14 +82,6 @@ class Config {
   const std::string m_logsDirectory;
   const spdlog::level::level_enum m_consoleLogLevel;
   const spdlog::level::level_enum m_fileLogLevel;
-
-  const uint32_t m_rtlSdrPpm;
-  const float m_rtlSdrGain;
-  const int32_t m_rtlSdrRadioOffset;
-
-  const uint32_t m_hackRfLnaGain;
-  const uint32_t m_hackRfVgaGain;
-  const int32_t m_hackRfRadioOffset;
 
   const uint8_t m_cores;
   const uint64_t m_memoryLimit;
