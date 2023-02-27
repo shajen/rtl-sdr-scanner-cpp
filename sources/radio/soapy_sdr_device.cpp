@@ -4,9 +4,10 @@
 #include <radio/help_structures.h>
 #include <utils.h>
 
+#include <SoapySDR/ConverterRegistry.hpp>
 #include <set>
 
-constexpr uint32_t MIN_SAMPLES_READ_COUNT = 262144;
+constexpr uint32_t MIN_SAMPLES_READ_COUNT = 131072;
 
 void appendName(std::string& buffer, const std::string& name) {
   if (!name.empty()) {
@@ -48,14 +49,13 @@ SoapySdrDevice::SoapySdrDevice(const Config& config, const std::string& serial, 
     Logger::warn("SoapySDR", "can not open device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
   }
-  double fullScale;
-  const auto format = m_device->getNativeStreamFormat(SOAPY_SDR_RX, 0, fullScale);
-  m_rxStream = m_device->setupStream(SOAPY_SDR_RX, format);
+  m_rxStream = m_device->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32);
   if (m_rxStream == nullptr) {
     Logger::warn("SoapySDR", "can not start stream, device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
   }
   Logger::info("SoapySDR", "set offset: {}, device: {}", offset, m_serial);
+  m_device->setGainMode(SOAPY_SDR_RX, 0, false);
   const auto supportedGainsVector = m_device->listGains(SOAPY_SDR_RX, 0);
   const auto supportedGainsSet = std::set<std::string>(supportedGainsVector.begin(), supportedGainsVector.end());
   for (const auto& [key, value] : gains) {
@@ -133,7 +133,7 @@ SdrDevice::Samples SoapySdrDevice::readData(const FrequencyRange& frequencyRange
     Logger::warn("SoapySDR", "can not activate stream, device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
   }
-  std::vector<uint8_t> buffer(m_samplesSize);
+  std::vector<RawSample> buffer(m_samplesSize);
   readSingleData(buffer);
   m_device->deactivateStream(m_rxStream, 0, 0);
   m_performanceLogger.newSample();
@@ -148,7 +148,7 @@ void SoapySdrDevice::startStream(const FrequencyRange& frequencyRange) {
   }
   m_thread = std::make_unique<std::thread>([this]() {
     setThreadParams("soapy_stream", PRIORITY::HIGH);
-    std::vector<uint8_t> buffer(m_samplesSize);
+    std::vector<RawSample> buffer(m_samplesSize);
     m_isWorking = true;
     while (m_isWorking) {
       readSingleData(buffer);
@@ -183,23 +183,16 @@ void SoapySdrDevice::setup(const FrequencyRange& frequencyRange) {
   m_samplesSize = getSamplesCount(frequencyRange.sampleRate, m_config.frequencyRangeScanningTime(), MIN_SAMPLES_READ_COUNT);
 }
 
-void SoapySdrDevice::readSingleData(std::vector<uint8_t>& buffer) const {
+void SoapySdrDevice::readSingleData(std::vector<RawSample>& buffer) {
   uint32_t totalReadSamples = 0;
-  const auto toReadSamples = buffer.size() / 2;
+  const auto toReadSamples = buffer.size();
   while (totalReadSamples < toReadSamples) {
-    void* buffs[] = {buffer.data() + 2 * totalReadSamples};
+    void* buffs[] = {buffer.data() + totalReadSamples};
     int flags;
     long long time_ns;
     const auto readSamples = m_device->readStream(m_rxStream, buffs, toReadSamples - totalReadSamples, flags, time_ns);
     if (0 < readSamples) {
       totalReadSamples += readSamples;
-    }
-  }
-  double fullScale;
-  const auto format = m_device->getNativeStreamFormat(SOAPY_SDR_RX, 0, fullScale);
-  if (format == SOAPY_SDR_CS8) {
-    for (auto& value : buffer) {
-      value = (value ^ 0b10000000);
     }
   }
 }

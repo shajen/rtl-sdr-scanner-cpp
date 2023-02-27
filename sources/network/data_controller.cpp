@@ -25,7 +25,7 @@ DataController::DataController(const Config& config, Mqtt& mqtt, const std::stri
 
 DataController::~DataController() = default;
 
-void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples, bool isActive) {
+void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<RawSample>& samples, bool isActive) {
   std::unique_lock lock(m_mutex);
   if (m_transmissions.count(frequencyRange) == 0) {
     if (isActive) {
@@ -40,17 +40,13 @@ void DataController::pushTransmission(const std::chrono::milliseconds time, cons
   if (isActive) {
     container.lastActive = std::max(container.lastActive, time);
   }
-  container.queue.push({time, std::move(samples), isActive});
-  flushTransmission(frequencyRange);
-}
-
-void DataController::pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive) {
-  std::vector<uint8_t> data(samples.size() * 2);
+  std::vector<DataType> data(samples.size());
   for (uint32_t i = 0; i < samples.size(); ++i) {
-    data[2 * i] = samples[i].real() * 127.5f + 127.5f;
-    data[2 * i + 1] = samples[i].imag() * 127.5f + 127.5f;
+    data[i].real(samples[i].real() * 127.5f + 127.5f);
+    data[i].imag(samples[i].imag() * 127.5f + 127.5f);
   }
-  pushTransmission(time, frequencyRange, std::move(data), isActive);
+  container.queue.push({time, std::move(data), isActive});
+  flushTransmission(frequencyRange);
 }
 
 void DataController::finishTransmission(const FrequencyRange& frequencyRange) {
@@ -85,7 +81,7 @@ void DataController::flushTransmission(const FrequencyRange& frequencyRange) {
 }
 
 void DataController::sendTransmission(const FrequencyRange& frequencyRange, const Transmission& transmission) {
-  std::vector<uint8_t> data(sizeof(uint64_t) + 2 * sizeof(Frequency) + sizeof(uint32_t) + transmission.samples.size());
+  std::vector<uint8_t> data(sizeof(uint64_t) + 2 * sizeof(Frequency) + sizeof(uint32_t) + sizeof(DataType) * transmission.samples.size());
   uint64_t offset = 0;
   add(data.data(), offset, static_cast<uint64_t>(transmission.time.count()));
   add(data.data(), offset, frequencyRange.start);

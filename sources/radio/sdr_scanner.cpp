@@ -104,7 +104,7 @@ void SdrScanner::checkManualRecording() {
       while (m_isRunning && m_device->isDataAvailable()) {
         m_performanceLogger.newSample();
         auto&& samples = m_device->getStreamData();
-        m_dataController.pushTransmission(samples.time, frequencyRange, std::move(samples.data), true);
+        m_dataController.pushTransmission(samples.time, frequencyRange, samples.data, true);
       }
     }
     Logger::info("Scanner", "finish manual recording: {}", frequencyRange.toString());

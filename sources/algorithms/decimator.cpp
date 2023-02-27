@@ -12,4 +12,4 @@ Decimator::~Decimator() {
   iirdecim_crcf_destroy(m_decimator);
 }
 
-void Decimator::decimate(std::complex<float> *in, uint32_t size, std::complex<float> *out) { iirdecim_crcf_execute_block(m_decimator, toLiquidComplex(in), size, toLiquidComplex(out)); }
+void Decimator::decimate(ReadySample *in, uint32_t size, ReadySample *out) { iirdecim_crcf_execute_block(m_decimator, toLiquidComplex(in), size, toLiquidComplex(out)); }

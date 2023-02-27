@@ -12,7 +12,7 @@ class Spectrogram {
   Spectrogram(const Config& config);
   virtual ~Spectrogram();
 
-  std::vector<Signal> psd(const FrequencyRange& frequencyRange, std::complex<float>* data, const uint32_t dataSize);
+  std::vector<Signal> psd(const FrequencyRange& frequencyRange, ReadySample* data, const uint32_t dataSize);
 
  private:
   const Config& m_config;

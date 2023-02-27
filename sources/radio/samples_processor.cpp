@@ -11,10 +11,10 @@ SamplesProcessor::SamplesProcessor(const Config &config) {
 
 SamplesProcessor::~SamplesProcessor() {}
 
-std::vector<Signal> SamplesProcessor::process(const std::vector<uint8_t> &input, std::vector<std::complex<float>> &output, const FrequencyRange &frequencyRange, const int32_t frequencyOffset) {
+std::vector<Signal> SamplesProcessor::process(const std::vector<RawSample> &input, std::vector<ReadySample> &output, const FrequencyRange &frequencyRange, const int32_t frequencyOffset) {
   Logger::trace("SamplesProc", "start processing");
-  if (output.size() < input.size() / 2) {
-    output.resize(input.size() / 2);
+  if (output.size() < input.size()) {
+    output.resize(input.size());
   }
 
   uint32_t dataOffset = 0;

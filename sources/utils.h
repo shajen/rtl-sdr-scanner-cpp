@@ -21,15 +21,13 @@ bool isMemoryLimitReached(uint64_t limit);
 
 uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time, const uint32_t minSamplesCount);
 
-void toComplex(const uint8_t* rawBuffer, std::complex<float>* buffer, uint32_t samplesCount);
-
 std::chrono::milliseconds time();
 
-std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount);
+std::vector<ReadySample> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount);
 
-void shift(std::complex<float>* samples, const std::vector<std::complex<float>>& factors, uint32_t samplesCount);
+void shift(ReadySample* samples, const std::vector<ReadySample>& factors, uint32_t samplesCount);
 
-liquid_float_complex* toLiquidComplex(std::complex<float>* ptr);
+liquid_float_complex* toLiquidComplex(ReadySample* ptr);
 
 std::vector<FrequencyRange> fitFrequencyRange(const UserDefinedFrequencyRange& userRange);
 

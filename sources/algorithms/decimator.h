@@ -11,7 +11,7 @@ class Decimator {
   Decimator(const Config& config, uint32_t rate);
   ~Decimator();
 
-  void decimate(std::complex<float>* in, uint32_t size, std::complex<float>* out);
+  void decimate(ReadySample* in, uint32_t size, ReadySample* out);
 
  private:
   const uint32_t m_rate;

@@ -3,8 +3,8 @@
 #include <algorithms/decimator.h>
 #include <algorithms/spectrogram.h>
 #include <algorithms/transmission_detector.h>
-#include <network/data_controller.h>
 #include <core_manager.h>
+#include <network/data_controller.h>
 #include <utils.h>
 
 #include <condition_variable>
@@ -17,7 +17,7 @@
 
 struct WorkerInputSamples {
   std::chrono::milliseconds time;
-  std::shared_ptr<std::vector<std::complex<float>>> samples;
+  std::shared_ptr<std::vector<ReadySample>> samples;
   FrequencyRange frequencyRange;
   bool isActive;
 };
@@ -44,9 +44,9 @@ class RecorderWorker {
   const FrequencyRange m_outputFrequencyRange;
   DataController &m_dataController;
 
-  std::vector<std::complex<float>> m_samplesData;
-  std::vector<std::complex<float>> m_shiftData;
-  std::vector<std::complex<float>> m_decimatorBuffer;
+  std::vector<ReadySample> m_samplesData;
+  std::vector<ReadySample> m_shiftData;
+  std::vector<ReadySample> m_decimatorBuffer;
   std::unique_ptr<Decimator> m_decimator;
 
   std::mutex &m_mutex;

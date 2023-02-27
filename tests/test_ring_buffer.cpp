@@ -2,7 +2,7 @@
 #include <ring_buffer.h>
 
 TEST(RingBufferTest, Empty) {
-  RingBuffer buffer(100);
+  RingBuffer<uint8_t> buffer(100);
   std::vector<uint8_t> tmp(20);
 
   EXPECT_EQ(buffer.availableDataSize(), 0);
@@ -21,7 +21,7 @@ TEST(RingBufferTest, Overflow) {
   constexpr auto SIZE = 31;
   constexpr auto ITERATION = 83;
 
-  RingBuffer buffer(ITERATION * SIZE - 1);
+  RingBuffer<uint8_t> buffer(ITERATION * SIZE - 1);
   std::vector<uint8_t> tmp(SIZE);
   for (int i = 1; i < ITERATION; ++i) {
     buffer.push(tmp.data(), tmp.size());
@@ -48,7 +48,7 @@ TEST(RingBufferTest, Round) {
     push.push_back(rand());
   }
 
-  RingBuffer buffer(BUFFER_SIZE);
+  RingBuffer<uint8_t> buffer(BUFFER_SIZE);
   uint32_t pushed = 0;
   while (popped.size() < push.size()) {
     while (buffer.availableDataSize() < POP_SIZE && pushed < push.size()) {

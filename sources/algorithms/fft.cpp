@@ -23,7 +23,7 @@ Fft::~Fft() {
   fftwf_destroy_plan(m_plan);
 }
 
-std::complex<float> *Fft::compute(std::complex<float> *in) {
+ReadySample *Fft::compute(ReadySample *in) {
   for (uint32_t i = 0; i < m_windowSize; ++i) {
     m_in[i].imag(in[i].imag() * m_window[i]);
     m_in[i].real(in[i].real() * m_window[i]);

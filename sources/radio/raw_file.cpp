@@ -24,7 +24,7 @@ RawFile::RawFile(const std::string &path, Frequency frequency, Frequency sampleR
   file.close();
 }
 
-void RawFile::append(const std::vector<uint8_t> &samples) {
+void RawFile::append(const std::vector<RawSample> &samples) {
   if (m_savedDataSize <= MAX_SIZE) {
     std::ofstream file;
     file.open(m_filename, std::ios::binary | std::ios::out | std::ios::app);

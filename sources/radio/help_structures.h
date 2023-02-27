@@ -1,8 +1,11 @@
 #pragma once
 
+#include <complex>
 #include <cstdint>
 #include <string>
 
+using RawSample = std::complex<float>;
+using ReadySample = std::complex<float>;
 using Frequency = uint32_t;
 using Power = float;
 

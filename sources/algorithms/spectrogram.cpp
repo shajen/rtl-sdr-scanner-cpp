@@ -10,7 +10,7 @@ Spectrogram::Spectrogram(const Config& config) : m_config(config) { Logger::info
 
 Spectrogram::~Spectrogram() { Logger::info("spectrogram", "deinit"); }
 
-std::vector<Signal> Spectrogram::psd(const FrequencyRange& frequencyRange, std::complex<float>* data, const uint32_t dataSize) {
+std::vector<Signal> Spectrogram::psd(const FrequencyRange& frequencyRange, ReadySample* data, const uint32_t dataSize) {
   const auto fftSize = frequencyRange.fft;
   const auto iterations = std::max(1u, static_cast<uint32_t>(std::lround((dataSize / fftSize) * m_config.spectrogramFactor())));
 

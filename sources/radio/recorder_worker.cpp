@@ -66,7 +66,6 @@ void RecorderWorker::processSamples(WorkerInputSamples &&inputSamples) {
   }
   if (m_decimatorBuffer.size() < downSamples) {
     m_decimatorBuffer.resize(downSamples);
-    Logger::debug("RecorderWrk", "thread id: {}, decimator buffer resized, size: {}", getThreadId(), m_decimatorBuffer.size());
   }
   if (!m_decimator) {
     m_decimator = std::make_unique<Decimator>(m_config, decimateRate);

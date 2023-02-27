@@ -15,7 +15,7 @@ class SamplesProcessor {
   SamplesProcessor(const Config& config);
   ~SamplesProcessor();
 
-  std::vector<Signal> process(const std::vector<uint8_t>& input, std::vector<std::complex<float>>& output, const FrequencyRange& frequencyRange, const int32_t frequencyOffset);
+  std::vector<Signal> process(const std::vector<RawSample>& input, std::vector<ReadySample>& output, const FrequencyRange& frequencyRange, const int32_t frequencyOffset);
 
  private:
   std::mutex m_mutex;

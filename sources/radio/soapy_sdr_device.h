@@ -25,7 +25,7 @@ class SoapySdrDevice : public SdrDevice {
 
  private:
   void setup(const FrequencyRange &frequencyRange);
-  void readSingleData(std::vector<uint8_t> &buffer) const;
+  void readSingleData(std::vector<RawSample> &buffer);
 
   const Config &m_config;
   SoapySDR::Device *m_device;

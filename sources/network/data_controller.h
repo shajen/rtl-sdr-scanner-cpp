@@ -12,11 +12,11 @@
 
 class DataController {
  public:
+  using DataType = std::complex<uint8_t>;
   DataController(const Config& config, Mqtt& mqtt, const std::string& deviceName);
   ~DataController();
 
-  void pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples, bool isActive);
-  void pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<std::complex<float>>& samples, bool isActive);
+  void pushTransmission(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<ReadySample>& samples, bool isActive);
   void finishTransmission(const FrequencyRange& frequencyRange);
   void sendSignals(const std::chrono::milliseconds time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals);
 
@@ -25,7 +25,7 @@ class DataController {
 
   struct Transmission {
     const std::chrono::milliseconds time;
-    const std::vector<uint8_t> samples;
+    const std::vector<DataType> samples;
     bool isActive;
   };
 

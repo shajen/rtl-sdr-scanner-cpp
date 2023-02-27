@@ -36,22 +36,20 @@ void SamplesProcessorWorker::process() {
   }
   Logger::trace("SamplesWrk", "thread id: {}, start processing", getThreadId());
 
-  const auto inputOffset = m_data->dataOffset;
-  const auto outputOffset = inputOffset / 2;
-  const auto inputSamples = m_data->dataSize;
-  const auto outputSamples = inputSamples / 2;
+  const auto offset = m_data->dataOffset;
+  const auto samplesCount = m_data->dataSize;
 
-  if (m_shiftData.size() < outputSamples) {
-    m_shiftData = getShiftData(m_data->frequencyOffset, m_data->frequencyRange.sampleRate, outputSamples);
+  if (m_shiftData.size() < samplesCount) {
+    m_shiftData = getShiftData(m_data->frequencyOffset, m_data->frequencyRange.sampleRate, samplesCount);
     Logger::debug("SamplesWrk", "thread id: {}, shift data resized, size: {}", getThreadId(), m_shiftData.size());
   }
-  toComplex(m_data->input + inputOffset, m_data->output + outputOffset, inputSamples);
+  memcpy(m_data->output + offset, m_data->input + offset, samplesCount * sizeof(RawSample));
   Logger::trace("SamplesWrk", "thread id: {}, uint8 to complex finished", getThreadId());
   if (m_data->frequencyOffset != 0) {
-    shift(m_data->output + outputOffset, m_shiftData, outputSamples);
+    shift(m_data->output + offset, m_shiftData, samplesCount);
     Logger::trace("SamplesWrk", "thread id: {}, shift finished", getThreadId());
   }
-  const auto signals = m_spectrogram.psd(m_data->frequencyRange, m_data->output + outputOffset, outputSamples);
+  const auto signals = m_spectrogram.psd(m_data->frequencyRange, m_data->output + offset, samplesCount);
   Logger::trace("SamplesProc", "thread id: {}, psd finished", getThreadId());
 
   std::unique_lock<std::mutex> lock(m_outMmutex);

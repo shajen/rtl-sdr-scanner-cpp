@@ -14,7 +14,7 @@ class SdrDevice {
  public:
   struct Samples {
     std::chrono::milliseconds time;
-    std::vector<uint8_t> data;
+    std::vector<RawSample> data;
   };
 
   SdrDevice(const std::string serial, const int32_t offset);
@@ -37,7 +37,7 @@ class SdrDevice {
   const int32_t m_offset;
   uint32_t m_samplesSize;
   PerformanceLogger m_performanceLogger;
-  RingBuffer m_dataBuffer;
+  RingBuffer<RawSample> m_dataBuffer;
   boost::circular_buffer<std::chrono::milliseconds> m_timeBuffer;
   std::mutex m_mutex;
   std::condition_variable m_cv;

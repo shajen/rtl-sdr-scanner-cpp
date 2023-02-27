@@ -12,8 +12,8 @@
 #include <vector>
 
 struct SamplesProcessorData {
-  const uint8_t* input;
-  std::complex<float>* output;
+  const RawSample* input;
+  ReadySample* output;
   const FrequencyRange& frequencyRange;
   const int32_t frequencyOffset;
   const uint32_t dataOffset;
@@ -32,7 +32,7 @@ class SamplesProcessorWorker {
   std::optional<SamplesProcessorData> m_data;
 
   Spectrogram m_spectrogram;
-  std::vector<std::complex<float>> m_shiftData;
+  std::vector<ReadySample> m_shiftData;
 
   std::mutex& m_outMmutex;
   std::condition_variable& m_outCv;

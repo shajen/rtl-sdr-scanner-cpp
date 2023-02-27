@@ -26,7 +26,7 @@ void Recorder::clear() {
   m_lastActiveDataTime = m_lastDataTime;
 }
 
-bool Recorder::isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
+bool Recorder::isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<RawSample>&& samples) {
   const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
   Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
@@ -34,12 +34,12 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
   return (!activeTransmissions.empty());
 }
 
-void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<uint8_t>&& samples) {
+void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<RawSample>&& samples) {
   Logger::debug("Recorder", "samples processing started");
   m_performanceLogger.newSample();
   const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
   processSignals(time, frequencyRange, signals);
-  const auto rawBufferSamples = samples.size() / 2;
+  const auto rawBufferSamples = samples.size();
   const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
   Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
 
@@ -55,7 +55,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
       Logger::info("Recorder", "erase worker {}, total workers: {}", frequencyToString(frequencyRange.center()), m_workers.size());
     }
   }
-  std::shared_ptr<std::vector<std::complex<float>>> sharedSamples;
+  std::shared_ptr<std::vector<ReadySample>> sharedSamples;
   for (const auto& [transmissionSampleRate, isActive] : activeTransmissions) {
     if (isActive) {
       m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
@@ -79,7 +79,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
         Logger::warn("Recorder", "reached memory limit, skipping samples");
         break;
       } else {
-        sharedSamples = std::make_shared<std::vector<std::complex<float>>>(std::move(m_rawBuffer));
+        sharedSamples = std::make_shared<std::vector<ReadySample>>(std::move(m_rawBuffer));
         sharedSamples->resize(rawBufferSamples);
         m_rawBuffer = {};
       }
