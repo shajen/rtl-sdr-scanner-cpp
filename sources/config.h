@@ -28,11 +28,12 @@ class Config {
  public:
   struct InternalJson {
     nlohmann::json masterJson;
-    nlohmann::json slaveJson;
   };
 
-  Config(const std::string& path, const std::string& config);
-  void log();
+  Config(const std::string& path);
+  void log() const;
+  nlohmann::json getConfig() const;
+  void updateConfig(const std::string& data);
 
   std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
   IgnoredFrequencies ignoredFrequencyRanges() const;
@@ -65,6 +66,7 @@ class Config {
 
  private:
   const InternalJson m_json;
+  const std::string m_configPath;
 
   const std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
   const IgnoredFrequencies m_ignoredFrequencies;

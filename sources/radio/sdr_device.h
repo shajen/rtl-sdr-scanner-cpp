@@ -16,6 +16,17 @@ class SdrDevice {
     std::chrono::milliseconds time;
     std::vector<RawSample> data;
   };
+  struct Gain {
+    const std::string name;
+    const double min;
+    const double max;
+    const double step;
+  };
+  struct Device {
+    const std::string serial;
+    const std::string model;
+    const std::vector<Gain> gains;
+  };
 
   SdrDevice(const std::string serial, const int32_t offset);
   virtual ~SdrDevice() = default;

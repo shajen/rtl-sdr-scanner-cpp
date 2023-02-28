@@ -9,6 +9,8 @@
 #include <optional>
 #include <vector>
 
+std::string getId();
+
 enum class PRIORITY : int { LOW = 0, MEDIUM = 5, HIGH = 19 };
 
 void setThreadParams(const std::string& name, PRIORITY priority = PRIORITY::LOW);

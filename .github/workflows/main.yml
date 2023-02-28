@@ -30,8 +30,6 @@ jobs:
           docker build -t sdr-scanner .
       - name: Test sdr-scanner
         run: docker run --rm sdr-scanner-test
-      - name: Run sdr-scanner
-        run: docker run --rm sdr-scanner
       - name: Deploy sdr-scanner
         if: github.ref_type == 'tag'
         run: |

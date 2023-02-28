@@ -1,40 +1,29 @@
 {
-  "scanner_frequencies_ranges": [
-    {
-      "device_serial": "auto",
-      "ranges": [
-        {
-          "start": 144000000,
-          "stop": 146000000,
-          "sample_rate": 2048000
-        }
-      ]
-    }
-  ],
-  "ignored_frequencies": [],
-  "recording": {
-    "max_noise_time_ms": 500,
-    "min_time_ms": 2000,
-    "min_sample_rate": 16000
-  },
-  "detection": {
-    "frequency_grouping_size": 10000,
-    "frequency_range_scanning_time_ms": 64,
-    "noise_learning_time_seconds": 30,
-    "noise_detection_margin": 10,
-    "torn_transmission_learning_time_seconds": 60
-  },
-  "output": {
-    "logs": "sdr/logs",
-    "file_log_level": "info",
-    "console_log_level": "info"
-  },
-  "cores": 0,
-  "memory_limit_mb": 0,
-  "mqtt": {
-    "hostname": "sdr-broker",
-    "port": 1883,
-    "username": "admin",
-    "password": "password"
-  }
+    "cores": 0,
+    "detection": {
+        "frequency_grouping_size": 10000,
+        "frequency_range_scanning_time_ms": 64,
+        "noise_detection_margin": 20,
+        "noise_learning_time_seconds": 30,
+        "torn_transmission_learning_time_seconds": 60
+    },
+    "ignored_frequencies": [],
+    "memory_limit_mb": 0,
+    "mqtt": {
+        "hostname": "sdr-broker",
+        "password": "password",
+        "port": 1883,
+        "username": "admin"
+    },
+    "output": {
+        "console_log_level": "info",
+        "file_log_level": "info",
+        "logs": "sdr/logs"
+    },
+    "recording": {
+        "max_noise_time_ms": 500,
+        "min_sample_rate": 16000,
+        "min_time_ms": 2000
+    },
+    "scanned_frequencies": []
 }

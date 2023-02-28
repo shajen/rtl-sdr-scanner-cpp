@@ -28,16 +28,14 @@ SdrScanner::SdrScanner(const Config& config, CoreManager& coreManager, const std
     Logger::info("Scanner", "frequency range, {}", frequencyRange.toString());
   }
 
-  if (splittedFrequencyRanges.empty()) {
-    throw std::runtime_error("empty frequency ranges");
-  }
-
   m_thread = std::make_unique<std::thread>([this, splittedFrequencyRanges]() {
     Logger::info("Scanner", "start thread id: {}", getThreadId());
     setThreadParams("scanner", PRIORITY::HIGH);
     try {
       while (m_isRunning) {
-        if (splittedFrequencyRanges.size() == 1) {
+        if (splittedFrequencyRanges.empty()) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } else if (splittedFrequencyRanges.size() == 1) {
           startStream(splittedFrequencyRanges.front(), true);
         } else {
           for (const auto& frequencyRange : splittedFrequencyRanges) {

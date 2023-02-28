@@ -9,10 +9,24 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <fstream>
 #include <numeric>
 #include <stdexcept>
 #include <thread>
+
+std::string generateRandomHash() {
+  auto generator = boost::uuids::random_generator();
+  auto uuid = boost::uuids::to_string(generator());
+  std::remove(uuid.begin(), uuid.end(), '-');
+  return uuid;
+}
+
+std::string getId() {
+  const auto static id = generateRandomHash();
+  return id;
+}
 
 void setThreadParams(const std::string &name, PRIORITY priority) {
   pthread_setname_np(pthread_self(), name.c_str());

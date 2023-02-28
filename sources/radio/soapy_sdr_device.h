@@ -16,7 +16,7 @@ class SoapySdrDevice : public SdrDevice {
   ~SoapySdrDevice();
 
   static void setLogLevel();
-  static std::vector<std::string> listDevices();
+  static std::vector<SdrDevice::Device> listDevices();
 
   SdrDevice::Samples readData(const FrequencyRange &frequencyRange);
   void startStream(const FrequencyRange &frequencyRange);

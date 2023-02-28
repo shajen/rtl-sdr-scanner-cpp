@@ -79,8 +79,8 @@ SoapySdrDevice::~SoapySdrDevice() {
 
 void SoapySdrDevice::setLogLevel() { SoapySDR::setLogLevel(SoapySDR::LogLevel::SOAPY_SDR_WARNING); }
 
-std::vector<std::string> SoapySdrDevice::listDevices() {
-  std::vector<std::string> serials;
+std::vector<SdrDevice::Device> SoapySdrDevice::listDevices() {
+  std::vector<SdrDevice::Device> devices;
   const SoapySDR::KwargsList results = SoapySDR::Device::enumerate("remote=");
   Logger::info("SoapySDR", "found {} devices:", results.size());
 
@@ -98,15 +98,13 @@ std::vector<std::string> SoapySdrDevice::listDevices() {
     appendValue(label, "serial", data["serial"]);
     Logger::info("SoapySDR", "#{}{}", i, label);
     SoapySDR::Device* sdr = SoapySDR::Device::make(results[i]);
-    if (data.count("serial")) {
-      serials.push_back(data["serial"]);
-    }
 
     if (sdr == nullptr) {
       Logger::warn("SoapySDR", "#{}, open device failed", i);
       continue;
     }
 
+    std::vector<SdrDevice::Gain> gains;
     for (const auto& gain : sdr->listGains(SOAPY_SDR_RX, 0)) {
       const auto gainRange = sdr->getGainRange(SOAPY_SDR_RX, 0, gain);
       if (gainRange.step() == 0) {
@@ -114,6 +112,7 @@ std::vector<std::string> SoapySdrDevice::listDevices() {
       } else {
         Logger::info("SoapySDR", " gain: {}, min: {} dB, max: {} dB, step: {} dB", gain, gainRange.minimum(), gainRange.maximum(), gainRange.step());
       }
+      gains.push_back({gain, (gainRange.minimum()), (gainRange.maximum()), (gainRange.step())});
     }
     for (const auto& range : sdr->getFrequencyRange(SOAPY_SDR_RX, 0)) {
       const auto min = std::to_string(std::llroundf(range.minimum() / 1000000));
@@ -123,8 +122,9 @@ std::vector<std::string> SoapySdrDevice::listDevices() {
     Logger::info("SoapySDR", " sample rates: {}", sampleRatesToString(sdr->listSampleRates(SOAPY_SDR_RX, 0)));
 
     SoapySDR::Device::unmake(sdr);
+    devices.push_back({data["serial"], data["driver"], gains});
   }
-  return serials;
+  return devices;
 }
 
 SdrDevice::Samples SoapySdrDevice::readData(const FrequencyRange& frequencyRange) {

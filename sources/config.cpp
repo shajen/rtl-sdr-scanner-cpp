@@ -36,14 +36,18 @@ nlohmann::json readJsonFromFile(const std::string &path) {
   }
 }
 
-Config::InternalJson getInternalJson(const std::string &path, const std::string &data) {
+Config::InternalJson getInternalJson(const std::string &path) {
   Config::InternalJson internalJson;
-  internalJson.slaveJson = readJsonFromFile(path);
-  try {
-    internalJson.masterJson = nlohmann::json::parse(data);
-  } catch (const nlohmann::json::parse_error &) {
-  }
+  internalJson.masterJson = readJsonFromFile(path);
   return internalJson;
+}
+
+nlohmann::json removeCredentials(const nlohmann::json &json) {
+  auto copy(json);
+  if (copy.contains("mqtt")) {
+    copy.erase("mqtt");
+  }
+  return copy;
 }
 
 template <typename T>
@@ -63,19 +67,15 @@ T readKey(const Config::InternalJson &json, const std::vector<std::string> &keys
   try {
     return readKey<T>(json.masterJson, keys);
   } catch (const std::runtime_error &) {
-    try {
-      return readKey<T>(json.slaveJson, keys);
-    } catch (const std::runtime_error &) {
-      constexpr auto SIZE = 2048;
-      char tmp[SIZE];
-      int offset = 0;
-      offset += snprintf(tmp + offset, SIZE - offset, "can not read: ");
-      for (const auto &key : keys) {
-        offset += snprintf(tmp + offset, SIZE - offset, "%s.", key.c_str());
-      }
-      Logger::warn("config", tmp);
-      return defaultValue;
+    constexpr auto SIZE = 2048;
+    char tmp[SIZE];
+    int offset = 0;
+    offset += snprintf(tmp + offset, SIZE - offset, "can not read: ");
+    for (const auto &key : keys) {
+      offset += snprintf(tmp + offset, SIZE - offset, "%s.", key.c_str());
     }
+    Logger::warn("config", tmp);
+    return defaultValue;
   }
 }
 
@@ -126,12 +126,8 @@ std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::Int
   try {
     return parseFrequenciesRanges(json.masterJson, key);
   } catch (const std::exception &) {
-    try {
-      return parseFrequenciesRanges(json.slaveJson, key);
-    } catch (const std::exception &) {
-      Logger::warn("config", "can not read: {}", key);
-      return {{"auto", 0, {}, {{144000000, 146000000, 2048000, 2048}}}};
-    }
+    Logger::warn("config", "can not read: {}", key);
+    return {{"auto", 0, {}, {{144000000, 146000000, 2048000, 2048}}}};
   }
 }
 
@@ -152,12 +148,8 @@ IgnoredFrequencies parseIgnoredFrequencies(const Config::InternalJson &json, con
   try {
     return parseIgnoredFrequencies(json.masterJson, key);
   } catch (const std::exception &) {
-    try {
-      return parseIgnoredFrequencies(json.slaveJson, key);
-    } catch (const std::exception &) {
-      Logger::warn("config", "can not read: {}", key);
-      return {};
-    }
+    Logger::warn("config", "can not read: {}", key);
+    return {};
   }
 }
 
@@ -169,9 +161,10 @@ uint8_t getCores(uint8_t cores) {
   }
 }
 
-Config::Config(const std::string &path, const std::string &config)
-    : m_json(getInternalJson(path, config)),
-      m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanner_frequencies_ranges")),
+Config::Config(const std::string &path)
+    : m_json(getInternalJson(path)),
+      m_configPath(path),
+      m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanned_frequencies")),
       m_ignoredFrequencies(parseIgnoredFrequencies(m_json, "ignored_frequencies")),
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
@@ -191,16 +184,17 @@ Config::Config(const std::string &path, const std::string &config)
       m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
       m_mqttPassword(readKey(m_json, {"mqtt", "password"}, std::string(""))) {}
 
-void Config::log() {
-  auto removeCredentials = [](const nlohmann::json &json) {
-    auto copy(json);
-    if (copy.contains("mqtt")) {
-      copy.erase("mqtt");
-    }
-    return copy;
-  };
-  Logger::info("config", "data: {}", removeCredentials(m_json.masterJson).dump());
-  Logger::info("config", "file: {}", removeCredentials(m_json.slaveJson).dump());
+void Config::log() const { Logger::info("config", "file: {}", removeCredentials(m_json.masterJson).dump()); }
+
+nlohmann::json Config::getConfig() const { return removeCredentials(m_json.masterJson); }
+
+void Config::updateConfig(const std::string &data) {
+  auto json = nlohmann::json::parse(data);
+  json["mqtt"] = m_json.masterJson["mqtt"];
+  std::string config = json.dump(4);
+  FILE *file = fopen(m_configPath.c_str(), "w");
+  fwrite(config.c_str(), config.length(), 1, file);
+  fclose(file);
 }
 
 std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() const { return m_userDefinedFrequencyRanges; }
