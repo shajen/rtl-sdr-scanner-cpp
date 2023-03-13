@@ -6,10 +6,6 @@ Sdr scanner also allows you to record multiple transmissions simultaneously (if 
 
 It also provides easy but very powerful **web panel** to explore recordings and spectrograms.
 
-# Wiki
-
-Many useful instructions and information are on the [wiki](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki).
-
 # Supported devices
 
 Sdr scanner use [SoapySDR](https://github.com/pothosware/SoapySDR) library to get data so it support all devices that are supported by `SoapySDR`. Full list of supported devices [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Supported-devices).
@@ -25,12 +21,20 @@ Sdr scanner use [SoapySDR](https://github.com/pothosware/SoapySDR) library to ge
 
 [introduction video](http://www.youtube.com/watch?v=TSDbcb7wSjs) - old version
 
-# Sample data collected
+# Screens
+
+## Sample data collected
 
 | Spectrogram | Transmission |
 | - | - |
 | ![](images/spectrograms.png?raw=1) | ![](images/transmissions.png?raw=1) |
 | ![](images/spectrogram.png?raw=1) | ![](images/transmission.png?raw=1) |
+
+## Configuration
+
+| App configuration | Groups |
+| - | - |
+| ![](images/config.png?raw=1) | ![](images/groups.png?raw=1) |
 
 # Quickstart
 
@@ -49,6 +53,8 @@ wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
 docker compose up
 ```
 
+## Update
+
 To update docker images to latest version type:
 ```
 docker compose pull
@@ -58,28 +64,19 @@ Also remember to update `docker-compose.yml` and `config.json`.
 
 ## Panel
 
-Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) and wait for data to collect.
+Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) and wait for spectrograms to collect.
+
+Open [http://localhost:8000/sdr/transmissions/](http://localhost:8000/sdr/transmissions/) and wait for transmissions to collect.
 
 Admin panel available at [http://localhost:8000/admin/](http://localhost:8000/admin/). Username: `admin`, password: `password`.
 
-# Config
+## Configuration
 
-Follow instruction [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration).
+Open [http://localhost:8000/sdr/config/](http://localhost:8000/sdr/config/) and follow instruction [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration).
 
-# Debugging
+# Wiki
 
-If you have some problems with this software follow the steps to get debug log.
-
-Set `"console_log_level": "trace"` in `config.json`.
-
-Then run app normally by `docker compose up`. After the error run `docker compose logs > logs.txt`. Please attach `logs.txt` if you create a new issue. Do not paste logs directly to issue. Upload it to any file host service ([https://file.io/](https://file.io/), [https://pastebin.com/](https://pastebin.com/) or any you like).
-
-# Timezone
-
-If timezone detection not work correctly and it seems to use `UTC` instead your timezone please set timezone in host system. To set `Europe/Warsaw` type:
-```
-echo "Europe/Warsaw" | sudo tee /etc/timezone
-```
+Many useful instructions and information are on the [wiki](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki).
 
 # Contributing
 
