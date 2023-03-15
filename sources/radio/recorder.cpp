@@ -35,7 +35,7 @@ bool Recorder::isTransmission(const std::chrono::milliseconds& time, const Frequ
 }
 
 void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<RawSample>&& samples) {
-  Logger::debug("Recorder", "samples processing started");
+  Logger::trace("Recorder", "samples processing started");
   m_performanceLogger.newSample();
   const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
   processSignals(time, frequencyRange, signals);
@@ -88,7 +88,7 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
     rws->cv.notify_one();
     Logger::debug("Recorder", "push worker input samples, queue size: {}", rws->samples.size());
   }
-  Logger::debug("Recorder", "samples processing finished");
+  Logger::trace("Recorder", "samples processing finished");
 }
 
 bool Recorder::isTransmissionInProgress() const { return m_lastDataTime <= m_lastActiveDataTime + m_config.maxRecordingNoiseTime(); }
