@@ -129,6 +129,7 @@ std::vector<SdrDevice::Device> SoapySdrDevice::listDevices() {
 
 SdrDevice::Samples SoapySdrDevice::readData(const FrequencyRange& frequencyRange) {
   setup(frequencyRange);
+  clearInternalBuffer();
   if (m_device->activateStream(m_rxStream, 0, 0, 0) != 0) {
     Logger::warn("SoapySDR", "can not activate stream, device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
@@ -142,6 +143,7 @@ SdrDevice::Samples SoapySdrDevice::readData(const FrequencyRange& frequencyRange
 
 void SoapySdrDevice::startStream(const FrequencyRange& frequencyRange) {
   setup(frequencyRange);
+  clearInternalBuffer();
   if (m_device->activateStream(m_rxStream, 0, 0, 0) != 0) {
     Logger::warn("SoapySDR", "can not activate stream, device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
@@ -170,6 +172,16 @@ void SoapySdrDevice::stopStream() {
 }
 
 std::string SoapySdrDevice::name() const { return m_device->getDriverKey() + "_" + m_serial; }
+
+void SoapySdrDevice::clearInternalBuffer() {
+  // TODO fix it
+  m_device->closeStream(m_rxStream);
+  m_rxStream = m_device->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32);
+  if (m_rxStream == nullptr) {
+    Logger::warn("SoapySDR", "can not start stream, device: {}", m_serial);
+    throw std::runtime_error(std::string("can not open device: ") + m_serial);
+  }
+}
 
 void SoapySdrDevice::setup(const FrequencyRange& frequencyRange) {
   if (m_device->getSampleRate(SOAPY_SDR_RX, 0) != frequencyRange.sampleRate) {

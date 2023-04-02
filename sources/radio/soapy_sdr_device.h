@@ -24,6 +24,7 @@ class SoapySdrDevice : public SdrDevice {
   std::string name() const;
 
  private:
+  void clearInternalBuffer();
   void setup(const FrequencyRange &frequencyRange);
   void readSingleData(std::vector<RawSample> &buffer);
 
