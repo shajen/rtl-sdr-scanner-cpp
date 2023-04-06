@@ -119,10 +119,21 @@ std::vector<SdrDevice::Device> SoapySdrDevice::listDevices() {
       const auto max = std::to_string(std::llroundf(range.maximum() / 1000000));
       Logger::info("SoapySDR", " frequency range: {} MHz - {} MHz ", min, max);
     }
-    Logger::info("SoapySDR", " sample rates: {}", sampleRatesToString(sdr->listSampleRates(SOAPY_SDR_RX, 0)));
+    const auto samplesRates = sdr->listSampleRates(SOAPY_SDR_RX, 0);
+    const auto maxSampleRate = std::max_element(samplesRates.begin(), samplesRates.end());
+    Frequency defaultSampleRate = 0;
+    if (maxSampleRate != samplesRates.end()) {
+      if (2000000 <= *maxSampleRate) {
+        defaultSampleRate = 2048000;
+      }
+      if (20000000 <= *maxSampleRate) {
+        defaultSampleRate = 20480000;
+      }
+    }
+    Logger::info("SoapySDR", " sample rates: {}", sampleRatesToString(samplesRates));
 
     SoapySDR::Device::unmake(sdr);
-    devices.push_back({data["serial"], data["driver"], gains});
+    devices.push_back({data["serial"], data["driver"], gains, defaultSampleRate});
   }
   return devices;
 }

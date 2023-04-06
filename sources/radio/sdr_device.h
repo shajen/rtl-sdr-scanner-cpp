@@ -26,6 +26,7 @@ class SdrDevice {
     const std::string serial;
     const std::string model;
     const std::vector<Gain> gains;
+    const Frequency defaultSampleRate;
   };
 
   SdrDevice(const std::string serial, const int32_t offset);

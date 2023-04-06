@@ -65,6 +65,7 @@ void RemoteController::listCallback(const std::string&) {
       return s == serial;
     });
     device["model"] = sdrDevice.model;
+    device["default_sample_rate"] = sdrDevice.defaultSampleRate;
     for (const auto& gain : sdrDevice.gains) {
       nlohmann::json gainJson;
       gainJson["name"] = gain.name;
