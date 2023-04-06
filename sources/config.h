@@ -1,6 +1,7 @@
 #pragma once
 
 #include <radio/help_structures.h>
+#include <radio/sdr_device.h>
 #include <spdlog/spdlog.h>
 
 #include <nlohmann/json.hpp>
@@ -34,6 +35,7 @@ class Config {
   void log() const;
   nlohmann::json getConfig() const;
   void updateConfig(const std::string& data);
+  void updateDefaultConfig(const SdrDevice::Device& sdrDevice);
 
   std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
   IgnoredFrequencies ignoredFrequencyRanges() const;
@@ -65,10 +67,10 @@ class Config {
   float spectrogramFactor() const;
 
  private:
-  const InternalJson m_json;
+  InternalJson m_json;
   const std::string m_configPath;
 
-  const std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
+  std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
   const IgnoredFrequencies m_ignoredFrequencies;
 
   const std::chrono::milliseconds m_maxRecordingNoiseTime;

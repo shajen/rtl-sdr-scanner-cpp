@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <logger.h>
+#include <utils.h>
 
 #include <thread>
 
@@ -195,6 +196,52 @@ void Config::updateConfig(const std::string &data) {
   FILE *file = fopen(m_configPath.c_str(), "w");
   fwrite(config.c_str(), config.length(), 1, file);
   fclose(file);
+}
+
+void Config::updateDefaultConfig(const SdrDevice::Device &sdrDevice) {
+  const auto KEY = "scanned_frequencies";
+  if (!m_json.masterJson.contains(KEY)) {
+    m_json.masterJson[KEY] = nlohmann::json::array_t();
+  }
+  for (const auto &device : m_json.masterJson[KEY]) {
+    if (device.contains("device_serial") && removeZerosFromBegging(device["device_serial"].get<std::string>()) == removeZerosFromBegging(sdrDevice.serial)) {
+      return;
+    }
+  }
+
+  auto range = [](Frequency start, Frequency stop, Frequency sampleRate) {
+    nlohmann::json range;
+    range["start"] = start;
+    range["stop"] = stop;
+    range["sample_rate"] = sampleRate;
+    return range;
+  };
+  nlohmann::json gainsJson;
+  std::map<std::string, float> gains;
+  for (const auto &gain : sdrDevice.gains) {
+    gainsJson[gain.name] = gain.max;
+    gains[gain.name] = gain.max;
+  }
+  nlohmann::json rangesJson;
+  std::vector<UserDefinedFrequencyRange> ranges;
+  if (sdrDevice.defaultSampleRate == 2048000) {
+    rangesJson.push_back(range(144000000, 146000000, sdrDevice.defaultSampleRate));
+    rangesJson.push_back(range(438000000, 440000000, sdrDevice.defaultSampleRate));
+    ranges.push_back({144000000, 146000000, sdrDevice.defaultSampleRate, 0});
+    ranges.push_back({438000000, 440000000, sdrDevice.defaultSampleRate, 0});
+  } else if (sdrDevice.defaultSampleRate == 20480000) {
+    rangesJson.push_back(range(140000000, 160000000, sdrDevice.defaultSampleRate));
+    rangesJson.push_back(range(430000000, 450000000, sdrDevice.defaultSampleRate));
+    ranges.push_back({140000000, 160000000, sdrDevice.defaultSampleRate, 0});
+    ranges.push_back({430000000, 450000000, sdrDevice.defaultSampleRate, 0});
+  }
+
+  nlohmann::json device;
+  device["device_serial"] = sdrDevice.serial;
+  device["device_gains"] = gainsJson;
+  device["ranges"] = rangesJson;
+  m_json.masterJson[KEY].push_back(device);
+  m_userDefinedFrequencyRanges.push_back({sdrDevice.serial, 0, gains, ranges});
 }
 
 std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() const { return m_userDefinedFrequencyRanges; }

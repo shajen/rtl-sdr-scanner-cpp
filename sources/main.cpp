@@ -20,6 +20,13 @@ void handler(int) {
 }
 
 template <typename T>
+void updateDefaultConfig(Config& config) {
+  for (const auto& device : T::listDevices()) {
+    config.updateDefaultConfig(device);
+  }
+}
+
+template <typename T>
 void createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
   for (const auto& device : T::listDevices()) {
     const auto& serial = device.serial;
@@ -74,6 +81,7 @@ int main(int argc, char* argv[]) {
       }
       Mqtt mqtt(*config);
       CoreManager coreManager(config->cores());
+      updateDefaultConfig<SoapySdrDevice>(*config);
       std::vector<std::unique_ptr<SdrScanner>> scanners = createScanners(*config, mqtt, coreManager);
       RemoteController rc(*config, mqtt, scanners, getId(), reloadConfig, isRunning);
 
