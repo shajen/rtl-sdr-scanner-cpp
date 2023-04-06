@@ -44,35 +44,56 @@ If you do not have `docker` installed, follow the instructions available at [htt
 
 ## Run
 
-Download sample configuration and docker file, then run it. Customize `config.json` to your needs.
+Download `docker-compose.yml` and run it.
 ```
-mkdir -p sdr
-cd sdr
-wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/config.json
+mkdir -p ~/sdr
+cd ~/sdr
 wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
-docker compose up
+docker compose up -d
 ```
 
-## Update
+## Stop
 
-To update docker images to latest version type:
 ```
-docker compose pull
+cd ~/sdr
+docker compose down
 ```
-
-Also remember to update `docker-compose.yml` and `config.json`.
-
-## Panel
-
-Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) and wait for spectrograms to collect.
-
-Open [http://localhost:8000/sdr/transmissions/](http://localhost:8000/sdr/transmissions/) and wait for transmissions to collect.
-
-Admin panel available at [http://localhost:8000/admin/](http://localhost:8000/admin/). Username: `admin`, password: `password`.
 
 ## Configuration
 
 Open [http://localhost:8000/sdr/config/](http://localhost:8000/sdr/config/) and follow instruction [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration).
+
+## Panel
+
+Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) or [http://localhost:8000/sdr/transmissions/](http://localhost:8000/sdr/transmissions/) and wait for data to collect.
+
+Admin panel available at [http://localhost:8000/admin/](http://localhost:8000/admin/). Username: `admin`, password: `password`.
+
+Sources of panel [here](https://github.com/shajen/monitor).
+
+## Update
+
+To update to latest version just update `docker-compose.yml`, images and run it.
+```
+cd ~/sdr
+docker compose down
+rm docker-compose.yml
+wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
+docker compose pull
+docker compose up -d
+```
+
+## Stop and remove data
+
+It removes all collected data!
+```
+cd ~/sdr
+docker compose down --volumes
+```
+
+# AI
+
+It uses `AI` model from [https://www.tensorflow.org/lite/inference_with_metadata/task_library/audio_classifier](https://www.tensorflow.org/lite/inference_with_metadata/task_library/audio_classifier) to classify whether a transmission is speech or noise.
 
 # Wiki
 

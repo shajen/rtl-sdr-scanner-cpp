@@ -25,6 +25,6 @@ COPY --from=build /root/auto-sdr/build/auto_sdr_test /usr/bin/auto_sdr_test
 CMD /usr/bin/auto_sdr_test
 
 FROM run
-COPY ./config.json /config.json
+COPY ./config.json /config/config.json
 COPY --from=build /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
-CMD /usr/bin/auto_sdr /config.json
+CMD /usr/bin/auto_sdr /config/config.json

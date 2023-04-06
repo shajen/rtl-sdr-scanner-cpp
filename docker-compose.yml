@@ -26,7 +26,7 @@ services:
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-      - ./config.json:/config.json
+      - scanner_config:/config
     devices:
       - /dev/bus/usb:/dev/bus/usb
   sdr-monitor-setup:
@@ -65,7 +65,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: python3 manage.py runscript mqtt_reader
+    command: python3 manage.py runscript monitor_worker --script-args="--reader --cleaner --classifier"
 volumes:
+  scanner_config:
   monitor_db:
   monitor_data:
