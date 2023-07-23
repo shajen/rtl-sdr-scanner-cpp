@@ -90,6 +90,10 @@ int main(int argc, char* argv[]) {
       }
       while (isRunning && !reloadConfig) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (std::any_of(scanners.begin(), scanners.end(), [](const std::unique_ptr<SdrScanner>& scanner) { return !scanner->isRunning(); })) {
+          Logger::error("main", "some device stop working");
+          return 1;
+        }
       }
       if (!reloadConfig) {
         break;
@@ -97,6 +101,7 @@ int main(int argc, char* argv[]) {
     }
   } catch (const std::exception& exception) {
     Logger::error("main", "main exception: {}", exception.what());
+    return 1;
   }
   Logger::info("main", "stop app auto_sdr");
   Logger::info("main", "stop thread id: {}", getThreadId());
