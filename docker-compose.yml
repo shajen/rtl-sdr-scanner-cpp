@@ -54,7 +54,7 @@ services:
     command: python3 manage.py runserver 0.0.0.0:8000
     ports:
       - 8000:8000
-  sdr-monitor-reader:
+  sdr-monitor-worker:
     image: shajen/sdr-monitor:latest
     restart: on-failure
     depends_on:
