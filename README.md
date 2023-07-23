@@ -85,7 +85,7 @@ docker compose up -d
 
 ## Stop and remove data
 
-It removes all collected data!
+It removes all collected data and configuration!
 ```
 cd ~/sdr
 docker compose down --volumes
