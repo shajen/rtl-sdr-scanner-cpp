@@ -73,7 +73,12 @@ void toComplex(const uint8_t *rawBuffer, std::complex<float> *buffer, uint32_t s
 std::chrono::milliseconds time() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
 
 std::vector<std::complex<float>> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount) {
-  const auto f = std::complex<float>(0.0f, -1.0f) * 2.0f * M_PIf32 * (static_cast<float>(-frequencyOffset) / static_cast<float>(sampleRate));
+  const float floatFreqOffset{static_cast<float>(-frequencyOffset)};
+  const float floatSampleRate{static_cast<float>(sampleRate)};
+  const float floatPI{static_cast<float>(M_PI)};
+  const float imaginaryUnit{-1.0f};
+
+  const auto f = std::complex<float>(0.0f, imaginaryUnit) * 2.0f * floatPI * (floatFreqOffset / floatSampleRate);
   std::vector<std::complex<float>> data(samplesCount);
   for (uint32_t i = 0; i < samplesCount; ++i) {
     data[i] = std::exp(f * static_cast<float>(i));
