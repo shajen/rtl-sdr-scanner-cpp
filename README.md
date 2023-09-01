@@ -227,7 +227,7 @@ To ignore annoying frequency that you are not interested use `ignored_frequencie
 }
 ```
 
-## Use multipe devices
+## Use multiple devices
 
 To use two dongles with serials `11111111` and `22222222`:
 ```
@@ -259,7 +259,7 @@ To use two dongles with serials `11111111` and `22222222`:
 
 If you have multiple `rtl-sdr` dongles with the same serial you can change it with `rtl_eeprom -s 12345678`.
 
-## Scan multipe frequencies ranges
+## Scan multiple frequencies ranges
 
 To scan `144 Mhz - 146 Mhz` and `440 Mhz - 442 Mhz` in the same time:
 ```

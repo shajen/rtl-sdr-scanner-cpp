@@ -45,8 +45,8 @@ void Recorder::processSamples(const std::chrono::milliseconds& time, const Frequ
   m_lastDataTime = std::max(m_lastDataTime, time);
   for (auto it = m_workers.begin(); it != m_workers.end();) {
     auto f = [it](const std::pair<FrequencyRange, bool>& data) { return it->first == data.first; };
-    const auto transmisionInProgress = std::any_of(activeTransmissions.begin(), activeTransmissions.end(), f);
-    if (transmisionInProgress) {
+    const auto transmissionInProgress = std::any_of(activeTransmissions.begin(), activeTransmissions.end(), f);
+    if (transmissionInProgress) {
       it++;
     } else {
       const auto frequencyRange = it->first;

@@ -97,7 +97,7 @@ void SdrScanner::checkManualRecording() {
     const auto frequencyRange = m_manualRecording->frequencyRange;
     const auto totalTime = m_manualRecording->time;
 
-    Logger::info("Scanner", "start manual recoridng: {}, time: {} seconds", frequencyRange.toString(), std::chrono::duration_cast<std::chrono::seconds>(totalTime).count());
+    Logger::info("Scanner", "start manual recording: {}, time: {} seconds", frequencyRange.toString(), std::chrono::duration_cast<std::chrono::seconds>(totalTime).count());
     m_device->startStream(frequencyRange);
     while (m_isRunning && time() - startTime <= totalTime) {
       m_device->waitForData();

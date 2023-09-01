@@ -38,7 +38,7 @@ TEST(RingBufferTest, Overflow) {
 
 TEST(RingBufferTest, Round) {
   std::vector<uint8_t> push;
-  std::vector<uint8_t> poped;
+  std::vector<uint8_t> popped;
 
   constexpr auto PUSH_SIZE = 1229;
   constexpr auto POP_SIZE = 1231;
@@ -50,16 +50,16 @@ TEST(RingBufferTest, Round) {
 
   RingBuffer buffer(BUFFER_SIZE);
   uint32_t pushed = 0;
-  while (poped.size() < push.size()) {
+  while (popped.size() < push.size()) {
     while (buffer.availableDataSize() < POP_SIZE && pushed < push.size()) {
       buffer.push(push.data() + pushed, PUSH_SIZE);
       pushed += PUSH_SIZE;
     }
     while (POP_SIZE <= buffer.availableDataSize()) {
       const auto tmp = buffer.pop(POP_SIZE);
-      std::copy(tmp.begin(), tmp.end(), std::back_inserter(poped));
+      std::copy(tmp.begin(), tmp.end(), std::back_inserter(popped));
     }
   }
 
-  EXPECT_EQ(push, poped);
+  EXPECT_EQ(push, popped);
 }
