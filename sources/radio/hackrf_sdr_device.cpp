@@ -147,7 +147,7 @@ void HackrfSdrDevice::setup(const FrequencyRange &frequencyRange) {
   if (frequencyRange.center() != m_frequency) {
     Logger::debug("HackRf", "set center {}", frequencyToString(frequencyRange.center()));
     if (hackrf_set_freq(m_device, frequencyRange.center()) != HACKRF_SUCCESS) {
-      throw std::runtime_error("can not set frequnecy");
+      throw std::runtime_error("can not set frequency");
     }
     m_frequency = frequencyRange.center();
   }
