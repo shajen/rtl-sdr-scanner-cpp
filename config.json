@@ -9,12 +9,6 @@
     },
     "ignored_frequencies": [],
     "memory_limit_mb": 0,
-    "mqtt": {
-        "hostname": "sdr-broker",
-        "password": "password",
-        "port": 1883,
-        "username": "admin"
-    },
     "output": {
         "console_log_level": "info",
         "file_log_level": "info",

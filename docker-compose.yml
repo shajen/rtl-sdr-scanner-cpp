@@ -1,71 +1,55 @@
 services:
   sdr-broker:
-    image: eclipse-mosquitto:latest
+    image: shajen/sdr-broker:${TAG:-latest}
+    env_file: .define.env
     restart: on-failure
-    command:
-      - /bin/sh
-      - -c
-      - |
-        echo "listener 1883" > /mosquitto/config/mosquitto.conf
-        echo "protocol mqtt" >> /mosquitto/config/mosquitto.conf
-        echo "listener 9001" >> /mosquitto/config/mosquitto.conf
-        echo "protocol websockets" >> /mosquitto/config/mosquitto.conf
-        echo "allow_anonymous false" >> /mosquitto/config/mosquitto.conf
-        echo "password_file /mosquitto/config/password.txt" >> /mosquitto/config/mosquitto.conf
-        echo "admin:password" > /mosquitto/config/password.txt
-        mosquitto_passwd -U /mosquitto/config/password.txt
-        mosquitto -c /mosquitto/config/mosquitto.conf
     ports:
-      - 1883:1883
-      - 9001:9001
+      - ${MQTT_PORT_TCP:-1883}:${MQTT_PORT_TCP:-1883}
+      - ${MQTT_PORT_WS:-9001}:${MQTT_PORT_WS:-9001}
   sdr-scanner:
-    image: shajen/sdr-scanner:latest
+    image: shajen/sdr-scanner:${TAG:-latest}
+    env_file: .define.env
     restart: on-failure
     depends_on:
       - sdr-broker
     volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
       - scanner_config:/config
     devices:
       - /dev/bus/usb:/dev/bus/usb
   sdr-monitor-setup:
-    image: shajen/sdr-monitor:latest
+    image: shajen/sdr-monitor:${TAG:-latest}
+    env_file: .define.env
     restart: on-failure
     depends_on:
       - sdr-broker
     volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: bash -c "python3 manage.py migrate && DJANGO_SUPERUSER_PASSWORD=password python3 manage.py createsuperuser --noinput --username admin --email admin@local.local &> /dev/null || true"
+    command: /entrypoint/setup.sh
   sdr-monitor-server:
-    image: shajen/sdr-monitor:latest
+    image: shajen/sdr-monitor:${TAG:-latest}
+    env_file: .define.env
     restart: on-failure
     depends_on:
       sdr-monitor-setup:
         condition: service_completed_successfully
     volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: python3 manage.py runserver 0.0.0.0:8000
+    command: /entrypoint/server.sh
     ports:
-      - 8000:8000
+      - ${HTTP_PORT:-8000}:8000
   sdr-monitor-worker:
-    image: shajen/sdr-monitor:latest
+    image: shajen/sdr-monitor:${TAG:-latest}
+    env_file: .define.env
     restart: on-failure
     depends_on:
       sdr-monitor-setup:
         condition: service_completed_successfully
     volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
-    command: python3 manage.py runscript monitor_worker --script-args="--reader --cleaner --classifier"
+    command: /entrypoint/worker.sh
 volumes:
   scanner_config:
   monitor_db:

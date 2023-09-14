@@ -37,18 +37,19 @@ nlohmann::json readJsonFromFile(const std::string &path) {
   }
 }
 
+std::string getEnv(const std::string &key, const std::string &defaultValue) {
+  const auto value = std::getenv(key.c_str());
+  if (value) {
+    return {value};
+  } else {
+    return defaultValue;
+  }
+}
+
 Config::InternalJson getInternalJson(const std::string &path) {
   Config::InternalJson internalJson;
   internalJson.masterJson = readJsonFromFile(path);
   return internalJson;
-}
-
-nlohmann::json removeCredentials(const nlohmann::json &json) {
-  auto copy(json);
-  if (copy.contains("mqtt")) {
-    copy.erase("mqtt");
-  }
-  return copy;
 }
 
 template <typename T>
@@ -180,18 +181,20 @@ Config::Config(const std::string &path)
       m_fileLogLevel(parseLogLevel(readKey(m_json, {"output", "file_log_level"}, std::string("info")))),
       m_cores(getCores(readKey(m_json, {"cores"}, 0))),
       m_memoryLimit(readKey(m_json, {"memory_limit_mb"}, 0)),
-      m_mqttHostname(readKey(m_json, {"mqtt", "hostname"}, std::string(""))),
-      m_mqttPort(readKey(m_json, {"mqtt", "port"}, 0)),
-      m_mqttUsername(readKey(m_json, {"mqtt", "username"}, std::string(""))),
-      m_mqttPassword(readKey(m_json, {"mqtt", "password"}, std::string(""))) {}
+      m_mqttHostname(getEnv("MQTT_HOST", "sdr-broker")),
+      m_mqttPort(stoi(getEnv("MQTT_PORT_TCP", "1883"))),
+      m_mqttUsername(getEnv("MQTT_USER", "admin")),
+      m_mqttPassword(getEnv("MQTT_PASSWORD", "password")) {}
 
-void Config::log() const { Logger::info("config", "file: {}", removeCredentials(m_json.masterJson).dump()); }
+void Config::log() const {
+  Logger::info("config", "mqtt: {}@{}:{}", m_mqttUsername, m_mqttHostname, m_mqttPort);
+  Logger::info("config", "file: {}", m_json.masterJson.dump());
+}
 
-nlohmann::json Config::getConfig() const { return removeCredentials(m_json.masterJson); }
+nlohmann::json Config::getConfig() const { return m_json.masterJson; }
 
 void Config::updateConfig(const std::string &data) {
   auto json = nlohmann::json::parse(data);
-  json["mqtt"] = m_json.masterJson["mqtt"];
   std::string config = json.dump(4);
   FILE *file = fopen(m_configPath.c_str(), "w");
   fwrite(config.c_str(), config.length(), 1, file);

@@ -27,4 +27,5 @@ CMD /usr/bin/auto_sdr_test
 FROM run
 COPY ./config.json /config/config.json
 COPY --from=build /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
-CMD /usr/bin/auto_sdr /config/config.json
+COPY entrypoint/run.sh /entrypoint/run.sh
+ENTRYPOINT ["/entrypoint/run.sh"]
