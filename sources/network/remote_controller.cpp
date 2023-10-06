@@ -11,12 +11,18 @@ constexpr auto STATUS = "status";
 constexpr auto CONFIG = "config";
 constexpr auto MANUAL_RECORDING = "manual_recording";
 constexpr auto RESTART = "restart";
+constexpr auto SUCCESS = "success";
+constexpr auto FAILED = "failed";
 
-std::string generateTopic(const std::string& subtopic, const std::string& id = "") {
+std::string generateTopic(const std::string& subtopic, const std::string& id = "", const std::string& subtopic2 = "") {
   if (id.empty()) {
     return "sdr/" + subtopic;
   } else {
-    return "sdr/" + subtopic + "/" + id;
+    if (subtopic2.empty()) {
+      return "sdr/" + subtopic + "/" + id;
+    } else {
+      return "sdr/" + subtopic + "/" + id + "/" + subtopic2;
+    }
   }
 }
 
@@ -94,8 +100,10 @@ void RemoteController::configCallback(const std::string& data) {
   try {
     m_config.updateConfig(data);
     m_reloadConfig = true;
+    m_mqtt.publish(generateTopic(CONFIG, m_id, SUCCESS), "", 2);
   } catch (const std::exception& e) {
     Logger::warn("rc", "invalid config");
+    m_mqtt.publish(generateTopic(CONFIG, m_id, FAILED), "", 2);
   }
 }
 
