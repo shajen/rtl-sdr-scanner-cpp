@@ -40,15 +40,14 @@ Sdr scanner use [SoapySDR](https://github.com/pothosware/SoapySDR) library to ge
 
 ## Install docker
 
-If you do not have `docker` installed, follow the instructions available at [https://docs.docker.com/desktop/](https://docs.docker.com/desktop/) to install `docker` and `docker compose`.
+If you do not have `docker` installed, follow the instructions [here](https://docs.docker.com/desktop/) to install `docker` and `docker compose`.
 
 ## Run
 
-Download `docker-compose.yml` and run it.
 ```
-mkdir -p ~/sdr
+git clone https://github.com/shajen/rtl-sdr-scanner-cpp.git ~/sdr
 cd ~/sdr
-wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
+nano .env # customize settings if you want: timezone, admin account and other
 docker compose up -d
 ```
 
@@ -59,26 +58,21 @@ cd ~/sdr
 docker compose down
 ```
 
-## Configuration
+## Web panel
 
-Open [http://localhost:8000/sdr/config/](http://localhost:8000/sdr/config/) and follow instruction [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration).
+Web panel [here](http://localhost:8000/). Default login: `admin`, password: `password`. Configuration [here](http://localhost:8000/sdr/config/), configuration manual [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration),  admin panel [here](http://localhost:8000/admin/).
 
-## Panel
-
-Open [http://localhost:8000/sdr/spectrograms/](http://localhost:8000/sdr/spectrograms/) or [http://localhost:8000/sdr/transmissions/](http://localhost:8000/sdr/transmissions/) and wait for data to collect.
-
-Admin panel available at [http://localhost:8000/admin/](http://localhost:8000/admin/). Username: `admin`, password: `password`.
+Open [spectrograms](http://localhost:8000/sdr/spectrograms/) or [transmissions](http://localhost:8000/sdr/transmissions/) and wait for data to collect.
 
 Sources of panel [here](https://github.com/shajen/monitor).
 
 ## Update
 
-To update to latest version just update `docker-compose.yml`, images and run it.
+To update to latest version just update git, images and run it.
 ```
 cd ~/sdr
 docker compose down
-rm docker-compose.yml
-wget https://github.com/shajen/rtl-sdr-scanner-cpp/raw/master/docker-compose.yml
+git pull
 docker compose pull
 docker compose up -d
 ```

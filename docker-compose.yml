@@ -1,37 +1,37 @@
 services:
-  sdr-broker:
-    image: shajen/sdr-broker:${TAG:-latest}
-    env_file: .define.env
+  broker:
+    image: shajen/broker:${BROKER_TAG:-latest}
+    env_file: .env
     restart: on-failure
     ports:
       - ${MQTT_PORT_TCP:-1883}:${MQTT_PORT_TCP:-1883}
       - ${MQTT_PORT_WS:-9001}:${MQTT_PORT_WS:-9001}
   sdr-scanner:
-    image: shajen/sdr-scanner:${TAG:-latest}
-    env_file: .define.env
+    image: shajen/sdr-scanner:${SDR_SCANNER_TAG:-latest}
+    env_file: .env
     restart: on-failure
     depends_on:
-      - sdr-broker
+      - broker
     volumes:
-      - scanner_config:/config
+      - sdr_config:/config
     devices:
       - /dev/bus/usb:/dev/bus/usb
-  sdr-monitor-setup:
-    image: shajen/sdr-monitor:${TAG:-latest}
-    env_file: .define.env
+  monitor-setup:
+    image: shajen/monitor:${MONITOR_TAG:-latest}
+    env_file: .env
     restart: on-failure
     depends_on:
-      - sdr-broker
+      - broker
     volumes:
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
     command: /entrypoint/setup.sh
-  sdr-monitor-server:
-    image: shajen/sdr-monitor:${TAG:-latest}
-    env_file: .define.env
+  monitor-server:
+    image: shajen/monitor:${MONITOR_TAG:-latest}
+    env_file: .env
     restart: on-failure
     depends_on:
-      sdr-monitor-setup:
+      monitor-setup:
         condition: service_completed_successfully
     volumes:
       - monitor_db:/usr/src/sdr-panel/db
@@ -39,18 +39,18 @@ services:
     command: /entrypoint/server.sh
     ports:
       - ${HTTP_PORT:-8000}:8000
-  sdr-monitor-worker:
-    image: shajen/sdr-monitor:${TAG:-latest}
-    env_file: .define.env
+  monitor-worker:
+    image: shajen/monitor:${MONITOR_TAG:-latest}
+    env_file: .env
     restart: on-failure
     depends_on:
-      sdr-monitor-setup:
+      monitor-setup:
         condition: service_completed_successfully
     volumes:
       - monitor_db:/usr/src/sdr-panel/db
       - monitor_data:/usr/src/sdr-panel/public/media
     command: /entrypoint/worker.sh
 volumes:
-  scanner_config:
+  sdr_config:
   monitor_db:
   monitor_data:

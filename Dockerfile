@@ -28,4 +28,4 @@ FROM run
 COPY ./config.json /config/config.json
 COPY --from=build /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
 COPY entrypoint/run.sh /entrypoint/run.sh
-ENTRYPOINT ["/entrypoint/run.sh"]
+CMD ["/entrypoint/run.sh"]
