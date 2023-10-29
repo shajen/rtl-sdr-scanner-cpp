@@ -1,11 +1,24 @@
 services:
   broker:
-    image: shajen/broker:${BROKER_TAG:-latest}
+    image: eclipse-mosquitto:latest
     env_file: .env
     restart: on-failure
     ports:
       - ${MQTT_PORT_TCP:-1883}:${MQTT_PORT_TCP:-1883}
       - ${MQTT_PORT_WS:-9001}:${MQTT_PORT_WS:-9001}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "listener ${MQTT_PORT_TCP:-1883}" > /mosquitto/config/mosquitto.conf
+        echo "protocol mqtt" >> /mosquitto/config/mosquitto.conf
+        echo "listener ${MQTT_PORT_WS:-9001}" >> /mosquitto/config/mosquitto.conf
+        echo "protocol websockets" >> /mosquitto/config/mosquitto.conf
+        echo "allow_anonymous false" >> /mosquitto/config/mosquitto.conf
+        echo "password_file /mosquitto/config/password.txt" >> /mosquitto/config/mosquitto.conf
+        echo "${MQTT_USER:-admin}:${MQTT_PASSWORD:-password}" > /mosquitto/config/password.txt
+        mosquitto_passwd -U /mosquitto/config/password.txt
+        mosquitto -c /mosquitto/config/mosquitto.conf
   sdr-scanner:
     image: shajen/sdr-scanner:${SDR_SCANNER_TAG:-latest}
     env_file: .env
