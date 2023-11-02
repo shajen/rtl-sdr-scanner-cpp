@@ -3,7 +3,7 @@
 #include <logger.h>
 #include <utils.h>
 
-SdrScanner::SdrScanner(const Config& config, CoreManager& coreManager, const std::vector<UserDefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt)
+SdrScanner::SdrScanner(const Config& config, CoreManager& coreManager, const std::vector<DefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt)
     : m_config(config),
       m_device(std::move(device)),
       m_dataController(config, mqtt, m_device->name()),

@@ -31,6 +31,6 @@ void shift(ReadySample* samples, const std::vector<ReadySample>& factors, uint32
 
 liquid_float_complex* toLiquidComplex(ReadySample* ptr);
 
-std::vector<FrequencyRange> fitFrequencyRange(const UserDefinedFrequencyRange& userRange);
+std::vector<FrequencyRange> fitFrequencyRange(const DefinedFrequencyRange& userRange);
 
 uint32_t countFft(const Frequency sampleRate);

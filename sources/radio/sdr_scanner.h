@@ -21,7 +21,7 @@ struct ManualRecording {
 
 class SdrScanner {
  public:
-  SdrScanner(const Config& config, CoreManager& coreManager, const std::vector<UserDefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt);
+  SdrScanner(const Config& config, CoreManager& coreManager, const std::vector<DefinedFrequencyRange>& ranges, std::unique_ptr<SdrDevice>&& device, Mqtt& mqtt);
   ~SdrScanner();
 
   bool isRunning() const;

@@ -28,13 +28,26 @@ void updateDefaultConfig(Config& config) {
 
 template <typename T>
 void createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
-  for (const auto& device : T::listDevices()) {
-    const auto& serial = device.serial;
-    for (const auto& range : config.userDefinedFrequencyRanges()) {
-      if (removeZerosFromBegging(range.serial) == removeZerosFromBegging(serial)) {
-        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, range.ranges, std::make_unique<T>(config, serial, range.offset, range.gains), mqtt));
-        break;
+  for (const auto& device : config.devices()) {
+    const auto serial = device["device_serial"].get<std::string>();
+    const auto offset = device.contains("device_offset") ? stoi(device["device_offset"].get<std::string>()) : 0;
+    const auto gains = device["device_gains"];
+    std::vector<DefinedFrequencyRange> ranges;
+    for (const auto& range : device["ranges"]) {
+      const auto sampleRate = range["sample_rate"].get<Frequency>();
+      const auto start = range["start"].get<Frequency>();
+      const auto stop = range["stop"].get<Frequency>();
+      const auto fft = range.contains("fft") ? stoi(device["fft"].get<std::string>()) : 0;
+      ranges.push_back({start, stop, sampleRate, static_cast<Frequency>(fft)});
+    }
+    try {
+      if (ranges.empty()) {
+        Logger::warn("main", "empty ranges to scan, skipping device: {}", serial);
+      } else {
+        scanners.push_back(std::make_unique<SdrScanner>(config, coreManager, ranges, std::make_unique<T>(config, serial, offset, gains), mqtt));
       }
+    } catch (const std::exception& exception) {
+      Logger::error("main", "can not create scanner: {}", exception.what());
     }
   }
 }

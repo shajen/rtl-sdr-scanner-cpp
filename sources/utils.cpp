@@ -97,7 +97,7 @@ void shift(ReadySample *samples, const std::vector<ReadySample> &factors, uint32
 
 liquid_float_complex *toLiquidComplex(ReadySample *ptr) { return reinterpret_cast<liquid_float_complex *>(ptr); }
 
-std::vector<FrequencyRange> fitFrequencyRange(const UserDefinedFrequencyRange &userRange) {
+std::vector<FrequencyRange> fitFrequencyRange(const DefinedFrequencyRange &userRange) {
   const auto range = userRange.stop - userRange.start;
   if (userRange.sampleRate < range) {
     const auto cutDigits = floor(log10(userRange.sampleRate));

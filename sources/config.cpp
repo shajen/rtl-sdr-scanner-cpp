@@ -9,7 +9,7 @@
 constexpr auto RESAMPLER_FILTER_LENGTH = 1;
 constexpr auto SPECTROGAM_FACTOR = 0.1f;
 
-std::string UserDefinedFrequencyRange::toString() const {
+std::string DefinedFrequencyRange::toString() const {
   return frequencyToString(start, "start") + ", " + frequencyToString(stop, "stop") + ", " + frequencyToString(sampleRate, "sample rate") + ", fft: " + std::to_string(fft);
 }
 
@@ -97,42 +97,6 @@ spdlog::level::level_enum parseLogLevel(const std::string &level) {
   return spdlog::level::level_enum::off;
 }
 
-std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const nlohmann::json &json, const std::string &key) {
-  if (!json.contains(key) || json[key].empty()) {
-    throw std::runtime_error("parseFrequenciesRanges exception: empty value");
-  }
-  std::vector<UserDefinedFrequencyRanges> ranges;
-  for (const nlohmann::json &value : json[key]) {
-    const auto deviceSerial = value["device_serial"].get<std::string>();
-    const auto deviceOffset = value.contains("device_offset") ? value["device_offset"].get<std::int32_t>() : 0;
-    std::map<std::string, float> gains;
-    if (value.contains("device_gains")) {
-      for (const auto &[key, value] : value["device_gains"].items()) {
-        gains[key] = value;
-      }
-    }
-    std::vector<UserDefinedFrequencyRange> subRanges;
-    for (const nlohmann::json &subValue : value["ranges"]) {
-      const auto start = subValue["start"].get<Frequency>();
-      const auto stop = subValue["stop"].get<Frequency>();
-      const auto sampleRate = subValue["sample_rate"].get<Frequency>();
-      const auto fft = subValue.contains("fft") ? subValue["fft"].get<Frequency>() : 0;
-      subRanges.push_back({start, stop, sampleRate, fft});
-    }
-    ranges.push_back({deviceSerial, deviceOffset, gains, subRanges});
-  }
-  return ranges;
-}
-
-std::vector<UserDefinedFrequencyRanges> parseFrequenciesRanges(const Config::InternalJson &json, const std::string &key) {
-  try {
-    return parseFrequenciesRanges(json.masterJson, key);
-  } catch (const std::exception &) {
-    Logger::warn("config", "can not read: {}", key);
-    return {{"auto", 0, {}, {{144000000, 146000000, 2048000, 2048}}}};
-  }
-}
-
 IgnoredFrequencies parseIgnoredFrequencies(const nlohmann::json &json, const std::string &key) {
   if (!json.contains(key) || !json[key].is_array()) {
     throw std::runtime_error("parseFrequenciesRanges exception: empty value");
@@ -166,7 +130,6 @@ uint8_t getCores(uint8_t cores) {
 Config::Config(const std::string &path)
     : m_json(getInternalJson(path)),
       m_configPath(path),
-      m_userDefinedFrequencyRanges(parseFrequenciesRanges(m_json, "scanned_frequencies")),
       m_ignoredFrequencies(parseIgnoredFrequencies(m_json, "ignored_frequencies")),
       m_maxRecordingNoiseTime(std::chrono::milliseconds(readKey(m_json, {"recording", "max_noise_time_ms"}, 2000))),
       m_minRecordingTime(std::chrono::milliseconds(readKey(m_json, {"recording", "min_time_ms"}, 1000))),
@@ -193,6 +156,36 @@ void Config::log() const {
 
 nlohmann::json Config::getConfig() const { return m_json.masterJson; }
 
+nlohmann::json Config::toJson(const SdrDevice::Device &sdrDevice) const {
+  auto range = [](Frequency start, Frequency stop, Frequency sampleRate) {
+    nlohmann::json range;
+    range["start"] = start;
+    range["stop"] = stop;
+    range["sample_rate"] = sampleRate;
+    return range;
+  };
+  nlohmann::json gainsJson;
+  std::map<std::string, float> gains;
+  for (const auto &gain : sdrDevice.gains) {
+    gainsJson[gain.name] = gain.max;
+    gains[gain.name] = gain.max;
+  }
+  nlohmann::json rangesJson;
+  if (sdrDevice.defaultSampleRate == 2048000) {
+    rangesJson.push_back(range(144000000, 146000000, sdrDevice.defaultSampleRate));
+    rangesJson.push_back(range(438000000, 440000000, sdrDevice.defaultSampleRate));
+  } else if (sdrDevice.defaultSampleRate == 20480000) {
+    rangesJson.push_back(range(140000000, 160000000, sdrDevice.defaultSampleRate));
+    rangesJson.push_back(range(430000000, 450000000, sdrDevice.defaultSampleRate));
+  }
+
+  nlohmann::json device;
+  device["device_serial"] = sdrDevice.serial;
+  device["device_gains"] = gainsJson;
+  device["ranges"] = rangesJson;
+  return device;
+}
+
 void Config::updateConfig(const std::string &data) {
   auto json = nlohmann::json::parse(data);
   std::string config = json.dump(4);
@@ -212,42 +205,11 @@ void Config::updateDefaultConfig(const SdrDevice::Device &sdrDevice) {
     }
   }
 
-  auto range = [](Frequency start, Frequency stop, Frequency sampleRate) {
-    nlohmann::json range;
-    range["start"] = start;
-    range["stop"] = stop;
-    range["sample_rate"] = sampleRate;
-    return range;
-  };
-  nlohmann::json gainsJson;
-  std::map<std::string, float> gains;
-  for (const auto &gain : sdrDevice.gains) {
-    gainsJson[gain.name] = gain.max;
-    gains[gain.name] = gain.max;
-  }
-  nlohmann::json rangesJson;
-  std::vector<UserDefinedFrequencyRange> ranges;
-  if (sdrDevice.defaultSampleRate == 2048000) {
-    rangesJson.push_back(range(144000000, 146000000, sdrDevice.defaultSampleRate));
-    rangesJson.push_back(range(438000000, 440000000, sdrDevice.defaultSampleRate));
-    ranges.push_back({144000000, 146000000, sdrDevice.defaultSampleRate, 0});
-    ranges.push_back({438000000, 440000000, sdrDevice.defaultSampleRate, 0});
-  } else if (sdrDevice.defaultSampleRate == 20480000) {
-    rangesJson.push_back(range(140000000, 160000000, sdrDevice.defaultSampleRate));
-    rangesJson.push_back(range(430000000, 450000000, sdrDevice.defaultSampleRate));
-    ranges.push_back({140000000, 160000000, sdrDevice.defaultSampleRate, 0});
-    ranges.push_back({430000000, 450000000, sdrDevice.defaultSampleRate, 0});
-  }
-
-  nlohmann::json device;
-  device["device_serial"] = sdrDevice.serial;
-  device["device_gains"] = gainsJson;
-  device["ranges"] = rangesJson;
-  m_json.masterJson[KEY].push_back(device);
-  m_userDefinedFrequencyRanges.push_back({sdrDevice.serial, 0, gains, ranges});
+  m_json.masterJson[KEY].push_back(toJson(sdrDevice));
 }
 
-std::vector<UserDefinedFrequencyRanges> Config::userDefinedFrequencyRanges() const { return m_userDefinedFrequencyRanges; }
+std::vector<nlohmann::json> Config::devices() const { return m_json.masterJson["scanned_frequencies"]; }
+
 IgnoredFrequencies Config::ignoredFrequencyRanges() const { return m_ignoredFrequencies; }
 
 std::chrono::milliseconds Config::maxRecordingNoiseTime() const { return m_maxRecordingNoiseTime; }

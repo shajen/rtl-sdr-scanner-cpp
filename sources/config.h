@@ -7,20 +7,13 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 
-struct UserDefinedFrequencyRange {
+struct DefinedFrequencyRange {
   const Frequency start;
   const Frequency stop;
   const Frequency sampleRate;
   const Frequency fft;
 
   std::string toString() const;
-};
-
-struct UserDefinedFrequencyRanges {
-  const std::string serial;
-  const int32_t offset;
-  const std::map<std::string, float> gains;
-  const std::vector<UserDefinedFrequencyRange> ranges;
 };
 
 using IgnoredFrequencies = std::vector<FrequencyRange>;
@@ -34,10 +27,11 @@ class Config {
   Config(const std::string& path);
   void log() const;
   nlohmann::json getConfig() const;
+  nlohmann::json toJson(const SdrDevice::Device& sdrDevice) const;
   void updateConfig(const std::string& data);
   void updateDefaultConfig(const SdrDevice::Device& sdrDevice);
 
-  std::vector<UserDefinedFrequencyRanges> userDefinedFrequencyRanges() const;
+  std::vector<nlohmann::json> devices() const;
   IgnoredFrequencies ignoredFrequencyRanges() const;
 
   std::chrono::milliseconds maxRecordingNoiseTime() const;
@@ -70,7 +64,6 @@ class Config {
   InternalJson m_json;
   const std::string m_configPath;
 
-  std::vector<UserDefinedFrequencyRanges> m_userDefinedFrequencyRanges;
   const IgnoredFrequencies m_ignoredFrequencies;
 
   const std::chrono::milliseconds m_maxRecordingNoiseTime;
