@@ -44,7 +44,12 @@ std::string sampleRatesToString(const std::vector<double>& sampleRates) {
 
 SoapySdrDevice::SoapySdrDevice(const Config& config, const std::string& serial, const int32_t offset, const std::map<std::string, float>& gains)
     : SdrDevice(removeZerosFromBegging(serial), offset), m_config(config), m_device(nullptr), m_rxStream(nullptr), m_isWorking(false), m_thread(nullptr) {
-  m_device = SoapySDR::Device::make("serial=" + serial);
+  try {
+    m_device = SoapySDR::Device::make("serial=" + serial);
+  } catch (const std::exception&) {
+    Logger::error("SoapySDR", "can not open device: {}", m_serial);
+    throw std::runtime_error(std::string("can not open device: ") + m_serial);
+  }
   if (m_device == nullptr) {
     Logger::error("SoapySDR", "can not open device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
@@ -97,7 +102,13 @@ std::vector<SdrDevice::Device> SoapySdrDevice::listDevices() {
     appendValue(label, "version", data["version"]);
     appendValue(label, "serial", data["serial"]);
     Logger::info("SoapySDR", "#{}{}", i, label);
-    SoapySDR::Device* sdr = SoapySDR::Device::make(results[i]);
+    SoapySDR::Device* sdr;
+    try {
+      sdr = SoapySDR::Device::make(results[i]);
+    } catch (const std::runtime_error&) {
+      Logger::warn("SoapySDR", "#{}, open device failed", i);
+      continue;
+    }
 
     if (sdr == nullptr) {
       Logger::warn("SoapySDR", "#{}, open device failed", i);
