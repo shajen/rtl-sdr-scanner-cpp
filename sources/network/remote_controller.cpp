@@ -65,9 +65,9 @@ void RemoteController::listCallback(const std::string&) {
   const auto configuredDevices = json["config"]["scanned_frequencies"];
   for (const auto& sdrDevice : SoapySdrDevice::listDevices()) {
     nlohmann::json device;
-    const std::string serial = removeZerosFromBegging(sdrDevice.serial);
+    const auto serial = sdrDevice.serial;
     auto configuredDevice = std::find_if(configuredDevices.begin(), configuredDevices.end(), [&serial](const nlohmann::json& data) {
-      const auto s = removeZerosFromBegging(data["device_serial"].get<std::string>());
+      const auto s = data["device_serial"].get<std::string>();
       return s == serial;
     });
     device["model"] = sdrDevice.model;
@@ -110,7 +110,7 @@ void RemoteController::configCallback(const std::string& data) {
 void RemoteController::manualRecordingCallback(const std::string& data) {
   try {
     const auto dataJson = nlohmann::json::parse(data);
-    const auto serial = removeZerosFromBegging(dataJson["serial"].get<std::string>());
+    const auto serial = dataJson["serial"].get<std::string>();
     const auto frequency = dataJson["frequency"].get<Frequency>();
     const auto sampleRate = dataJson["sample_rate"].get<Frequency>();
     const auto seconds = std::chrono::seconds(dataJson["seconds"].get<uint32_t>());

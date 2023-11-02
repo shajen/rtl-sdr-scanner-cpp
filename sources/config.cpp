@@ -200,7 +200,7 @@ void Config::updateDefaultConfig(const SdrDevice::Device &sdrDevice) {
     m_json.masterJson[KEY] = nlohmann::json::array_t();
   }
   for (const auto &device : m_json.masterJson[KEY]) {
-    if (device.contains("device_serial") && removeZerosFromBegging(device["device_serial"].get<std::string>()) == removeZerosFromBegging(sdrDevice.serial)) {
+    if (device.contains("device_serial") && device["device_serial"].get<std::string>() == sdrDevice.serial) {
       return;
     }
   }

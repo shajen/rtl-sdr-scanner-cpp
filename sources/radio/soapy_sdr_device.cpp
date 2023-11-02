@@ -43,7 +43,7 @@ std::string sampleRatesToString(const std::vector<double>& sampleRates) {
 }
 
 SoapySdrDevice::SoapySdrDevice(const Config& config, const std::string& serial, const int32_t offset, const std::map<std::string, float>& gains)
-    : SdrDevice(removeZerosFromBegging(serial), offset), m_config(config), m_device(nullptr), m_rxStream(nullptr), m_isWorking(false), m_thread(nullptr) {
+    : SdrDevice(serial, offset), m_config(config), m_device(nullptr), m_rxStream(nullptr), m_isWorking(false), m_thread(nullptr) {
   try {
     m_device = SoapySDR::Device::make("serial=" + serial);
   } catch (const std::exception&) {
@@ -193,7 +193,7 @@ void SoapySdrDevice::stopStream() {
   Logger::debug("SoapySDR", "stop rx stream, device: {}", m_serial);
 }
 
-std::string SoapySdrDevice::name() const { return m_device->getDriverKey() + "_" + m_serial; }
+std::string SoapySdrDevice::name() const { return m_device->getDriverKey() + "_" + removeZerosFromBegging(m_serial); }
 
 void SoapySdrDevice::clearInternalBuffer() {
   // TODO fix it
