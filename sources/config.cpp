@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <config_migrator.h>
 #include <logger.h>
 #include <utils.h>
 
@@ -49,6 +50,7 @@ std::string getEnv(const std::string &key, const std::string &defaultValue) {
 Config::InternalJson getInternalJson(const std::string &path) {
   Config::InternalJson internalJson;
   internalJson.masterJson = readJsonFromFile(path);
+  ConfigMigrator::update(internalJson.masterJson);
   return internalJson;
 }
 
@@ -156,7 +158,7 @@ void Config::log() const {
 
 nlohmann::json Config::getConfig() const { return m_json.masterJson; }
 
-nlohmann::json Config::toJson(const SdrDevice::Device &sdrDevice) const {
+nlohmann::json Config::toJson(const SdrDevice::Device &sdrDevice, bool isEnabled) const {
   auto range = [](Frequency start, Frequency stop, Frequency sampleRate) {
     nlohmann::json range;
     range["start"] = start;
@@ -182,6 +184,7 @@ nlohmann::json Config::toJson(const SdrDevice::Device &sdrDevice) const {
   nlohmann::json device;
   device["device_serial"] = sdrDevice.serial;
   device["device_gains"] = gainsJson;
+  device["device_enabled"] = isEnabled;
   device["ranges"] = rangesJson;
   return device;
 }
@@ -194,7 +197,7 @@ void Config::updateConfig(const std::string &data) {
   fclose(file);
 }
 
-void Config::updateDefaultConfig(const SdrDevice::Device &sdrDevice) {
+void Config::updateConfig(const SdrDevice::Device &sdrDevice, bool isEnabled) {
   const auto KEY = "scanned_frequencies";
   if (!m_json.masterJson.contains(KEY)) {
     m_json.masterJson[KEY] = nlohmann::json::array_t();
@@ -205,7 +208,7 @@ void Config::updateDefaultConfig(const SdrDevice::Device &sdrDevice) {
     }
   }
 
-  m_json.masterJson[KEY].push_back(toJson(sdrDevice));
+  m_json.masterJson[KEY].push_back(toJson(sdrDevice, isEnabled));
 }
 
 std::vector<nlohmann::json> Config::devices() const { return m_json.masterJson["scanned_frequencies"]; }

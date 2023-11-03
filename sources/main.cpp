@@ -20,9 +20,9 @@ void handler(int) {
 }
 
 template <typename T>
-void updateDefaultConfig(Config& config) {
+void updateConfig(Config& config) {
   for (const auto& device : T::listDevices()) {
-    config.updateDefaultConfig(device);
+    config.updateConfig(device, true);
   }
 }
 
@@ -30,6 +30,10 @@ template <typename T>
 void createScanners(const Config& config, Mqtt& mqtt, CoreManager& coreManager, std::vector<std::unique_ptr<SdrScanner>>& scanners) {
   for (const auto& device : config.devices()) {
     const auto serial = device["device_serial"].get<std::string>();
+    if (!device["device_enabled"].get<bool>()) {
+      Logger::info("main", "device disabled, skipping device: {}", serial);
+      continue;
+    }
     const auto offset = device.contains("device_offset") ? stoi(device["device_offset"].get<std::string>()) : 0;
     const auto gains = device["device_gains"];
     std::vector<DefinedFrequencyRange> ranges;
@@ -94,7 +98,7 @@ int main(int argc, char* argv[]) {
       }
       Mqtt mqtt(*config);
       CoreManager coreManager(config->cores());
-      updateDefaultConfig<SoapySdrDevice>(*config);
+      updateConfig<SoapySdrDevice>(*config);
       std::vector<std::unique_ptr<SdrScanner>> scanners = createScanners(*config, mqtt, coreManager);
       RemoteController rc(*config, mqtt, scanners, getId(), reloadConfig, isRunning);
 

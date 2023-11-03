@@ -62,7 +62,7 @@ void RemoteController::listCallback(const std::string&) {
   nlohmann::json json;
   json["devices"] = {};
   for (const auto& device : SoapySdrDevice::listDevices()) {
-    m_config.updateDefaultConfig(device);
+    m_config.updateConfig(device, false);
     const auto configuredDevices = m_config.devices();
     const auto configuredDevice = std::find_if(configuredDevices.begin(), configuredDevices.end(), [&device](const nlohmann::json& data) {
       const auto serial = data["device_serial"].get<std::string>();
@@ -71,6 +71,7 @@ void RemoteController::listCallback(const std::string&) {
     nlohmann::json deviceJson;
     deviceJson["model"] = device.model;
     deviceJson["default_sample_rate"] = device.defaultSampleRate;
+    deviceJson["enabled"] = (*configuredDevice)["device_enabled"].get<bool>();
     for (const auto& gain : device.gains) {
       nlohmann::json gainJson;
       gainJson["name"] = gain.name;

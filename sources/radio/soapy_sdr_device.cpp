@@ -54,6 +54,7 @@ SoapySdrDevice::SoapySdrDevice(const Config& config, const std::string& serial, 
     Logger::error("SoapySDR", "can not open device: {}", m_serial);
     throw std::runtime_error(std::string("can not open device: ") + m_serial);
   }
+  Logger::info("SoapySDR", "open device: {}", m_serial);
   m_rxStream = m_device->setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32);
   if (m_rxStream == nullptr) {
     Logger::error("SoapySDR", "can not start stream device: {}", m_serial);

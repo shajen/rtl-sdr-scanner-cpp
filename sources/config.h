@@ -27,9 +27,9 @@ class Config {
   Config(const std::string& path);
   void log() const;
   nlohmann::json getConfig() const;
-  nlohmann::json toJson(const SdrDevice::Device& sdrDevice) const;
+  nlohmann::json toJson(const SdrDevice::Device& sdrDevice, bool isEnabled) const;
   void updateConfig(const std::string& data);
-  void updateDefaultConfig(const SdrDevice::Device& sdrDevice);
+  void updateConfig(const SdrDevice::Device& sdrDevice, bool isEnabled);
 
   std::vector<nlohmann::json> devices() const;
   IgnoredFrequencies ignoredFrequencyRanges() const;

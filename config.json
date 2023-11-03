@@ -19,5 +19,6 @@
         "min_sample_rate": 16000,
         "min_time_ms": 2000
     },
-    "scanned_frequencies": []
+    "scanned_frequencies": [],
+    "version": 1
 }
