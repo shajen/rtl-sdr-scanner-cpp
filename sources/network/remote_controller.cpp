@@ -60,38 +60,30 @@ void RemoteController::callback(const std::string& topic, const std::string& dat
 
 void RemoteController::listCallback(const std::string&) {
   nlohmann::json json;
-  json["config"] = m_config.getConfig();
   json["devices"] = {};
-  const auto configuredDevices = json["config"]["scanned_frequencies"];
-  for (const auto& sdrDevice : SoapySdrDevice::listDevices()) {
-    nlohmann::json device;
-    const auto serial = sdrDevice.serial;
-    auto configuredDevice = std::find_if(configuredDevices.begin(), configuredDevices.end(), [&serial](const nlohmann::json& data) {
-      const auto s = data["device_serial"].get<std::string>();
-      return s == serial;
+  for (const auto& device : SoapySdrDevice::listDevices()) {
+    m_config.updateDefaultConfig(device);
+    const auto configuredDevices = m_config.devices();
+    const auto configuredDevice = std::find_if(configuredDevices.begin(), configuredDevices.end(), [&device](const nlohmann::json& data) {
+      const auto serial = data["device_serial"].get<std::string>();
+      return serial == device.serial;
     });
-    device["model"] = sdrDevice.model;
-    device["default_sample_rate"] = sdrDevice.defaultSampleRate;
-    for (const auto& gain : sdrDevice.gains) {
+    nlohmann::json deviceJson;
+    deviceJson["model"] = device.model;
+    deviceJson["default_sample_rate"] = device.defaultSampleRate;
+    for (const auto& gain : device.gains) {
       nlohmann::json gainJson;
       gainJson["name"] = gain.name;
       gainJson["min"] = gain.min;
       gainJson["max"] = gain.max;
       gainJson["step"] = gain.step;
-      if (configuredDevice != configuredDevices.end() && configuredDevice->contains("device_gains") && (*configuredDevice)["device_gains"].contains(gain.name)) {
-        gainJson["value"] = (*configuredDevice)["device_gains"][gain.name];
-      } else {
-        gainJson["value"] = 0.0f;
-      }
-      if (configuredDevice != configuredDevices.end() && configuredDevice->contains("ranges")) {
-        device["ranges"] = (*configuredDevice)["ranges"];
-      } else {
-        device["ranges"] = nlohmann::json::array();
-      }
-      device["gains"].push_back(gainJson);
+      gainJson["value"] = (*configuredDevice)["device_gains"][gain.name];
+      deviceJson["ranges"] = (*configuredDevice)["ranges"];
+      deviceJson["gains"].push_back(gainJson);
     }
-    json["devices"][serial] = device;
+    json["devices"][device.serial] = deviceJson;
   }
+  json["config"] = m_config.getConfig();
   sendStatus(json.dump());
 }
 
