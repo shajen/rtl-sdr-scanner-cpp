@@ -4,7 +4,7 @@ This project contains sdr scanner written in `c++` to **scan and record multiple
 
 Sdr scanner also allows you to record multiple transmissions simultaneously (if they are transmitted on the same band). For example, if one transmission is on 145.200 MHz and the other is on 145.600 MHz, the scanner will record and save both!
 
-It also provides easy but very powerful **web panel** to explore recordings and spectrograms.
+It also provides easy but very powerful **web panel** to explore recordings, spectrograms and configure sdr device.
 
 # Supported devices
 
@@ -60,9 +60,12 @@ docker compose down
 
 ## Web panel
 
-Web panel [here](http://localhost:8000/). Default login: `admin`, password: `password`. Configuration [here](http://localhost:8000/sdr/config/), configuration manual [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration),  admin panel [here](http://localhost:8000/admin/).
-
-Open [spectrograms](http://localhost:8000/sdr/spectrograms/) or [transmissions](http://localhost:8000/sdr/transmissions/) and wait for data to collect.
+Default web panel address is [http://localhost:8000/](http://localhost:8000/), default login: `admin`, password: `password`. Useful links:
+- [configuration](http://localhost:8000/sdr/config/)
+- [configuration manual](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration)
+- [admin panel](http://localhost:8000/admin/)
+- [spectrograms](http://localhost:8000/sdr/spectrograms/) (wait for data to collect after start and configure)
+- [transmissions](http://localhost:8000/sdr/transmissions/) (wait for data to collect after start and configure)
 
 Sources of panel [here](https://github.com/shajen/monitor).
 
@@ -109,9 +112,11 @@ NOTE: Be sure to merge the **latest** from **upstream** before making a pull req
 
 If you enjoy this project and want to thanks, please use follow link:
 
-- [Revolut](https://revolut.me/borysm2b) (best way)
+[<img src="images/paypal.jpg" width="100">](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
+[<img src="images/revolut.jpg" width="100">](https://revolut.me/borysm2b)
+<img src="images/btc.png" width="100">
 
-- [PayPal](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
+BTC address: 18UDYg9mu26K2E3U479eMvMZXPDpswR7Jn
 
 # License
 
