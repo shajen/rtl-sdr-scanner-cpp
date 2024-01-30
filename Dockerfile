@@ -23,9 +23,10 @@ RUN git clone --branch soapy-sdrplay3-0.4.2 https://github.com/pothosware/SoapyS
 
 WORKDIR /root/auto-sdr/
 COPY . .
-RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release /root/auto-sdr && \
+RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-g" /root/auto-sdr && \
     cmake --build /root/auto-sdr/build -j$(nproc) && \
-    strip /root/auto-sdr/build/auto_sdr && \
+    mv /root/auto-sdr/build/auto_sdr /root/auto-sdr/build/auto_sdr.debug && \
+    strip /root/auto-sdr/build/auto_sdr.debug -o /root/auto-sdr/build/auto_sdr && \
     strip /root/auto-sdr/build/auto_sdr_test
 
 FROM ubuntu:22.04 as run
@@ -48,6 +49,7 @@ COPY --from=build /usr/local/lib/libsdrplay_api.so* /usr/local/lib/
 COPY --from=build /usr/local/bin/sdrplay_apiService /usr/local/bin/
 COPY --from=build /usr/local/lib/SoapySDR/modules0.8/libsdrPlaySupport.so /usr/local/lib/SoapySDR/modules0.8/
 COPY --from=build /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
+COPY --from=build /root/auto-sdr/build/auto_sdr.debug /usr/bin/auto_sdr.debug
 RUN ldconfig
 COPY entrypoint/run.sh /entrypoint/run.sh
 CMD ["/entrypoint/run.sh"]
