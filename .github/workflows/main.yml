@@ -20,8 +20,8 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Generate version file
         run: |
-          echo "constexpr auto GIT_COMMIT = \"$(git rev-parse HEAD)\";" > sources/version.h
-          echo "constexpr auto GIT_TAG = \"$(git describe --tags)\";" >> sources/version.h
+          echo "constexpr auto GIT_COMMIT = \"${{ github.sha }}\";" > sources/version.h
+          echo "constexpr auto GIT_TAG = \"${{ github.ref_name }}\";" >> sources/version.h
       - name: Build test
         uses: docker/build-push-action@v5
         with:
