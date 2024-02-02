@@ -9,6 +9,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up docker cache
+        uses: actions/cache@v3
+        with:
+          path: cache
+          key: docker
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -29,16 +34,14 @@ jobs:
           load: true
           target: test
           tags: ${{ env.IMAGE }}:test
-          cache-from: |
-            type=registry,ref=${{ env.IMAGE }}:latest
-            type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
+          cache-from: type=local,src=cache
+          cache-to: type=local,dest=cache,mode=max
       - name: Build app
         uses: docker/build-push-action@v5
         with:
           context: .
-          cache-from: |
-            type=registry,ref=${{ env.IMAGE }}:latest
-            type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
+          cache-from: type=local,src=cache
+          cache-to: type=local,dest=cache,mode=max
       - name: Run test
         run: |
           docker run --rm ${{ env.IMAGE }}:test
@@ -50,8 +53,8 @@ jobs:
           push: true
           platforms: linux/arm/v7,linux/arm64/v8,linux/amd64
           tags: ${{ env.IMAGE }}:${{ github.ref_name }}
-          cache-from: type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
-          cache-to: type=inline
+          cache-from: type=local,src=cache
+          cache-to: type=local,dest=cache,mode=max
       - name: Push release version
         if: ${{ github.ref_type == 'tag' }}
         uses: docker/build-push-action@v5
@@ -62,7 +65,5 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.ref_name }}
-          cache-from: |
-            type=registry,ref=${{ env.IMAGE }}:latest
-            type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
-          cache-to: type=inline
+          cache-from: type=local,src=cache
+          cache-to: type=local,dest=cache,mode=max

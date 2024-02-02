@@ -22,7 +22,10 @@ RUN git clone --branch soapy-sdrplay3-0.4.2 https://github.com/pothosware/SoapyS
     cmake --install build
 
 WORKDIR /root/auto-sdr/
-COPY . .
+COPY CMakeLists.txt CMakeLists.txt
+COPY cmake cmake
+COPY tests tests
+COPY sources sources
 RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-g" /root/auto-sdr && \
     cmake --build /root/auto-sdr/build -j$(nproc) && \
     mv /root/auto-sdr/build/auto_sdr /root/auto-sdr/build/auto_sdr.debug && \
