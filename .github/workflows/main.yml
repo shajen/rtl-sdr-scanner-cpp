@@ -1,44 +1,68 @@
-name: main
+on: push
 
-on:
-  push:
-  pull_request:
+env:
+  IMAGE: ${{ secrets.DOCKER_HUB_USERNAME }}/sdr-scanner
 
 jobs:
   main:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up docker cache
-        uses: actions/cache@v3
-        with:
-          path: /var/lib/docker
-          key: ${{ runner.os }}-docker
-      - name: Set up ccache
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.ccache
-          key: ${{ runner.os }}-ccache
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Build sdr-scanner
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Generate version file
         run: |
           echo "constexpr auto GIT_COMMIT = \"$(git rev-parse HEAD)\";" > sources/version.h
           echo "constexpr auto GIT_TAG = \"$(git describe --tags)\";" >> sources/version.h
-          docker build -t sdr-scanner-test --target test .
-          docker build -t sdr-scanner .
-      - name: Test sdr-scanner
-        run: docker run --rm sdr-scanner-test
-      - name: Deploy sdr-scanner branch
-        if: ${{ github.ref_type == 'branch' && github.ref_name == vars.CI_BRANCH && github.event_name != 'pull_request' }}
+      - name: Build test
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          target: test
+          tags: ${{ env.IMAGE }}:test
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:latest
+            type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
+      - name: Build app
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:latest
+            type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
+      - name: Run test
         run: |
-          TAG=${GITHUB_REF_NAME}
-          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} docker.io
-          docker buildx create --use || true
-          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t docker.io/shajen/sdr-scanner:$TAG --push .
-      - name: Deploy sdr-scanner tag
+          docker run --rm ${{ env.IMAGE }}:test
+      - name: Push development version
+        if: ${{ github.ref_type == 'branch' && github.ref_name == vars.CI_BRANCH }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm/v7,linux/arm64/v8,linux/amd64
+          tags: ${{ env.IMAGE }}:${{ github.ref_name }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
+          cache-to: type=inline
+      - name: Push release version
         if: ${{ github.ref_type == 'tag' }}
-        run: |
-          TAG=${GITHUB_REF_NAME/v/}
-          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} docker.io
-          docker buildx create --use || true
-          docker buildx build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 -t docker.io/shajen/sdr-scanner:$TAG -t docker.io/shajen/sdr-scanner --push .
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          platforms: linux/arm/v7,linux/arm64/v8,linux/amd64
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+          cache-from: |
+            type=registry,ref=${{ env.IMAGE }}:latest
+            type=registry,ref=${{ env.IMAGE }}:${{ github.ref_name }}
+          cache-to: type=inline
