@@ -1,36 +1,20 @@
 #pragma once
 
-#include <config.h>
-#include <liquid/liquid.h>
 #include <radio/help_structures.h>
 
 #include <chrono>
-#include <complex>
-#include <optional>
-#include <vector>
+#include <string>
 
-std::string getId();
+std::chrono::milliseconds getTime();
 
-enum class PRIORITY : int { LOW = 0, MEDIUM = 5, HIGH = 19 };
+void setNoData(float* data, const int size);
 
-void setThreadParams(const std::string& name, PRIORITY priority = PRIORITY::LOW);
+std::string getGqrxRawFileName(const char* label, Frequency frequency, Frequency sampleRate);
 
-uint32_t getThreadId();
+std::string getPowerRawFileName(const char* label, Frequency frequency, int fftSize);
 
-std::string removeZerosFromBegging(const std::string& string);
+int getFft(const Frequency sampleRate, Frequency maxStep);
 
-bool isMemoryLimitReached(uint64_t limit);
+std::pair<int, int> getResamplerFactors(Frequency sampleRate, Frequency bandwidth);
 
-uint32_t getSamplesCount(const Frequency& sampleRate, const std::chrono::milliseconds& time, const uint32_t minSamplesCount);
-
-std::chrono::milliseconds time();
-
-std::vector<ReadySample> getShiftData(int32_t frequencyOffset, Frequency sampleRate, uint32_t samplesCount);
-
-void shift(ReadySample* samples, const std::vector<ReadySample>& factors, uint32_t samplesCount);
-
-liquid_float_complex* toLiquidComplex(ReadySample* ptr);
-
-std::vector<FrequencyRange> fitFrequencyRange(const DefinedFrequencyRange& userRange);
-
-uint32_t countFft(const Frequency sampleRate);
+Frequency getTunedFrequency(Frequency frequency, Frequency step);

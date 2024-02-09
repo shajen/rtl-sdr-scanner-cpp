@@ -1,6 +1,5 @@
+#include <gtest/gtest.h>
 #include <logger.h>
-
-#include "gtest/gtest.h"
 
 int main(int argc, char **argv) {
   Logger::configure(spdlog::level::off, spdlog::level::off, "");

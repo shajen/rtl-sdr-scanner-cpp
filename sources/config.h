@@ -1,90 +1,22 @@
 #pragma once
 
-#include <radio/help_structures.h>
-#include <radio/sdr_device.h>
-#include <spdlog/spdlog.h>
+#include <chrono>
 
-#include <nlohmann/json.hpp>
-#include <vector>
+constexpr auto DEBUG_DIR = ".";                     // debug files directory
+constexpr auto DEBUG_SAVE_RAW_IQ = false;           // save sdr data as raw iq to open in gqrx
+constexpr auto DEBUG_SAVE_RAW_POWER = false;        // save raw psd results
+constexpr auto DEBUG_SAVE_RAW_RECORDING = false;    // save recordings as raw iq to open in gqrx
+constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;  // print stats every n frames
 
-struct DefinedFrequencyRange {
-  const Frequency start;
-  const Frequency stop;
-  const Frequency sampleRate;
-  const Frequency fft;
-
-  std::string toString() const;
-};
-
-using IgnoredFrequencies = std::vector<FrequencyRange>;
-
-class Config {
- public:
-  struct InternalJson {
-    nlohmann::json masterJson;
-  };
-
-  Config(const std::string& path);
-  void log() const;
-  nlohmann::json getConfig() const;
-  nlohmann::json toJson(const SdrDevice::Device& sdrDevice, bool isEnabled) const;
-  void updateConfig(const std::string& data);
-  void updateConfig(const SdrDevice::Device& sdrDevice, bool isEnabled);
-
-  std::vector<nlohmann::json> devices() const;
-  IgnoredFrequencies ignoredFrequencyRanges() const;
-
-  std::chrono::milliseconds maxRecordingNoiseTime() const;
-  std::chrono::milliseconds minRecordingTime() const;
-  Frequency minRecordingSampleRate() const;
-
-  Frequency frequencyGroupingSize() const;
-  std::chrono::milliseconds frequencyRangeScanningTime() const;
-  std::chrono::seconds noiseLearningTime() const;
-  uint32_t noiseDetectionMargin() const;
-  std::chrono::seconds tornTransmissionLearningTime() const;
-
-  spdlog::level::level_enum logLevelConsole() const;
-  spdlog::level::level_enum logLevelFile() const;
-  std::string logDir() const;
-
-  uint8_t cores() const;
-  uint64_t memoryLimit() const;
-
-  std::string mqttHostname() const;
-  int mqttPort() const;
-  std::string mqttUsername() const;
-  std::string mqttPassword() const;
-
-  // experts only
-  uint32_t resamplerFilterLength() const;
-  float spectrogramFactor() const;
-
- private:
-  InternalJson m_json;
-  const std::string m_configPath;
-
-  const IgnoredFrequencies m_ignoredFrequencies;
-
-  const std::chrono::milliseconds m_maxRecordingNoiseTime;
-  const std::chrono::milliseconds m_minRecordingTime;
-  const Frequency m_minRecordingSampleRate;
-
-  const Frequency m_frequencyGroupingSize;
-  const std::chrono::milliseconds m_frequencyRangeScanningTime;
-  const std::chrono::seconds m_noiseLearningTime;
-  const uint32_t m_noiseDetectionMargin;
-  const std::chrono::seconds m_tornTransmissionLearningTime;
-
-  const std::string m_logsDirectory;
-  const spdlog::level::level_enum m_consoleLogLevel;
-  const spdlog::level::level_enum m_fileLogLevel;
-
-  const uint8_t m_cores;
-  const uint64_t m_memoryLimit;
-
-  const std::string m_mqttHostname;
-  const int m_mqttPort;
-  const std::string m_mqttUsername;
-  const std::string m_mqttPassword;
-};
+constexpr auto INITIAL_DELAY = std::chrono::milliseconds(1000);        // delay after first start sdr device to start processing
+constexpr auto MAX_STEP_AFTER_FFT = 1000;                              // max step after fft
+constexpr auto TUNING_STEP = 1000;                                     // tuning step
+constexpr auto DECIMATOR_FACTOR = 20;                                  // average n frames into one to prevent CPU usage and noise
+constexpr auto RECORDING_BANDWIDTH = 16000;                            // recording bandwidth
+constexpr auto RECORDING_TIMEOUT = std::chrono::milliseconds(2000);    // stop recording only after n seconds of silent
+constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(5000);  // noise learnig time
+constexpr auto GROUPING_Y = 10;                                        // average n frames in time domain
+constexpr auto GROUPING_X = 5;                                         // average n frames in frequency domain
+constexpr auto RECORDING_START_THRESHOLD = 6;                          // start recording if average power greather than n
+constexpr auto RECORDING_STOP_THRESHOLD = 4;                           // stop recording if average power lower than n
+constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(1000);  // waiting time for transmission in single scanning range

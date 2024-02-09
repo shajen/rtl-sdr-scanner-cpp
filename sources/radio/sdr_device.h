@@ -1,56 +1,47 @@
 #pragma once
 
-#include <performance_logger.h>
+#include <gnuradio/soapy/source.h>
+#include <gnuradio/top_block.h>
+#include <notification.h>
+#include <radio/blocks/average_y.h>
+#include <radio/blocks/file_sink.h>
+#include <radio/blocks/noise_learner.h>
+#include <radio/blocks/transmission.h>
 #include <radio/help_structures.h>
-#include <ring_buffer.h>
+#include <radio/recorder.h>
 
-#include <boost/circular_buffer.hpp>
-#include <condition_variable>
-#include <cstdint>
-#include <functional>
-#include <mutex>
+#include <map>
+#include <memory>
+#include <string>
 
 class SdrDevice {
  public:
-  struct Samples {
-    std::chrono::milliseconds time;
-    std::vector<RawSample> data;
-  };
-  struct Gain {
-    const std::string name;
-    const double min;
-    const double max;
-    const double step;
-  };
-  struct Device {
-    const std::string serial;
-    const std::string model;
-    const std::vector<Gain> gains;
-    const Frequency defaultSampleRate;
-  };
+  SdrDevice(
+      const std::string& driver, const std::string& serial, const std::map<std::string, float> gains, const Frequency sampleRate, TransmissionNotification& notification, const int recordersCount);
+  ~SdrDevice();
 
-  SdrDevice(const std::string serial, const int32_t offset);
-  virtual ~SdrDevice() = default;
+  void setFrequency(Frequency frequency);
+  bool updateRecordings(std::vector<Frequency> sortedShifts);
 
-  virtual SdrDevice::Samples readData(const FrequencyRange& frequencyRange) = 0;
+ private:
+  void setupGqrxChain();
+  void setupPowerChain(TransmissionNotification& notification);
 
-  virtual void startStream(const FrequencyRange& frequencyRange) = 0;
-  virtual void stopStream() = 0;
-  void waitForData();
-  bool isDataAvailable();
-  Samples getStreamData();
-
-  virtual std::string name() const = 0;
-  virtual std::string serial() const;
-  int32_t offset() const;
-
- protected:
+  const std::string m_driver;
   const std::string m_serial;
-  const int32_t m_offset;
-  uint32_t m_samplesSize;
-  PerformanceLogger m_performanceLogger;
-  RingBuffer<RawSample> m_dataBuffer;
-  boost::circular_buffer<std::chrono::milliseconds> m_timeBuffer;
-  std::mutex m_mutex;
-  std::condition_variable m_cv;
+
+  const Frequency m_sampleRate;
+  const int m_fftSize;
+  bool m_isInitialized;
+  std::atomic<Frequency> m_frequency;
+
+  std::shared_ptr<gr::top_block> m_tb;
+  std::shared_ptr<FileSink> m_gqrxFileSink;
+  std::shared_ptr<FileSink> m_powerFileSink;
+  std::shared_ptr<gr::soapy::source> m_source;
+  std::shared_ptr<NoiseLearner> m_noiseLearner;
+  std::shared_ptr<AverageY> m_averageY;
+  std::shared_ptr<Transmission> m_transmission;
+  std::vector<std::unique_ptr<Recorder>> m_recorders;
+  Connector m_connector;
 };

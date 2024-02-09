@@ -6,7 +6,7 @@
 class PerformanceLogger {
  public:
   PerformanceLogger(const std::string& name);
-  void newSample();
+  void kick();
 
  private:
   const std::string m_name;

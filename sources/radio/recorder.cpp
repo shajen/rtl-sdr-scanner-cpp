@@ -1,110 +1,50 @@
 #include "recorder.h"
 
 #include <config.h>
+#include <gnuradio/filter/rational_resampler.h>
 #include <logger.h>
-#include <math.h>
-#include <utils.h>
+#include <radio/blocks/file_sink.h>
 
-#include <map>
+constexpr auto LABEL = "recorder";
 
-Recorder::Recorder(const Config& config, CoreManager& coreManager, int32_t offset, DataController& dataController)
-    : m_config(config),
-      m_coreManager(coreManager),
-      m_offset(offset),
-      m_dataController(dataController),
-      m_transmissionDetector(config),
-      m_samplesProcessor(config),
-      m_performanceLogger("Recorder"),
-      m_lastDataTime(0),
-      m_lastActiveDataTime(0) {}
+Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate) : m_sampleRate(sampleRate), m_shift(0), m_connector(tb) {
+  Logger::info(LABEL, "starting");
+  const auto& [factor1, factor2] = getResamplerFactors(m_sampleRate, RECORDING_BANDWIDTH);
+  Logger::info(LABEL, "bandwidth: {}, rational resampler factors: {}, {}", RECORDING_BANDWIDTH, factor1, factor2);
 
-Recorder::~Recorder() {}
+  m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
+  m_shiftBlock = gr::blocks::rotator_cc::make();
+  auto resampler = gr::filter::rational_resampler<gr_complex, gr_complex, gr_complex>::make(factor1, factor2);
+  m_fileSinkBlock = std::make_shared<FileSink>(sizeof(gr_complex), "recorder");
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(source, m_blocker, m_shiftBlock, resampler, m_fileSinkBlock);
 
-void Recorder::clear() {
-  m_workers.clear();
-  m_lastDataTime = time();
-  m_lastActiveDataTime = m_lastDataTime;
+  Logger::info(LABEL, "started");
 }
 
-bool Recorder::isTransmission(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<RawSample>&& samples) {
-  const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
-  const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
-  Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
-  processSignals(time, frequencyRange, signals);
-  return (!activeTransmissions.empty());
+Recorder::~Recorder() {
+  Logger::info(LABEL, "stopping");
+  stopRecording();
+  Logger::info(LABEL, "stoped");
 }
 
-void Recorder::processSamples(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, std::vector<RawSample>&& samples) {
-  Logger::trace("Recorder", "samples processing started");
-  m_performanceLogger.newSample();
-  const auto signals = m_samplesProcessor.process(samples, m_rawBuffer, frequencyRange, m_offset);
-  processSignals(time, frequencyRange, signals);
-  const auto rawBufferSamples = samples.size();
-  const auto activeTransmissions = m_transmissionDetector.getTransmissions(time, signals);
-  Logger::trace("Recorder", "active transmissions finished, count: {}", activeTransmissions.size());
+Frequency Recorder::getShift() { return m_shift; }
 
-  m_lastDataTime = std::max(m_lastDataTime, time);
-  for (auto it = m_workers.begin(); it != m_workers.end();) {
-    auto f = [it](const std::pair<FrequencyRange, bool>& data) { return it->first == data.first; };
-    const auto transmissionInProgress = std::any_of(activeTransmissions.begin(), activeTransmissions.end(), f);
-    if (transmissionInProgress) {
-      it++;
-    } else {
-      const auto frequencyRange = it->first;
-      it = m_workers.erase(it);
-      Logger::info("Recorder", "erase worker {}, total workers: {}", frequencyToString(frequencyRange.center()), m_workers.size());
-    }
+bool Recorder::isRecording() { return !m_blocker->isBlocking(); }
+
+void Recorder::startRecording(Frequency frequency, Frequency shift) {
+  m_shift = shift;
+  m_shiftBlock->set_phase_inc(2.0l * M_PIl * (static_cast<double>(-shift) / static_cast<float>(m_sampleRate)));
+  if (DEBUG_SAVE_RAW_RECORDING) {
+    m_fileSinkBlock->startRecording(getGqrxRawFileName("recorder", frequency + shift, RECORDING_BANDWIDTH));
   }
-  std::shared_ptr<std::vector<ReadySample>> sharedSamples;
-  for (const auto& [transmissionSampleRate, isActive] : activeTransmissions) {
-    if (isActive) {
-      m_lastActiveDataTime = std::max(m_lastActiveDataTime, time);
-    }
-    if (m_workers.count(transmissionSampleRate) == 0) {
-      auto core = m_coreManager.getCore();
-      if (!core) {
-        Logger::warn("Recorder", "reached concurrent transmissions limit, skip {}", frequencyToString(transmissionSampleRate.center()));
-        continue;
-      }
-      { Logger::info("Recorder", "create worker {}, total workers: {}", frequencyToString(transmissionSampleRate.center()), m_workers.size() + 1); }
-      auto rws = std::make_unique<RecorderWorkerStruct>();
-      auto worker = std::make_unique<RecorderWorker>(m_config, std::move(core), m_dataController, frequencyRange, transmissionSampleRate, rws->mutex, rws->cv, rws->samples);
-      rws->worker = std::move(worker);
-      m_workers.insert({transmissionSampleRate, std::move(rws)});
-    }
-    auto& rws = m_workers.at(transmissionSampleRate);
-    std::unique_lock<std::mutex> lock(rws->mutex);
-    if (!sharedSamples) {
-      if (isMemoryLimitReached(m_config.memoryLimit())) {
-        Logger::warn("Recorder", "reached memory limit, skipping samples");
-        break;
-      } else {
-        sharedSamples = std::make_shared<std::vector<ReadySample>>(std::move(m_rawBuffer));
-        sharedSamples->resize(rawBufferSamples);
-        m_rawBuffer = {};
-      }
-    }
-    rws->samples.push_back({time, sharedSamples, frequencyRange, isActive});
-    rws->cv.notify_one();
-    Logger::debug("Recorder", "push worker input samples, queue size: {}", rws->samples.size());
-  }
-  Logger::trace("Recorder", "samples processing finished");
+  m_blocker->setBlocking(false);
 }
 
-bool Recorder::isTransmissionInProgress() const { return m_lastDataTime <= m_lastActiveDataTime + m_config.maxRecordingNoiseTime(); }
-
-void Recorder::processSignals(const std::chrono::milliseconds& time, const FrequencyRange& frequencyRange, const std::vector<Signal>& signals) {
-  if (m_config.frequencyRangeScanningTime() < std::chrono::seconds(1)) {
-    if (m_signalMediators.count(frequencyRange) == 0) {
-      m_signalMediators[frequencyRange] = std::make_unique<SignalMediator>(std::chrono::milliseconds(1000));
+void Recorder::stopRecording() {
+  if (isRecording()) {
+    if (DEBUG_SAVE_RAW_RECORDING) {
+      m_fileSinkBlock->stop();
     }
-    const auto averagedSignals = m_signalMediators[frequencyRange]->append(time, signals);
-    if (!averagedSignals.empty()) {
-      m_dataController.sendSignals(time, frequencyRange, averagedSignals);
-      Logger::trace("Recorder", "signal sent");
-    }
-  } else {
-    m_dataController.sendSignals(time, frequencyRange, signals);
-    Logger::trace("Recorder", "signal sent");
   }
+  m_blocker->setBlocking(true);
 }

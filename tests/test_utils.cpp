@@ -1,33 +1,41 @@
 #include <gtest/gtest.h>
 #include <utils.h>
 
-class UtilsTest : public ::testing::Test {
- public:
-  std::vector<FrequencyRange> calculate(Frequency start, Frequency stop, Frequency sampleRate, uint32_t fft) { return fitFrequencyRange({start, stop, sampleRate, fft}); }
-  FrequencyRange range(Frequency start, Frequency stop, Frequency sampleRate, uint32_t fft) { return {start, stop, sampleRate, fft}; }
-};
+TEST(Utils, Fft) {
+  EXPECT_EQ(getFft(2048000 - 1, 1000), 2048);
+  EXPECT_EQ(getFft(2048000, 1000), 2048);
+  EXPECT_EQ(getFft(2048000 + 1, 1000), 4096);
 
-TEST_F(UtilsTest, RtlSdrSingleRangeTest) {
-  const std::vector<FrequencyRange> results{range(144000000, 146000000, 2048000, 16384)};
-  EXPECT_EQ(results, calculate(144000000, 146000000, 2048000, 16384));
+  EXPECT_EQ(getFft(20480000 - 1, 625), 32768);
+  EXPECT_EQ(getFft(20480000, 625), 32768);
+  EXPECT_EQ(getFft(20480000 + 1, 625), 65536);
+
+  EXPECT_EQ(getFft(104857600 - 1, 100), 1048576);
+  EXPECT_EQ(getFft(104857600, 100), 1048576);
+  EXPECT_EQ(getFft(104857600 + 1, 100), 2097152);
 }
 
-TEST_F(UtilsTest, RtlSdrSplitRangeTest) {
-  const std::vector<FrequencyRange> results{range(144000000, 146000000, 2048000, 16384), range(146000000, 148000000, 2048000, 16384)};
-  EXPECT_EQ(results, calculate(144000000, 148000000, 2048000, 16384));
+TEST(Utils, Resampler) {
+  auto result = [](int a, int b) { return std::make_pair(a, b); };
+  EXPECT_EQ(getResamplerFactors(20000, 16000), result(4, 5));
+  EXPECT_EQ(getResamplerFactors(2048000, 16000), result(1, 128));
+  EXPECT_EQ(getResamplerFactors(20480000, 16000), result(1, 1280));
 }
 
-TEST_F(UtilsTest, HackRfSingleRangeTest) {
-  const std::vector<FrequencyRange> results{range(130000000, 150000000, 20480000, 16384)};
-  EXPECT_EQ(results, calculate(130000000, 150000000, 20480000, 16384));
-}
+TEST(Utils, TunedFrequency) {
+  EXPECT_EQ(getTunedFrequency(-999, 1000), -1000);
+  EXPECT_EQ(getTunedFrequency(-1001, 1000), -1000);
+  EXPECT_EQ(getTunedFrequency(-1001, 1000), -1000);
 
-TEST_F(UtilsTest, HackRfSplitRangeTest) {
-  const std::vector<FrequencyRange> results{range(130000000, 150000000, 20480000, 16384), range(150000000, 170000000, 20480000, 16384)};
-  EXPECT_EQ(results, calculate(130000000, 170000000, 20480000, 16384));
-}
+  EXPECT_EQ(getTunedFrequency(-1499, 1000), -1000);
+  EXPECT_EQ(getTunedFrequency(-1500, 1000), -1000);
+  EXPECT_EQ(getTunedFrequency(-1501, 1000), -2000);
 
-TEST_F(UtilsTest, Fft) {
-  EXPECT_EQ(countFft(2048000), 2048);
-  EXPECT_EQ(countFft(20480000), 16384);
+  EXPECT_EQ(getTunedFrequency(999, 1000), 1000);
+  EXPECT_EQ(getTunedFrequency(1001, 1000), 1000);
+  EXPECT_EQ(getTunedFrequency(1001, 1000), 1000);
+
+  EXPECT_EQ(getTunedFrequency(1499, 1000), 1000);
+  EXPECT_EQ(getTunedFrequency(1500, 1000), 2000);
+  EXPECT_EQ(getTunedFrequency(1501, 1000), 2000);
 }
