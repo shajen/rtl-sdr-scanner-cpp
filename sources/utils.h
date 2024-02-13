@@ -3,6 +3,7 @@
 #include <radio/help_structures.h>
 
 #include <chrono>
+#include <set>
 #include <string>
 
 std::chrono::milliseconds getTime();
@@ -18,3 +19,5 @@ int getFft(const Frequency sampleRate, Frequency maxStep);
 std::pair<int, int> getResamplerFactors(Frequency sampleRate, Frequency bandwidth);
 
 Frequency getTunedFrequency(Frequency frequency, Frequency step);
+
+bool containsWithMargin(const std::set<int>& indexes, const int index, const int margin);

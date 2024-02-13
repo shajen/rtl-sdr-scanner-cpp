@@ -132,6 +132,7 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   const auto step = static_cast<double>(m_sampleRate) / m_fftSize;
   const auto indexToFrequency = [this, step](const int index) { return m_frequency + static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
   const auto indexToShift = [this, step](const int index) { return static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
+  const auto indexStep = static_cast<Frequency>(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / m_fftSize));
 
   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize * DECIMATOR_FACTOR);
   const auto decimator = std::make_shared<Decimator>(m_fftSize, DECIMATOR_FACTOR);
@@ -139,8 +140,9 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   const auto psd = std::make_shared<PSD>(m_fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequency, indexToFrequency);
   m_averageY = std::make_shared<AverageY>(m_fftSize, GROUPING_Y);
-  m_transmission = std::make_shared<Transmission>(m_fftSize, notification, indexToFrequency, indexToShift);
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_averageY, m_transmission);
+  auto averageX = std::make_shared<AverageX>(m_fftSize, GROUPING_X);
+  m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift);
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_averageY, averageX, m_transmission);
 
   if (DEBUG_SAVE_RAW_POWER) {
     auto f2c = gr::blocks::float_to_char::make(m_fftSize);

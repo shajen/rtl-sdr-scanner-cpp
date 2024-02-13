@@ -39,3 +39,47 @@ TEST(Utils, TunedFrequency) {
   EXPECT_EQ(getTunedFrequency(1500, 1000), 2000);
   EXPECT_EQ(getTunedFrequency(1501, 1000), 2000);
 }
+
+TEST(Utils, ContaisWithMargin0) {
+  std::set<int> indexes({10, 14});
+
+  EXPECT_FALSE(containsWithMargin(indexes, 9, 0));
+  EXPECT_TRUE(containsWithMargin(indexes, 10, 0));
+  EXPECT_FALSE(containsWithMargin(indexes, 11, 0));
+
+  EXPECT_FALSE(containsWithMargin(indexes, 13, 0));
+  EXPECT_TRUE(containsWithMargin(indexes, 14, 0));
+  EXPECT_FALSE(containsWithMargin(indexes, 15, 0));
+}
+
+TEST(Utils, ContaisWithMargin1) {
+  std::set<int> indexes({10, 14});
+
+  EXPECT_FALSE(containsWithMargin(indexes, 8, 1));
+  EXPECT_TRUE(containsWithMargin(indexes, 9, 1));
+  EXPECT_TRUE(containsWithMargin(indexes, 10, 1));
+  EXPECT_TRUE(containsWithMargin(indexes, 11, 1));
+  EXPECT_FALSE(containsWithMargin(indexes, 12, 1));
+
+  EXPECT_FALSE(containsWithMargin(indexes, 12, 1));
+  EXPECT_TRUE(containsWithMargin(indexes, 13, 1));
+  EXPECT_TRUE(containsWithMargin(indexes, 14, 1));
+  EXPECT_TRUE(containsWithMargin(indexes, 15, 1));
+  EXPECT_FALSE(containsWithMargin(indexes, 16, 1));
+}
+
+TEST(Utils, ContaisWithMargin2) {
+  std::set<int> indexes({10, 14});
+
+  EXPECT_FALSE(containsWithMargin(indexes, 8, 2));
+  EXPECT_TRUE(containsWithMargin(indexes, 9, 2));
+  EXPECT_TRUE(containsWithMargin(indexes, 10, 2));
+  EXPECT_TRUE(containsWithMargin(indexes, 11, 2));
+  EXPECT_FALSE(containsWithMargin(indexes, 12, 2));
+
+  EXPECT_FALSE(containsWithMargin(indexes, 12, 2));
+  EXPECT_TRUE(containsWithMargin(indexes, 13, 2));
+  EXPECT_TRUE(containsWithMargin(indexes, 14, 2));
+  EXPECT_TRUE(containsWithMargin(indexes, 15, 2));
+  EXPECT_FALSE(containsWithMargin(indexes, 16, 2));
+}

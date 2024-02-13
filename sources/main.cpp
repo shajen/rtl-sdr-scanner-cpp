@@ -23,7 +23,8 @@ std::unique_ptr<Scanner> createScanner(char* serial, const int recordersCount) {
     return std::make_unique<Scanner>("hackrf", "10961dc29925b4f", gains, 20000000, ranges, recordersCount);
   } else if (serial && strcmp(serial, "12345678") == 0) {
     const std::map<std::string, float> gains({{"TUNER", 49.6}});
-    const std::vector<FrequencyRange> ranges({{144000000, 146000000}});
+    // const std::vector<FrequencyRange> ranges({{144000000, 146000000}});
+    const std::vector<FrequencyRange> ranges({{100000000, 102000000}});
     // const std::vector<FrequencyRange> ranges({{144000000, 146000000}, {150000000, 152000000}});
     return std::make_unique<Scanner>("rtlsdr", "12345678", gains, 2000000, ranges, recordersCount);
   } else {

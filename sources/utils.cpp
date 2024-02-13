@@ -53,3 +53,11 @@ Frequency getTunedFrequency(Frequency frequency, Frequency step) {
     return up;
   }
 }
+
+bool containsWithMargin(const std::set<int>& indexes, const int index, const int margin) {
+  const auto submargin = margin % 2 == 0 ? margin / 2 : margin / 2 + 1;
+  const auto left = index - submargin;
+  const auto right = index + submargin;
+  auto it = indexes.lower_bound(left);
+  return (it != indexes.end() && *it <= right);
+}
