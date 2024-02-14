@@ -138,8 +138,19 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
         freeRecorder->startRecording(m_frequency, shift);
         Logger::info(LABEL, "start recorder, frequency: {}{} Hz{}", GREEN, m_frequency + shift, NC);
       } else {
-        Logger::info(LABEL, "can not start recorder, frequency: {}{} Hz{}", BROWN, m_frequency + shift, NC);
+        if (!ignoredTransmissions.count(shift)) {
+          Logger::info(LABEL, "no recorders available, frequency: {}{} Hz{}", BROWN, m_frequency + shift, NC);
+          ignoredTransmissions.insert(shift);
+        }
       }
+    }
+  }
+
+  for (auto it = ignoredTransmissions.begin(); it != ignoredTransmissions.cend();) {
+    if (isWaitingForRecording(*it)) {
+      it++;
+    } else {
+      ignoredTransmissions.erase(it++);
     }
   }
 

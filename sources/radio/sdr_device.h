@@ -12,6 +12,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 
 class SdrDevice {
@@ -43,5 +44,6 @@ class SdrDevice {
   std::shared_ptr<AverageY> m_averageY;
   std::shared_ptr<Transmission> m_transmission;
   std::vector<std::unique_ptr<Recorder>> m_recorders;
+  std::set<Frequency> ignoredTransmissions;
   Connector m_connector;
 };
