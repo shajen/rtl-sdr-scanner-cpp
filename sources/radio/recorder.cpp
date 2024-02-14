@@ -14,14 +14,24 @@ constexpr auto LABEL = "recorder";
 
 Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate) : m_sampleRate(sampleRate), m_shift(0), m_connector(tb) {
   Logger::info(LABEL, "starting");
-  const auto& [factor1, factor2] = getResamplerFactors(m_sampleRate, RECORDING_BANDWIDTH);
-  Logger::info(LABEL, "bandwidth: {}, rational resampler factors: {}, {}", RECORDING_BANDWIDTH, factor1, factor2);
+  Logger::info(LABEL, "bandwidth: {}", RECORDING_BANDWIDTH);
 
+  std::vector<std::shared_ptr<gr::basic_block>> blocks;
   m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
   m_shiftBlock = gr::blocks::rotator_cc::make();
-  auto resampler = gr::filter::rational_resampler<gr_complex, gr_complex, gr_complex>::make(factor1, factor2);
+  blocks.push_back(source);
+  blocks.push_back(m_blocker);
+  blocks.push_back(m_shiftBlock);
+
+  std::shared_ptr<gr::basic_block> lastResampler;
+  for (const auto& [factor1, factor2] : getResamplersFactors(m_sampleRate, RECORDING_BANDWIDTH, RESAMPLER_THRESHOLD)) {
+    Logger::info(LABEL, "rational resampler factors: {}, {}", factor1, factor2);
+    lastResampler = gr::filter::rational_resampler<gr_complex, gr_complex, gr_complex>::make(factor1, factor2);
+    blocks.push_back(lastResampler);
+  }
   m_rawFileSinkBlock = std::make_shared<FileSink>(sizeof(gr_complex));
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(source, m_blocker, m_shiftBlock, resampler, m_rawFileSinkBlock);
+  blocks.push_back(m_rawFileSinkBlock);
+  m_connector.connect(blocks);
 
   if (DEBUG_SAVE_RECORDING_POWER) {
     const auto fftSize = DEBUG_SAVE_RECORDING_POWER_FFT_SIZE;
@@ -30,7 +40,7 @@ Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block>
     const auto psd = std::make_shared<PSD>(fftSize, RECORDING_BANDWIDTH);
     const auto f2c = gr::blocks::float_to_char::make(fftSize);
     m_powerFileSinkBlock = std::make_shared<FileSink>(fftSize);
-    m_connector.connect<std::shared_ptr<gr::basic_block>>(resampler, s2c, fft, psd, f2c, m_powerFileSinkBlock);
+    m_connector.connect<std::shared_ptr<gr::basic_block>>(lastResampler, s2c, fft, psd, f2c, m_powerFileSinkBlock);
   }
   Logger::info(LABEL, "started");
 }

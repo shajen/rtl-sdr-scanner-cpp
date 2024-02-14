@@ -16,7 +16,9 @@ std::string getPowerRawFileName(const char* label, Frequency frequency, int fftS
 
 int getFft(const Frequency sampleRate, Frequency maxStep);
 
-std::pair<int, int> getResamplerFactors(Frequency sampleRate, Frequency bandwidth);
+std::vector<int> getPrimeFactors(int n);
+
+std::vector<std::pair<int, int>> getResamplersFactors(const Frequency sampleRate, const Frequency bandwidth, const int threshold);
 
 Frequency getTunedFrequency(Frequency frequency, Frequency step);
 

@@ -1,9 +1,40 @@
 #include "utils.h"
 
 #include <config.h>
+#include <math.h>
 #include <time.h>
 
+#include <algorithm>
 #include <numeric>
+
+namespace {
+void split(const int value, std::vector<int>& factors, const int threshold) {
+  const auto f = [](const int value) {
+    for (int i = sqrt(value); 1 <= i; --i) {
+      if (value % i == 0) {
+        return std::pair<int, int>(i, value / i);
+      }
+    }
+    return std::pair<int, int>(1, value);
+  };
+
+  if ((threshold < value && getPrimeFactors(value).size() != 1)) {
+    const auto& [f1, f2] = f(value);
+    if (threshold < f1) {
+      split(f1, factors, threshold);
+    } else {
+      factors.push_back(f1);
+    }
+    if (threshold < f2) {
+      split(f2, factors, threshold);
+    } else {
+      factors.push_back(f2);
+    }
+  } else {
+    factors.push_back(value);
+  }
+}
+}  // namespace
 
 std::chrono::milliseconds getTime() { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()); }
 
@@ -37,9 +68,52 @@ int getFft(const Frequency sampleRate, const Frequency maxStep) {
   return newFft;
 }
 
-std::pair<int, int> getResamplerFactors(Frequency sampleRate, Frequency bandwidth) {
-  auto gcd = std::gcd(sampleRate, bandwidth);
-  return {bandwidth / gcd, sampleRate / gcd};
+std::vector<int> getPrimeFactors(int n) {
+  if (n == 1) {
+    return {1};
+  }
+  std::vector<int> factors;
+  while (n % 2 == 0) {
+    factors.push_back(2);
+    n = n / 2;
+  }
+
+  for (int i = 3; i <= sqrt(n); i = i + 2) {
+    while (n % i == 0) {
+      factors.push_back(i);
+      n = n / i;
+    }
+  }
+
+  if (n > 2) {
+    factors.push_back(n);
+  }
+  return factors;
+}
+
+std::vector<std::pair<int, int>> getResamplersFactors(const Frequency sampleRate, const Frequency bandwidth, const int threshold) {
+  const auto gcd = std::gcd(sampleRate, bandwidth);
+  const auto left = bandwidth / gcd;
+  const auto right = sampleRate / gcd;
+
+  std::vector<int> leftFactors;
+  std::vector<int> rightFactors;
+  split(left, leftFactors, threshold);
+  split(right, rightFactors, threshold);
+  while (leftFactors.size() < rightFactors.size()) {
+    leftFactors.push_back(1);
+  }
+  while (rightFactors.size() < leftFactors.size()) {
+    rightFactors.push_back(1);
+  }
+  std::sort(leftFactors.begin(), leftFactors.end());
+  std::sort(rightFactors.begin(), rightFactors.end());
+
+  std::vector<std::pair<int, int>> results;
+  for (size_t i = 0; i < leftFactors.size(); ++i) {
+    results.push_back({leftFactors[i], rightFactors[i]});
+  }
+  return results;
 }
 
 Frequency getTunedFrequency(Frequency frequency, Frequency step) {

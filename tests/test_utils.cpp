@@ -15,11 +15,57 @@ TEST(Utils, Fft) {
   EXPECT_EQ(getFft(104857600 + 1, 100), 2097152);
 }
 
-TEST(Utils, Resampler) {
-  auto result = [](int a, int b) { return std::make_pair(a, b); };
-  EXPECT_EQ(getResamplerFactors(20000, 16000), result(4, 5));
-  EXPECT_EQ(getResamplerFactors(2048000, 16000), result(1, 128));
-  EXPECT_EQ(getResamplerFactors(20480000, 16000), result(1, 1280));
+TEST(Utils, PrimeFactors) {
+  EXPECT_EQ(getPrimeFactors(1), std::vector<int>({1}));
+  EXPECT_EQ(getPrimeFactors(2), std::vector<int>({2}));
+  EXPECT_EQ(getPrimeFactors(3), std::vector<int>({3}));
+  EXPECT_EQ(getPrimeFactors(4), std::vector<int>({2, 2}));
+  EXPECT_EQ(getPrimeFactors(89), std::vector<int>({89}));
+  EXPECT_EQ(getPrimeFactors(1250), std::vector<int>({2, 5, 5, 5, 5}));
+  EXPECT_EQ(getPrimeFactors(1200500), std::vector<int>({2, 2, 5, 5, 5, 7, 7, 7, 7}));
+}
+
+TEST(Utils, ResamplersRandom) {
+  using Result = std::vector<std::pair<int, int>>;
+  const auto threshold = 125;
+
+  EXPECT_EQ(getResamplersFactors(1, 1, threshold), Result({{1, 1}}));
+  EXPECT_EQ(getResamplersFactors(7823, 7823, threshold), Result({{1, 1}}));
+  EXPECT_EQ(getResamplersFactors(7823, 7883, threshold), Result({{7883, 7823}}));
+}
+
+TEST(Utils, ResamplersTypical16kHz) {
+  using Result = std::vector<std::pair<int, int>>;
+  const auto threshold = 125;
+
+  EXPECT_EQ(getResamplersFactors(1000000, 16000, threshold), Result({{2, 125}}));
+  EXPECT_EQ(getResamplersFactors(10000000, 16000, threshold), Result({{1, 25}, {1, 25}}));
+
+  EXPECT_EQ(getResamplersFactors(1024000, 16000, threshold), Result({{1, 64}}));
+  EXPECT_EQ(getResamplersFactors(10240000, 16000, threshold), Result({{1, 20}, {1, 32}}));
+
+  EXPECT_EQ(getResamplersFactors(2000000, 16000, threshold), Result({{1, 125}}));
+  EXPECT_EQ(getResamplersFactors(20000000, 16000, threshold), Result({{1, 25}, {1, 50}}));
+
+  EXPECT_EQ(getResamplersFactors(2048000, 16000, threshold), Result({{1, 8}, {1, 16}}));
+  EXPECT_EQ(getResamplersFactors(20480000, 16000, threshold), Result({{1, 32}, {1, 40}}));
+}
+
+TEST(Utils, ResamplersTypical20kHz) {
+  using Result = std::vector<std::pair<int, int>>;
+  const auto threshold = 125;
+
+  EXPECT_EQ(getResamplersFactors(1000000, 20000, threshold), Result({{1, 50}}));
+  EXPECT_EQ(getResamplersFactors(10000000, 20000, threshold), Result({{1, 20}, {1, 25}}));
+
+  EXPECT_EQ(getResamplersFactors(1024000, 20000, threshold), Result({{1, 16}, {5, 16}}));
+  EXPECT_EQ(getResamplersFactors(10240000, 20000, threshold), Result({{1, 16}, {1, 32}}));
+
+  EXPECT_EQ(getResamplersFactors(2000000, 20000, threshold), Result({{1, 100}}));
+  EXPECT_EQ(getResamplersFactors(20000000, 20000, threshold), Result({{1, 25}, {1, 40}}));
+
+  EXPECT_EQ(getResamplersFactors(2048000, 20000, threshold), Result({{1, 16}, {5, 32}}));
+  EXPECT_EQ(getResamplersFactors(20480000, 20000, threshold), Result({{1, 32}, {1, 32}}));
 }
 
 TEST(Utils, TunedFrequency) {
