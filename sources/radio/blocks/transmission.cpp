@@ -15,6 +15,7 @@ Transmission::Transmission(
       m_indexToFrequency(indexToFrequency),
       m_indexToShift(indexToShift),
       m_isProcessing(false),
+      m_indexesFirstDataTime(m_itemSize),
       m_indexesLastDataTime(m_itemSize) {
   Logger::info(LABEL, "group size: {}", m_groupSize);
 }
@@ -28,12 +29,13 @@ int Transmission::work(int noutput_items, gr_vector_const_void_star& input_items
 
   std::unique_lock<std::mutex> lock(m_mutex);
   for (int i = 0; i < noutput_items; ++i) {
+    const auto now = getTime();
     const auto power = &input_buf[i * m_itemSize];
     const auto indexes = getSortedIndexes(power);
-    updateIndexesTime(power);
-    clearIndexes(power);
-    addIndexes(power, indexes);
-    m_notification.notify(getSortedTransmissions(power));
+    updateIndexesTime(power, now);
+    clearIndexes(power, now);
+    addIndexes(power, now, indexes);
+    m_notification.notify(getSortedTransmissions(power, now));
   }
 
   return noutput_items;
@@ -43,7 +45,7 @@ void Transmission::setProcessing(const bool isProcessing) {
   if (!isProcessing) {
     std::unique_lock<std::mutex> lock(m_mutex);
     for (const auto& index : m_indexes) {
-      Logger::info(LABEL, "stop transmission, frequency: {} Hz{}", m_indexToFrequency(index));
+      Logger::info(LABEL, "stop transmission, frequency: {} Hz{}", getFrequency(index));
     }
     m_indexes.clear();
   }
@@ -61,15 +63,13 @@ std::vector<Transmission::Index> Transmission::getSortedIndexes(const float* pow
   return indexes;
 }
 
-void Transmission::clearIndexes(const float* power) {
-  const auto now = getTime();
+void Transmission::clearIndexes(const float* power, const std::chrono::milliseconds now) {
   for (auto it = m_indexes.begin(); it != m_indexes.cend();) {
     const auto index = *it;
     const auto lastDataTime = now - m_indexesLastDataTime[index];
-    const auto frequency = m_indexToFrequency(index);
-    Logger::debug(LABEL, "active transmission, frequency: {} Hz, avg power: {:.2f}, last data: {} ms ago", frequency, power[index], lastDataTime.count());
+    Logger::debug(LABEL, "active transmission, frequency: {} Hz, avg power: {:.2f}, last data: {} ms ago", getFrequency(index), power[index], lastDataTime.count());
     if (RECORDING_TIMEOUT < lastDataTime) {
-      Logger::info(LABEL, "stop transmission, frequency: {} Hz, avg power: {:.2f}", frequency, power[index]);
+      Logger::info(LABEL, "stop transmission, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
       m_indexes.erase(it++);
     } else {
       it++;
@@ -77,24 +77,22 @@ void Transmission::clearIndexes(const float* power) {
   }
 }
 
-void Transmission::addIndexes(const float* power, const std::vector<Index>& indexes) {
+void Transmission::addIndexes(const float* power, const std::chrono::milliseconds now, const std::vector<Index>& indexes) {
   if (!indexes.empty()) {
     const auto& index = indexes.front();
-    const auto frequency = m_indexToFrequency(index);
-    Logger::debug(LABEL, "best group, frequency: {} Hz, avg power: {:.2f}", frequency, power[index]);
+    Logger::debug(LABEL, "best group, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
   }
   for (const auto& index : indexes) {
-    const auto frequency = m_indexToFrequency(index);
-    Logger::debug(LABEL, "group, frequency: {} Hz, avg power: {:.2f}", frequency, power[index]);
+    Logger::debug(LABEL, "group, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
     if (!containsWithMargin(m_indexes, index, m_groupSize)) {
-      Logger::info(LABEL, "start transmission, frequency: {} Hz, avg power: {:.2f}", frequency, power[index]);
+      Logger::info(LABEL, "start transmission, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
       m_indexes.insert(index);
+      m_indexesFirstDataTime[index] = now;
     }
   }
 }
 
-void Transmission::updateIndexesTime(const float* power) {
-  const auto now = getTime();
+void Transmission::updateIndexesTime(const float* power, const std::chrono::milliseconds now) {
   for (int i = 0; i < m_itemSize; ++i) {
     if (RECORDING_STOP_THRESHOLD <= power[i]) {
       m_indexesLastDataTime[i] = now;
@@ -102,12 +100,19 @@ void Transmission::updateIndexesTime(const float* power) {
   }
 }
 
-std::vector<Frequency> Transmission::getSortedTransmissions(const float* power) const {
+std::vector<FrequencyFlush> Transmission::getSortedTransmissions(const float* power, const std::chrono::milliseconds now) const {
   std::vector<Index> indexes(m_indexes.begin(), m_indexes.end());
   std::sort(indexes.begin(), indexes.end(), [power](const Index& i1, const Index& i2) { return power[i1] > power[i2]; });
-  std::vector<Frequency> transmissions;
+  std::vector<FrequencyFlush> transmissions;
   for (const auto& index : indexes) {
-    transmissions.push_back(getTunedFrequency(m_indexToShift(index), TUNING_STEP));
+    const auto isMinimalDuration = m_indexesFirstDataTime[index] + RECORDING_MIN_TIME <= now;
+    const auto isNewData = m_indexesLastDataTime[index] == now;
+    const auto flush = isMinimalDuration && isNewData;
+    transmissions.push_back({getShift(index), flush});
   }
   return transmissions;
 }
+
+Frequency Transmission::getFrequency(const Index index) const { return getTunedFrequency(m_indexToFrequency(index), TUNING_STEP); }
+
+Frequency Transmission::getShift(const Index index) const { return getTunedFrequency(m_indexToShift(index), TUNING_STEP); }

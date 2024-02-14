@@ -23,10 +23,12 @@ class Transmission : virtual public gr::sync_block {
 
  private:
   std::vector<Index> getSortedIndexes(const float* power) const;
-  void clearIndexes(const float* power);
-  void addIndexes(const float* power, const std::vector<Index>& indexes);
-  void updateIndexesTime(const float* power);
-  std::vector<Frequency> getSortedTransmissions(const float* power) const;
+  void clearIndexes(const float* power, const std::chrono::milliseconds now);
+  void addIndexes(const float* power, const std::chrono::milliseconds now, const std::vector<Index>& indexes);
+  void updateIndexesTime(const float* power, const std::chrono::milliseconds now);
+  std::vector<FrequencyFlush> getSortedTransmissions(const float* power, const std::chrono::milliseconds now) const;
+  Frequency getFrequency(const Index index) const;
+  Frequency getShift(const Index index) const;
 
   const int m_itemSize;
   const int m_groupSize;
@@ -35,6 +37,7 @@ class Transmission : virtual public gr::sync_block {
   const std::function<Frequency(const int index)> m_indexToShift;
   std::mutex m_mutex;
   std::atomic<bool> m_isProcessing;
+  std::vector<std::chrono::milliseconds> m_indexesFirstDataTime;
   std::vector<std::chrono::milliseconds> m_indexesLastDataTime;
   std::set<Index> m_indexes;
 };

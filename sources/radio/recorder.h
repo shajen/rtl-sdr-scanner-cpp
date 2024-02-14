@@ -25,6 +25,8 @@ class Recorder {
   bool isRecording();
   void startRecording(Frequency frequency, Frequency shift);
   void stopRecording();
+  void flush();
+  std::chrono::milliseconds getDuration() const;
 
  private:
   const Frequency m_sampleRate;
@@ -35,4 +37,6 @@ class Recorder {
   std::shared_ptr<FileSink> m_rawFileSinkBlock;
   std::shared_ptr<FileSink> m_powerFileSinkBlock;
   Connector m_connector;
+  std::chrono::milliseconds m_firstDataTime;
+  std::chrono::milliseconds m_lastDataTime;
 };

@@ -21,7 +21,7 @@ class SdrDevice {
   ~SdrDevice();
 
   void setFrequency(Frequency frequency);
-  bool updateRecordings(std::vector<Frequency> sortedShifts);
+  bool updateRecordings(const std::vector<FrequencyFlush> sortedShifts);
 
  private:
   void setupGqrxChain();

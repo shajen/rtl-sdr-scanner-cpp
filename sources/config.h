@@ -16,6 +16,7 @@ constexpr auto TUNING_STEP = 1000;                                     // tuning
 constexpr auto DECIMATOR_FACTOR = 20;                                  // average n frames into one to prevent CPU usage and noise
 constexpr auto RECORDING_BANDWIDTH = 16000;                            // recording bandwidth
 constexpr auto RESAMPLER_THRESHOLD = 125;                              // max interpolation or decimation factor of RESAMPLER
+constexpr auto RECORDING_MIN_TIME = std::chrono::milliseconds(2000);   // drop recording if shorter then n seconds
 constexpr auto RECORDING_TIMEOUT = std::chrono::milliseconds(2000);    // stop recording only after n seconds of silent
 constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(5000);  // noise learnig time
 constexpr auto GROUPING_Y = 10;                                        // average n frames in time domain

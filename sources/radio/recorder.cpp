@@ -10,9 +10,12 @@
 #include <radio/blocks/file_sink.h>
 #include <radio/blocks/psd.h>
 
+#include <limits>
+
 constexpr auto LABEL = "recorder";
 
-Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate) : m_sampleRate(sampleRate), m_shift(0), m_connector(tb) {
+Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate)
+    : m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_connector(tb) {
   Logger::info(LABEL, "starting");
   Logger::info(LABEL, "bandwidth: {}", RECORDING_BANDWIDTH);
 
@@ -56,25 +59,38 @@ Frequency Recorder::getShift() { return m_shift; }
 bool Recorder::isRecording() { return !m_blocker->isBlocking(); }
 
 void Recorder::startRecording(Frequency frequency, Frequency shift) {
-  m_shift = shift;
-  m_shiftBlock->set_phase_inc(2.0l * M_PIl * (static_cast<double>(-shift) / static_cast<float>(m_sampleRate)));
-  if (DEBUG_SAVE_RECORDING_RAW_IQ) {
-    m_rawFileSinkBlock->startRecording(getGqrxRawFileName("rr", frequency + shift, RECORDING_BANDWIDTH));
+  if (!isRecording()) {
+    m_firstDataTime = getTime();
+    m_lastDataTime = m_firstDataTime;
+    m_shift = shift;
+    m_shiftBlock->set_phase_inc(2.0l * M_PIl * (static_cast<double>(-shift) / static_cast<float>(m_sampleRate)));
+    if (DEBUG_SAVE_RECORDING_RAW_IQ) {
+      m_rawFileSinkBlock->startRecording(getGqrxRawFileName("rr", frequency + shift, RECORDING_BANDWIDTH));
+    }
+    if (DEBUG_SAVE_RECORDING_POWER) {
+      m_powerFileSinkBlock->startRecording(getPowerRawFileName("rp", frequency + shift, DEBUG_SAVE_RECORDING_POWER_FFT_SIZE));
+    }
+    m_blocker->setBlocking(false);
+  } else {
+    Logger::warn(LABEL, "can not start recording, recorder already recording");
   }
-  if (DEBUG_SAVE_RECORDING_POWER) {
-    m_powerFileSinkBlock->startRecording(getPowerRawFileName("rp", frequency + shift, DEBUG_SAVE_RECORDING_POWER_FFT_SIZE));
-  }
-  m_blocker->setBlocking(false);
 }
 
 void Recorder::stopRecording() {
   if (isRecording()) {
+    m_shift = std::numeric_limits<Frequency>::max();
     if (DEBUG_SAVE_RECORDING_RAW_IQ) {
       m_rawFileSinkBlock->stopRecording();
     }
     if (DEBUG_SAVE_RECORDING_POWER) {
       m_powerFileSinkBlock->stopRecording();
     }
+    m_blocker->setBlocking(true);
+  } else {
+    Logger::warn(LABEL, "can not stop recording, recorder do not recording");
   }
-  m_blocker->setBlocking(true);
 }
+
+void Recorder::flush() { m_lastDataTime = getTime(); }
+
+std::chrono::milliseconds Recorder::getDuration() const { return m_lastDataTime - m_firstDataTime; }

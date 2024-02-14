@@ -8,4 +8,5 @@
 
 using Frequency = int64_t;
 using FrequencyRange = std::pair<Frequency, Frequency>;
-using TransmissionNotification = Notification<std::vector<Frequency>>;
+using FrequencyFlush = std::pair<Frequency, bool>;
+using TransmissionNotification = Notification<std::vector<FrequencyFlush>>;

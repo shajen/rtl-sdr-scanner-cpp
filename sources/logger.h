@@ -6,6 +6,7 @@
 constexpr auto LOGGER_BUFFER_SIZE = 1024;
 constexpr auto GREEN = "\033[0;32m";
 constexpr auto RED = "\033[0;31m";
+constexpr auto BROWN = "\033[0;33m";
 constexpr auto NC = "\033[0m";
 
 class Logger {

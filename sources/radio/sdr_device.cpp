@@ -91,40 +91,64 @@ void SdrDevice::setFrequency(Frequency frequency) {
   m_noiseLearner->setProcessing(true);
 }
 
-bool SdrDevice::updateRecordings(std::vector<Frequency> sortedShifts) {
-  const std::set<Frequency> shifts(sortedShifts.begin(), sortedShifts.end());
+bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts) {
+  const auto isWaitingForRecording = [&sortedShifts](const Frequency shift) {
+    return std::find_if(sortedShifts.begin(), sortedShifts.end(), [shift](const FrequencyFlush shiftFlush) {
+             // improve auto formatter
+             return shift == shiftFlush.first;
+           }) != sortedShifts.end();
+  };
+  const auto getShiftRecorder = [this](const Frequency shift) {
+    return std::find_if(m_recorders.begin(), m_recorders.end(), [shift](const std::unique_ptr<Recorder>& recorder) {
+      // improve auto formatter
+      return recorder->getShift() == shift;
+    });
+  };
+  const auto getFreeRecorder = [this]() {
+    return std::find_if(m_recorders.begin(), m_recorders.end(), [](const std::unique_ptr<Recorder>& recorder) {
+      // improve auto formatter
+      return !recorder->isRecording();
+    });
+  };
+
   for (auto& recorder : m_recorders) {
     if (recorder->isRecording()) {
       const auto shift = recorder->getShift();
-      if (shifts.count(shift) == 0) {
+      if (!isWaitingForRecording(shift)) {
         recorder->stopRecording();
-        Logger::info(LABEL, "stop recording, frequency: {}{} Hz{}", RED, m_frequency + shift, NC);
+        Logger::info(LABEL, "stop recorder, frequency: {}{} Hz{}, time: {} ms", RED, m_frequency + shift, NC, recorder->getDuration().count());
       }
     }
   }
-  std::set<Frequency> activeShifts;
-  for (auto& recorder : m_recorders) {
-    if (recorder->isRecording()) {
-      activeShifts.insert(recorder->getShift());
-    }
-  }
-  for (const auto& shift : sortedShifts) {
-    if (activeShifts.count(shift)) {
-      break;
-    }
-    for (auto& recorder : m_recorders) {
+
+  for (const auto& [shift, flush] : sortedShifts) {
+    const auto itRecorder = getShiftRecorder(shift);
+    if (itRecorder != m_recorders.end()) {
+      const auto& recorder = *itRecorder;
       if (!recorder->isRecording()) {
-        recorder->startRecording(m_frequency, shift);
-        Logger::info(LABEL, "start recording, frequency: {}{} Hz{}", GREEN, m_frequency + shift, NC);
-        break;
+        Logger::warn(LABEL, "start recorder that should be already started, frequency: {}{} Hz{}", GREEN, m_frequency + shift, NC);
+      }
+      if (flush) {
+        recorder->flush();
+      }
+    } else {
+      const auto itFreeRecorder = getFreeRecorder();
+      if (itFreeRecorder != m_recorders.end()) {
+        const auto& freeRecorder = *itFreeRecorder;
+        freeRecorder->startRecording(m_frequency, shift);
+        Logger::info(LABEL, "start recorder, frequency: {}{} Hz{}", GREEN, m_frequency + shift, NC);
+      } else {
+        Logger::info(LABEL, "can not start recorder, frequency: {}{} Hz{}", BROWN, m_frequency + shift, NC);
       }
     }
   }
+
   for (auto& recorder : m_recorders) {
     if (recorder->isRecording()) {
       return true;
     }
   }
+
   return false;
 }
 
