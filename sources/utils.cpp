@@ -25,7 +25,7 @@ std::string getPowerRawFileName(const char* label, Frequency frequency, int fftS
   char buf[1024];
   time_t rawtime = time(nullptr);
   struct tm* tm = localtime(&rawtime);
-  snprintf(buf, 1024, "%s/%s_%04d%02d%02d_%02d%02d%02d_%lu_%d.raw", DEBUG_DIR, label, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, fftSize);
+  snprintf(buf, 1024, "%s/%s_%04d%02d%02d_%02d%02d%02d_%lu_%d.pwr", DEBUG_DIR, label, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, fftSize);
   return buf;
 }
 

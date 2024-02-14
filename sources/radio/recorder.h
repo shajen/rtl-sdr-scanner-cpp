@@ -32,6 +32,7 @@ class Recorder {
 
   std::shared_ptr<Blocker> m_blocker;
   std::shared_ptr<gr::blocks::rotator_cc> m_shiftBlock;
-  std::shared_ptr<FileSink> m_fileSinkBlock;
+  std::shared_ptr<FileSink> m_rawFileSinkBlock;
+  std::shared_ptr<FileSink> m_powerFileSinkBlock;
   Connector m_connector;
 };

@@ -66,8 +66,8 @@ void SdrDevice::setFrequency(Frequency frequency) {
   m_noiseLearner->setProcessing(false);
   m_averageY->setProcessing(false);
   m_transmission->setProcessing(false);
-  if (DEBUG_SAVE_RAW_POWER) m_powerFileSink->stopRecording();
-  if (DEBUG_SAVE_RAW_IQ) m_gqrxFileSink->stopRecording();
+  if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->stopRecording();
+  if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->stopRecording();
 
   m_frequency = 0;
   for (int i = 0; i < 10; ++i) {
@@ -84,8 +84,8 @@ void SdrDevice::setFrequency(Frequency frequency) {
     m_isInitialized = true;
   }
   m_frequency = frequency;
-  if (DEBUG_SAVE_RAW_IQ) m_gqrxFileSink->startRecording(getGqrxRawFileName("full", m_frequency, m_sampleRate));
-  if (DEBUG_SAVE_RAW_POWER) m_powerFileSink->startRecording(getPowerRawFileName("power", m_frequency, m_fftSize));
+  if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->startRecording(getGqrxRawFileName("fr", m_frequency, m_sampleRate));
+  if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->startRecording(getPowerRawFileName("fp", m_frequency, m_fftSize));
   m_transmission->setProcessing(true);
   m_averageY->setProcessing(true);
   m_noiseLearner->setProcessing(true);
@@ -144,39 +144,16 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift);
   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_averageY, averageX, m_transmission);
 
-  if (DEBUG_SAVE_RAW_POWER) {
+  if (DEBUG_SAVE_ORG_POWER) {
     auto f2c = gr::blocks::float_to_char::make(m_fftSize);
-    m_powerFileSink = std::make_shared<FileSink>(m_fftSize * sizeof(int8_t), "power");
+    m_powerFileSink = std::make_shared<FileSink>(m_fftSize);
     m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, f2c, m_powerFileSink);
   }
 }
 
-// void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
-//   const auto step = static_cast<double>(m_sampleRate) / m_fftSize;
-//   const auto indexToFrequency = [this, step](const int index) { return m_frequency + static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
-//   const auto indexToShift = [this, step](const int index) { return static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
-
-//   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize * DECIMATOR_FACTOR);
-//   const auto decimator = std::make_shared<Decimator>(m_fftSize, DECIMATOR_FACTOR);
-//   const auto fft = gr::fft::fft_v<gr_complex, true>::make(m_fftSize, gr::fft::window::hamming(m_fftSize), true);
-//   auto mag = gr::blocks::complex_to_mag::make(m_fftSize);
-//   auto multiply = gr::blocks::multiply_const<float>::make(1.0 / static_cast<float>(m_sampleRate), m_fftSize);
-//   auto nlog10 = gr::blocks::nlog10_ff::make(10.0, m_fftSize);
-//   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequency, indexToFrequency);
-//   m_average = std::make_shared<Average>(m_fftSize, indexToFrequency);
-//   m_transmission = std::make_shared<Transmission>(m_fftSize, notification, indexToFrequency, indexToShift);
-//   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, mag, multiply, nlog10, m_noiseLearner, m_average, m_transmission);
-
-//   if (DEBUG_SAVE_RAW_POWER) {
-//     auto f2c = gr::blocks::float_to_char::make(m_fftSize);
-//     m_powerFileSink = std::make_shared<FileSink>(m_fftSize * sizeof(int8_t), "power");
-//     m_connector.connect<std::shared_ptr<gr::basic_block>>(nlog10, f2c, m_powerFileSink);
-//   }
-// }
-
 void SdrDevice::setupGqrxChain() {
-  if (DEBUG_SAVE_RAW_IQ) {
-    m_gqrxFileSink = std::make_shared<FileSink>(sizeof(gr_complex), "full");
+  if (DEBUG_SAVE_ORG_RAW_IQ) {
+    m_gqrxFileSink = std::make_shared<FileSink>(sizeof(gr_complex));
     m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, m_gqrxFileSink);
   }
 }

@@ -5,8 +5,7 @@
 
 constexpr auto LABEL = "file";
 
-FileSink::FileSink(int itemSize, const std::string& label)
-    : gr::sync_block("FileSink", gr::io_signature::make(1, 1, itemSize), gr::io_signature::make(0, 0, 0)), m_itemSize(itemSize), m_label(label), m_isRecording(false), m_filename("") {}
+FileSink::FileSink(int itemSize) : gr::sync_block("FileSink", gr::io_signature::make(1, 1, itemSize), gr::io_signature::make(0, 0, 0)), m_itemSize(itemSize), m_isRecording(false), m_filename("") {}
 
 FileSink::~FileSink() { stopRecording(); }
 

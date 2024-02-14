@@ -2,11 +2,13 @@
 
 #include <chrono>
 
-constexpr auto DEBUG_DIR = ".";                     // debug files directory
-constexpr auto DEBUG_SAVE_RAW_IQ = false;           // save sdr data as raw iq to open in gqrx
-constexpr auto DEBUG_SAVE_RAW_POWER = false;        // save raw psd results
-constexpr auto DEBUG_SAVE_RAW_RECORDING = false;    // save recordings as raw iq to open in gqrx
-constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;  // print stats every n frames
+constexpr auto DEBUG_DIR = ".";                             // debug files directory
+constexpr auto DEBUG_SAVE_ORG_RAW_IQ = false;               // save orgignal sdr data as raw iq to open in gqrx
+constexpr auto DEBUG_SAVE_ORG_POWER = false;                // save original raw psd results
+constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = false;         // save recordings as raw iq to open in gqrx
+constexpr auto DEBUG_SAVE_RECORDING_POWER = false;          // save recordings psd results
+constexpr auto DEBUG_SAVE_RECORDING_POWER_FFT_SIZE = 2048;  // fft of psd
+constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;          // print stats every n frames
 
 constexpr auto INITIAL_DELAY = std::chrono::milliseconds(1000);        // delay after first start sdr device to start processing
 constexpr auto MAX_STEP_AFTER_FFT = 1000;                              // max step after fft
