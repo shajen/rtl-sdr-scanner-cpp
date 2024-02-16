@@ -9,12 +9,16 @@ Blocker::Blocker(const int itemSize, const bool isBlocking)
 
 int Blocker::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items) {
   if (m_isBlocking) {
-    consume_each(noutput_items);
     return 0;
   } else {
     std::memcpy(output_items[0], input_items[0], noutput_items * m_itemSize);
     return noutput_items;
   }
+}
+
+int Blocker::general_work(int noutput_items, gr_vector_int&, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items) {
+  consume_each(noutput_items);
+  return work(noutput_items, input_items, output_items);
 }
 
 bool Blocker::isBlocking() const { return m_isBlocking; }
