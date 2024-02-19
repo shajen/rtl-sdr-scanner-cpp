@@ -32,7 +32,7 @@ Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block>
     lastResampler = gr::filter::rational_resampler<gr_complex, gr_complex, gr_complex>::make(factor1, factor2);
     blocks.push_back(lastResampler);
   }
-  m_rawFileSinkBlock = std::make_shared<FileSink>(sizeof(gr_complex));
+  m_rawFileSinkBlock = std::make_shared<FileSink>(sizeof(gr_complex), true);
   blocks.push_back(m_rawFileSinkBlock);
   m_connector.connect(blocks);
 
@@ -42,7 +42,7 @@ Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block>
     const auto fft = gr::fft::fft_v<gr_complex, true>::make(fftSize, gr::fft::window::hamming(fftSize), true);
     const auto psd = std::make_shared<PSD>(fftSize, RECORDING_BANDWIDTH);
     const auto f2c = gr::blocks::float_to_char::make(fftSize);
-    m_powerFileSinkBlock = std::make_shared<FileSink>(fftSize);
+    m_powerFileSinkBlock = std::make_shared<FileSink>(fftSize, true);
     m_connector.connect<std::shared_ptr<gr::basic_block>>(lastResampler, s2c, fft, psd, f2c, m_powerFileSinkBlock);
   }
   Logger::info(LABEL, "started");
@@ -91,6 +91,14 @@ void Recorder::stopRecording() {
   }
 }
 
-void Recorder::flush() { m_lastDataTime = getTime(); }
+void Recorder::flush() {
+  m_lastDataTime = getTime();
+  if (DEBUG_SAVE_RECORDING_RAW_IQ) {
+    m_rawFileSinkBlock->flush();
+  }
+  if (DEBUG_SAVE_RECORDING_POWER) {
+    m_powerFileSinkBlock->flush();
+  }
+}
 
 std::chrono::milliseconds Recorder::getDuration() const { return m_lastDataTime - m_firstDataTime; }
