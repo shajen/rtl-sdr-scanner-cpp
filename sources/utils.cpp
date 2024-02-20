@@ -135,3 +135,18 @@ bool containsWithMargin(const std::set<int>& indexes, const int index, const int
   auto it = indexes.lower_bound(left);
   return (it != indexes.end() && *it <= right);
 }
+
+std::unique_ptr<char[]> formatFrequency(const Frequency frequency) {
+  const int f1 = frequency / 1000000;
+  const int f2 = (frequency / 1000) % 1000;
+  const int f3 = frequency % 1000;
+  std::unique_ptr<char[]> p(new char[20]);
+  if (1000000 <= frequency) {
+    sprintf(p.get(), "%d.%03d.%03d Hz", f1, f2, f3);
+  } else if (1000 <= frequency) {
+    sprintf(p.get(), "%d.%03d Hz", f2, f3);
+  } else {
+    sprintf(p.get(), "%d Hz", f3);
+  }
+  return p;
+}

@@ -54,7 +54,7 @@ int NoiseLearner::work(int noutput_items, gr_vector_const_void_star& input_items
     const auto fitIndex = i * m_itemSize;
     if (!noise.m_isReady) {
       if (noise.add(&input_buf[fitIndex], m_itemSize)) {
-        Logger::info(LABEL, "learning completed, frequency: {} Hz", m_frequency);
+        Logger::info(LABEL, "learning completed, frequency: {}", formatFrequency(m_frequency).get());
       }
       setNoData(&output_buf[fitIndex], m_itemSize);
       continue;
@@ -70,7 +70,7 @@ int NoiseLearner::work(int noutput_items, gr_vector_const_void_star& input_items
 
     const auto frequency = m_indexToFrequency(maxIndex);
     const auto maxValue = output_buf[fitIndex + maxIndex];
-    Logger::debug(LABEL, "best signal, frequency: {} Hz, power: {:.2f}", frequency, maxValue);
+    Logger::debug(LABEL, "best signal, frequency: {}, power: {:.2f}", formatFrequency(frequency).get(), maxValue);
   }
 
   return noutput_items;

@@ -35,7 +35,15 @@ SdrDevice::SdrDevice(
       m_tb(gr::make_top_block("sdr")),
       m_connector(m_tb) {
   Logger::info(LABEL, "starting");
-  Logger::info(LABEL, "driver: {}, serial: {}, sample rate: {} Hz, fft size: {}, step: {} Hz, recorders: {}", m_driver, m_serial, m_sampleRate, m_fftSize, TUNING_STEP, recordersCount);
+  Logger::info(
+      LABEL,
+      "driver: {}, serial: {}, sample rate: {}, fft size: {}, step: {}, recorders: {}",
+      m_driver,
+      m_serial,
+      formatFrequency(m_sampleRate).get(),
+      m_fftSize,
+      formatFrequency(TUNING_STEP).get(),
+      recordersCount);
 
   m_source = gr::soapy::source::make(getSoapyArgs(driver, serial).c_str(), "fc32", 1);
 
@@ -73,7 +81,7 @@ void SdrDevice::setFrequency(Frequency frequency) {
   for (int i = 0; i < 10; ++i) {
     try {
       m_source->set_frequency(0, frequency);
-      Logger::info(LABEL, "set frequency: {}", frequency);
+      Logger::info(LABEL, "set frequency: {}", formatFrequency(frequency).get());
       break;
     } catch (std::exception& e) {
     }
@@ -116,7 +124,7 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
       const auto shift = recorder->getShift();
       if (!isWaitingForRecording(shift)) {
         recorder->stopRecording();
-        Logger::info(LABEL, "stop recorder, frequency: {}{} Hz{}, time: {} ms", RED, m_frequency + shift, NC, recorder->getDuration().count());
+        Logger::info(LABEL, "stop recorder, frequency: {}{}{}, time: {} ms", RED, formatFrequency(m_frequency + shift).get(), NC, recorder->getDuration().count());
       }
     }
   }
@@ -126,7 +134,7 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
     if (itRecorder != m_recorders.end()) {
       const auto& recorder = *itRecorder;
       if (!recorder->isRecording()) {
-        Logger::warn(LABEL, "start recorder that should be already started, frequency: {}{} Hz{}", GREEN, m_frequency + shift, NC);
+        Logger::warn(LABEL, "start recorder that should be already started, frequency: {}{}{}", GREEN, formatFrequency(m_frequency + shift).get(), NC);
       }
       if (flush) {
         recorder->flush();
@@ -136,10 +144,10 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
       if (itFreeRecorder != m_recorders.end()) {
         const auto& freeRecorder = *itFreeRecorder;
         freeRecorder->startRecording(m_frequency, shift);
-        Logger::info(LABEL, "start recorder, frequency: {}{} Hz{}", GREEN, m_frequency + shift, NC);
+        Logger::info(LABEL, "start recorder, frequency: {}{}{}", GREEN, formatFrequency(m_frequency + shift).get(), NC);
       } else {
         if (!ignoredTransmissions.count(shift)) {
-          Logger::info(LABEL, "no recorders available, frequency: {}{} Hz{}", BROWN, m_frequency + shift, NC);
+          Logger::info(LABEL, "no recorders available, frequency: {}{}{}", BROWN, formatFrequency(m_frequency + shift).get(), NC);
           ignoredTransmissions.insert(shift);
         }
       }

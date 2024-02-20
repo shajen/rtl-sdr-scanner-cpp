@@ -45,7 +45,7 @@ void Transmission::setProcessing(const bool isProcessing) {
   if (!isProcessing) {
     std::unique_lock<std::mutex> lock(m_mutex);
     for (const auto& index : m_indexes) {
-      Logger::info(LABEL, "stop transmission, frequency: {} Hz{}", getFrequency(index));
+      Logger::info(LABEL, "stop transmission, frequency: {}", formatFrequency(getFrequency(index)).get());
     }
     m_indexes.clear();
   }
@@ -67,9 +67,9 @@ void Transmission::clearIndexes(const float* power, const std::chrono::milliseco
   for (auto it = m_indexes.begin(); it != m_indexes.cend();) {
     const auto index = *it;
     const auto lastDataTime = now - m_indexesLastDataTime[index];
-    Logger::debug(LABEL, "active transmission, frequency: {} Hz, avg power: {:.2f}, last data: {} ms ago", getFrequency(index), power[index], lastDataTime.count());
+    Logger::debug(LABEL, "active transmission, frequency: {}, avg power: {:.2f}, last data: {} ms ago", formatFrequency(getFrequency(index)).get(), power[index], lastDataTime.count());
     if (RECORDING_TIMEOUT < lastDataTime) {
-      Logger::info(LABEL, "stop transmission, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
+      Logger::info(LABEL, "stop transmission, frequency: {}, avg power: {:.2f}", formatFrequency(getFrequency(index)).get(), power[index]);
       m_indexes.erase(it++);
     } else {
       it++;
@@ -80,12 +80,12 @@ void Transmission::clearIndexes(const float* power, const std::chrono::milliseco
 void Transmission::addIndexes(const float* power, const std::chrono::milliseconds now, const std::vector<Index>& indexes) {
   if (!indexes.empty()) {
     const auto& index = indexes.front();
-    Logger::debug(LABEL, "best group, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
+    Logger::debug(LABEL, "best group, frequency: {}, avg power: {:.2f}", formatFrequency(getFrequency(index)).get(), power[index]);
   }
   for (const auto& index : indexes) {
-    Logger::debug(LABEL, "group, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
+    Logger::debug(LABEL, "group, frequency: {}, avg power: {:.2f}", formatFrequency(getFrequency(index)).get(), power[index]);
     if (!containsWithMargin(m_indexes, index, m_groupSize)) {
-      Logger::info(LABEL, "start transmission, frequency: {} Hz, avg power: {:.2f}", getFrequency(index), power[index]);
+      Logger::info(LABEL, "start transmission, frequency: {}, avg power: {:.2f}", formatFrequency(getFrequency(index)).get(), power[index]);
       m_indexes.insert(index);
       m_indexesFirstDataTime[index] = now;
     }

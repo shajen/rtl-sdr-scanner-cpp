@@ -23,3 +23,5 @@ std::vector<std::pair<int, int>> getResamplersFactors(const Frequency sampleRate
 Frequency getTunedFrequency(Frequency frequency, Frequency step);
 
 bool containsWithMargin(const std::set<int>& indexes, const int index, const int margin);
+
+std::unique_ptr<char[]> formatFrequency(const Frequency frequency);
