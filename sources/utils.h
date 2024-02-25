@@ -25,3 +25,5 @@ Frequency getTunedFrequency(Frequency frequency, Frequency step);
 bool containsWithMargin(const std::set<int>& indexes, const int index, const int margin);
 
 std::unique_ptr<char[]> formatFrequency(const Frequency frequency);
+
+void average(const float* input, float* output, int size, int groupSize);

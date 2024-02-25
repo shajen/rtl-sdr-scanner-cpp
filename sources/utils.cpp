@@ -150,3 +150,27 @@ std::unique_ptr<char[]> formatFrequency(const Frequency frequency) {
   }
   return p;
 }
+
+void average(const float* input, float* output, int size, int groupSize) {
+  const auto a = groupSize / 2;
+  float sum = 0.0;
+  int count = 0;
+
+  auto isIndexValid = [size](int i) { return 0 <= i && i < size; };
+
+  for (int i = -a; i < size + a - 1; ++i) {
+    const auto first = i - a - 1;
+    const auto last = i + a;
+    if (isIndexValid(first)) {
+      sum -= input[first];
+      count--;
+    }
+    if (isIndexValid(last)) {
+      sum += input[last];
+      count++;
+    }
+    if (isIndexValid(i)) {
+      output[i] = sum / count;
+    }
+  }
+}
