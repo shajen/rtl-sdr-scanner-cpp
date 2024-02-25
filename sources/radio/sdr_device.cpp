@@ -1,16 +1,12 @@
 #include "sdr_device.h"
 
 #include <config.h>
-#include <gnuradio/blocks/complex_to_mag.h>
 #include <gnuradio/blocks/float_to_char.h>
-#include <gnuradio/blocks/multiply_const.h>
-#include <gnuradio/blocks/nlog10_ff.h>
 #include <gnuradio/blocks/stream_to_vector.h>
 #include <gnuradio/fft/fft_v.h>
 #include <gnuradio/fft/window.h>
 #include <gnuradio/soapy/source.h>
 #include <logger.h>
-#include <radio/blocks/average_x.h>
 #include <radio/blocks/decimator.h>
 #include <radio/blocks/psd.h>
 
@@ -72,7 +68,6 @@ SdrDevice::~SdrDevice() {
 
 void SdrDevice::setFrequency(Frequency frequency) {
   m_noiseLearner->setProcessing(false);
-  m_averageY->setProcessing(false);
   m_transmission->setProcessing(false);
   if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->stopRecording();
   if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->stopRecording();
@@ -95,7 +90,6 @@ void SdrDevice::setFrequency(Frequency frequency) {
   if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->startRecording(getGqrxRawFileName("fr", m_frequency, m_sampleRate));
   if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->startRecording(getPowerRawFileName("fp", m_frequency, m_fftSize));
   m_transmission->setProcessing(true);
-  m_averageY->setProcessing(true);
   m_noiseLearner->setProcessing(true);
 }
 
@@ -147,7 +141,7 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
         Logger::info(LABEL, "start recorder, frequency: {}{}{}", GREEN, formatFrequency(m_frequency + shift).get(), NC);
       } else {
         if (!ignoredTransmissions.count(shift)) {
-          Logger::info(LABEL, "no recorders available, frequency: {}{}{}", BROWN, formatFrequency(m_frequency + shift).get(), NC);
+          Logger::info(LABEL, "no recorders available, frequency: {}{}{}", YELLOW, formatFrequency(m_frequency + shift).get(), NC);
           ignoredTransmissions.insert(shift);
         }
       }
@@ -182,10 +176,8 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(m_fftSize, gr::fft::window::hamming(m_fftSize), true);
   const auto psd = std::make_shared<PSD>(m_fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequency, indexToFrequency);
-  m_averageY = std::make_shared<AverageY>(m_fftSize, GROUPING_Y);
-  auto averageX = std::make_shared<AverageX>(m_fftSize, GROUPING_X);
   m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift);
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_averageY, averageX, m_transmission);
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
 
   if (DEBUG_SAVE_ORG_POWER) {
     auto f2c = gr::blocks::float_to_char::make(m_fftSize);

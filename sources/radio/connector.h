@@ -26,6 +26,10 @@ class Connector {
     }
   }
 
+  void connect(std ::shared_ptr<gr::basic_block> block1, std ::shared_ptr<gr::basic_block> block2, const int index1 = 0, const int index2 = 0) {
+    m_connections.emplace_back(m_tb, block1, block2, index1, index2);
+  }
+
  private:
   std::shared_ptr<gr::top_block> m_tb;
   std::vector<Connection> m_connections;

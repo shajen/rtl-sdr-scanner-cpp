@@ -87,7 +87,7 @@ TEST(Utils, TunedFrequency) {
 }
 
 TEST(Utils, ContaisWithMargin0) {
-  std::set<int> indexes({10, 14});
+  std::map<int, bool> indexes({{10, false}, {14, false}});
 
   EXPECT_FALSE(containsWithMargin(indexes, 9, 0));
   EXPECT_TRUE(containsWithMargin(indexes, 10, 0));
@@ -99,7 +99,7 @@ TEST(Utils, ContaisWithMargin0) {
 }
 
 TEST(Utils, ContaisWithMargin1) {
-  std::set<int> indexes({10, 14});
+  std::map<int, bool> indexes({{10, false}, {14, false}});
 
   EXPECT_FALSE(containsWithMargin(indexes, 8, 1));
   EXPECT_TRUE(containsWithMargin(indexes, 9, 1));
@@ -115,7 +115,7 @@ TEST(Utils, ContaisWithMargin1) {
 }
 
 TEST(Utils, ContaisWithMargin2) {
-  std::set<int> indexes({10, 14});
+  std::map<int, bool> indexes({{10, false}, {14, false}});
 
   EXPECT_FALSE(containsWithMargin(indexes, 8, 2));
   EXPECT_TRUE(containsWithMargin(indexes, 9, 2));
@@ -139,4 +139,48 @@ TEST(Utils, AverageX) {
   for (size_t i = 0; i < result.size(); ++i) {
     EXPECT_FLOAT_EQ(output[i], result[i]);
   }
+}
+
+TEST(Utils, mostFrequentValue) {
+  std::vector<int> v1({1, 2, 3, 4, 5, 5});
+  EXPECT_EQ(mostFrequentValue(v1), 5);
+
+  std::vector<int> v2({3, 3, 1, 1, 5, 5});
+  EXPECT_EQ(mostFrequentValue(v2), 3);
+
+  std::vector<int> v3({3, 3, 1, 1, 5, 5, 2, 2});
+  EXPECT_EQ(mostFrequentValue(v3), 3);
+
+  std::vector<int> v4({1, 1, 1, 1, 2, 5, 5, 5});
+  EXPECT_EQ(mostFrequentValue(v4), 1);
+
+  std::vector<int> v5({1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10});
+  EXPECT_EQ(mostFrequentValue(v5), 1);
+}
+
+TEST(Utils, getMaxIndex) {
+  std::vector<float> data({1, 2, 3, 4, 5, 4, 3, 2, 1});
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 0, 0), 0);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 0, 1), 0);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 0, 2), 1);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 0, 3), 1);
+
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 0), 8);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 1), 8);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 2), 7);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 3), 7);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 4), 6);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 5), 6);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 8, 6), 5);
+
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 0), 2);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 1), 2);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 2), 3);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 3), 3);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 4), 4);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 5), 4);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 6), 4);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 7), 4);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 8), 4);
+  EXPECT_EQ(getMaxIndex(data.data(), data.size(), 2, 9), 4);
 }

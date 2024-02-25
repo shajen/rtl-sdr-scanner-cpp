@@ -128,14 +128,6 @@ Frequency getTunedFrequency(Frequency frequency, Frequency step) {
   }
 }
 
-bool containsWithMargin(const std::set<int>& indexes, const int index, const int margin) {
-  const auto submargin = margin % 2 == 0 ? margin / 2 : margin / 2 + 1;
-  const auto left = index - submargin;
-  const auto right = index + submargin;
-  auto it = indexes.lower_bound(left);
-  return (it != indexes.end() && *it <= right);
-}
-
 std::unique_ptr<char[]> formatFrequency(const Frequency frequency) {
   const int f1 = frequency / 1000000;
   const int f2 = (frequency / 1000) % 1000;
@@ -173,4 +165,11 @@ void average(const float* input, float* output, int size, int groupSize) {
       output[i] = sum / count;
     }
   }
+}
+
+int getMaxIndex(const float* data, const int size, const int index, const int groupSize) {
+  const auto min = std::max(0, index - groupSize / 2);
+  const auto max = std::min(size, index + groupSize / 2 + 1);
+  const auto it = std::max_element(data + min, data + max);
+  return std::distance(data, it);
 }

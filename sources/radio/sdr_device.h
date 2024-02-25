@@ -3,7 +3,6 @@
 #include <gnuradio/soapy/source.h>
 #include <gnuradio/top_block.h>
 #include <notification.h>
-#include <radio/blocks/average_y.h>
 #include <radio/blocks/file_sink.h>
 #include <radio/blocks/noise_learner.h>
 #include <radio/blocks/transmission.h>
@@ -41,7 +40,6 @@ class SdrDevice {
   std::shared_ptr<FileSink> m_powerFileSink;
   std::shared_ptr<gr::soapy::source> m_source;
   std::shared_ptr<NoiseLearner> m_noiseLearner;
-  std::shared_ptr<AverageY> m_averageY;
   std::shared_ptr<Transmission> m_transmission;
   std::vector<std::unique_ptr<Recorder>> m_recorders;
   std::set<Frequency> ignoredTransmissions;

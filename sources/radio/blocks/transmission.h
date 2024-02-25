@@ -1,16 +1,18 @@
 #pragma once
 
 #include <gnuradio/sync_block.h>
+#include <radio/averager.h>
 #include <radio/help_structures.h>
+#include <radio/signal.h>
 
 #include <atomic>
 #include <mutex>
 #include <set>
 
 class Transmission : virtual public gr::sync_block {
- public:
   using Index = int;
 
+ public:
   Transmission(
       const int itemSize,
       const int groupSize,
@@ -22,22 +24,20 @@ class Transmission : virtual public gr::sync_block {
   void setProcessing(const bool isProcessing);
 
  private:
-  std::vector<Index> getSortedIndexes(const float* power) const;
-  void clearIndexes(const float* power, const std::chrono::milliseconds now);
-  void addIndexes(const float* power, const std::chrono::milliseconds now, const std::vector<Index>& indexes);
-  void updateIndexesTime(const float* power, const std::chrono::milliseconds now);
-  std::vector<FrequencyFlush> getSortedTransmissions(const float* power, const std::chrono::milliseconds now) const;
-  Frequency getFrequency(const Index index) const;
-  Frequency getShift(const Index index) const;
+  void process(const float* power);
+  void clearSignals(const float* power, const std::chrono::milliseconds now);
+  void addSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
+  void updateSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
+  Index getBestIndex(Index index) const;
+  std::vector<FrequencyFlush> getSortedTransmissions(const std::chrono::milliseconds now) const;
 
   const int m_itemSize;
   const int m_groupSize;
+  Averager m_averager;
   TransmissionNotification& m_notification;
-  const std::function<Frequency(const int index)> m_indexToFrequency;
-  const std::function<Frequency(const int index)> m_indexToShift;
+  const std::function<Frequency(const Index index)> m_indexToFrequency;
+  const std::function<Frequency(const Index index)> m_indexToShift;
   std::mutex m_mutex;
   std::atomic<bool> m_isProcessing;
-  std::vector<std::chrono::milliseconds> m_indexesFirstDataTime;
-  std::vector<std::chrono::milliseconds> m_indexesLastDataTime;
-  std::set<Index> m_indexes;
+  std::map<Index, Signal> m_signals;
 };

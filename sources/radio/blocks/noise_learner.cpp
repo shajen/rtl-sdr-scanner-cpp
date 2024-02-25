@@ -70,7 +70,7 @@ int NoiseLearner::work(int noutput_items, gr_vector_const_void_star& input_items
 
     const auto frequency = m_indexToFrequency(maxIndex);
     const auto maxValue = output_buf[fitIndex + maxIndex];
-    Logger::debug(LABEL, "best signal, frequency: {}, power: {:.2f}", formatFrequency(frequency).get(), maxValue);
+    Logger::trace(LABEL, "best signal, frequency: {}, power: {:.2f}", formatFrequency(frequency).get(), maxValue);
   }
 
   return noutput_items;

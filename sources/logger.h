@@ -4,9 +4,13 @@
 #include <spdlog/spdlog.h>
 
 constexpr auto LOGGER_BUFFER_SIZE = 1024;
-constexpr auto GREEN = "\033[0;32m";
 constexpr auto RED = "\033[0;31m";
+constexpr auto GREEN = "\033[0;32m";
 constexpr auto BROWN = "\033[0;33m";
+constexpr auto BLUE = "\033[0;34m";
+constexpr auto MAGENTA = "\033[0;35m";
+constexpr auto CYAN = "\033[0;36m";
+constexpr auto YELLOW = "\033[0;93m";
 constexpr auto NC = "\033[0m";
 
 class Logger {
