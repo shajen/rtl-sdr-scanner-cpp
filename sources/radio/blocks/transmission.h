@@ -26,7 +26,7 @@ class Transmission : virtual public gr::sync_block {
 
  private:
   void process(const float* power);
-  void clearSignals(const float* power, const std::chrono::milliseconds now);
+  void clearSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
   void addSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
   void updateSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
   Index getBestIndex(Index index) const;

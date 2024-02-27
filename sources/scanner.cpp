@@ -10,7 +10,7 @@ Scanner::Scanner(
     : m_device(driver, serial, gains, sampleRate, m_notification, recordersCount), m_ranges(ranges), m_isRunning(true), m_thread([this]() { worker(); }) {
   Logger::info(LABEL, "starting");
   for (const auto& range : ranges) {
-    Logger::info(LABEL, "scanned range: {} - {}", formatFrequency(range.first).get(), formatFrequency(range.second).get());
+    Logger::info(LABEL, "scanned range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
   }
   Logger::info(LABEL, "started");
 }

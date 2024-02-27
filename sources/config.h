@@ -18,6 +18,7 @@ constexpr auto RECORDING_START_THRESHOLD = 5;                    // start record
 constexpr auto RECORDING_STOP_THRESHOLD = 3;                     // stop recording if average power lower than n
 constexpr auto RESAMPLER_THRESHOLD = 125;                        // max interpolation or decimation factor of RESAMPLER
 
+constexpr auto COLOR_LOG_ENABLED = true;
 constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(2000);  // noise learnig time
 constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(2000);  // waiting time for transmission in single scanning range
 constexpr auto RECORDING_BANDWIDTH = 32000;                            // recording bandwidth

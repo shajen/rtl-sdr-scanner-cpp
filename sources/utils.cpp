@@ -1,7 +1,11 @@
 #include "utils.h"
 
+#define FMT_HEADER_ONLY
+
 #include <config.h>
+#include <logger.h>
 #include <math.h>
+#include <spdlog/spdlog.h>
 #include <time.h>
 
 #include <algorithm>
@@ -128,19 +132,39 @@ Frequency getTunedFrequency(Frequency frequency, Frequency step) {
   }
 }
 
-std::unique_ptr<char[]> formatFrequency(const Frequency frequency) {
+std::string formatFrequency(const Frequency frequency, const char* color) {
+  const char* reset = NC;
+  if (!color) {
+    color = GREEN;
+  }
+  if (!COLOR_LOG_ENABLED) {
+    color = "";
+    reset = "";
+  }
+
   const int f1 = frequency / 1000000;
   const int f2 = (frequency / 1000) % 1000;
   const int f3 = frequency % 1000;
-  std::unique_ptr<char[]> p(new char[20]);
   if (1000000 <= frequency) {
-    sprintf(p.get(), "%d.%03d.%03d Hz", f1, f2, f3);
+    return fmt::format("{}{:d}.{:03d}.{:03d} Hz{}", color, f1, f2, f3, reset);
   } else if (1000 <= frequency) {
-    sprintf(p.get(), "%d.%03d Hz", f2, f3);
+    return fmt::format("{}{:d}.{:03d} Hz{}", color, f2, f3, reset);
   } else {
-    sprintf(p.get(), "%d Hz", f3);
+    return fmt::format("{}{:d} Hz{}", color, f3, reset);
   }
-  return p;
+}
+
+std::string formatPower(const float power, const char* color) {
+  const char* reset = NC;
+  if (!color) {
+    color = GREEN;
+  }
+  if (!COLOR_LOG_ENABLED) {
+    color = "";
+    reset = "";
+  }
+
+  return fmt::format("{}{:6.2f}{}", color, power, reset);
 }
 
 void average(const float* input, float* output, int size, int groupSize) {

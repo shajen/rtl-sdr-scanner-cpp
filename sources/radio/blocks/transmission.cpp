@@ -44,7 +44,7 @@ void Transmission::setProcessing(const bool isProcessing) {
   if (!isProcessing) {
     std::unique_lock<std::mutex> lock(m_mutex);
     for (const auto& [index, signal] : m_signals) {
-      Logger::info(LABEL, "stop, frequency: {}, center frequency: {}", formatFrequency(m_indexToFrequency(index)).get(), formatFrequency(m_indexToFrequency(signal.getIndex())).get());
+      Logger::info(LABEL, "stop, frequency: {}, center frequency: {}", formatFrequency(m_indexToFrequency(index), BLUE), formatFrequency(m_indexToFrequency(signal.getIndex()), BLUE));
     }
     m_signals.clear();
   }
@@ -61,20 +61,21 @@ void Transmission::process(const float* power) {
   const auto now = getTime();
   addSignals(avgPower.data(), power, now);
   updateSignals(avgPower.data(), power, now);
-  clearSignals(avgPower.data(), now);
+  clearSignals(avgPower.data(), power, now);
   m_notification.notify(getSortedTransmissions(now));
 }
 
-void Transmission::clearSignals(const float* power, const std::chrono::milliseconds now) {
+void Transmission::clearSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now) {
   for (auto it = m_signals.begin(); it != m_signals.cend();) {
     const auto& [index, signal] = *it;
     if (signal.isTimeout(now)) {
       Logger::info(
           LABEL,
-          "stop, frequency: {}, power: {:.2f}, center frequency: {}",
-          formatFrequency(m_indexToFrequency(index)).get(),
-          power[index],
-          formatFrequency(m_indexToFrequency(signal.getIndex())).get());
+          "stop, frequency: {}, center frequency: {}, avg power: {}, raw power:{}",
+          formatFrequency(m_indexToFrequency(index), BLUE),
+          formatFrequency(m_indexToFrequency(signal.getIndex()), BLUE),
+          formatPower(avgPower[index], BLUE),
+          formatPower(rawPower[index], BLUE));
       m_signals.erase(it++);
     } else {
       it++;
@@ -94,7 +95,12 @@ void Transmission::addSignals(const float* avgPower, const float* rawPower, cons
   for (const auto& index : indexes) {
     if (!containsWithMargin(m_signals, index, m_groupSize)) {
       const auto bestIndex = getBestIndex(index);
-      Logger::info(LABEL, "start, frequency: {}, avg power: {:.2f}, raw power: {:.2f}", formatFrequency(m_indexToFrequency(bestIndex)).get(), avgPower[bestIndex], rawPower[bestIndex]);
+      Logger::info(
+          LABEL,
+          "start, frequency: {}, avg power: {}, raw power: {}",
+          formatFrequency(m_indexToFrequency(bestIndex), BLUE),
+          formatPower(avgPower[bestIndex], BLUE),
+          formatPower(rawPower[bestIndex], BLUE));
       m_signals.insert({bestIndex, {m_indexToFrequency, m_indexToShift, now}});
     }
   }
@@ -107,19 +113,11 @@ void Transmission::updateSignals(const float* avgPower, const float* rawPower, c
     signal.newData(bestAvgIndex, avgPower[bestAvgIndex], bestRawIndex, rawPower[bestRawIndex], now);
     Logger::debug(
         LABEL,
-        "avg, f: {}{}{}, p: {}{:5.2f}{}, raw, f: {}{}{}, p: {}{:5.2f}{}, d: {:5d} ms, ld: {:5d} ms ago, f: {}",
-        CYAN,
-        formatFrequency(m_indexToFrequency(bestAvgIndex)).get(),
-        NC,
-        CYAN,
-        avgPower[bestAvgIndex],
-        NC,
-        MAGENTA,
-        formatFrequency(m_indexToFrequency(bestRawIndex)).get(),
-        NC,
-        MAGENTA,
-        rawPower[bestRawIndex],
-        NC,
+        "avg, f: {}, p: {}, raw, f: {}, p: {}, d: {:5d} ms, ld: {:5d} ms ago, f: {}",
+        formatFrequency(m_indexToFrequency(bestAvgIndex), CYAN),
+        formatPower(avgPower[bestAvgIndex], CYAN),
+        formatFrequency(m_indexToFrequency(bestRawIndex), MAGENTA),
+        formatPower(rawPower[bestRawIndex], MAGENTA),
         signal.getDuration().count(),
         signal.getLastDataTime(now).count(),
         signal.needFlush(now) ? 1 : 0);
@@ -134,7 +132,7 @@ Transmission::Index Transmission::getBestIndex(Index index) const {
     const auto& row = m_averager.data().at(i);
     const auto bestIndex = getMaxIndex(row.data(), row.size(), index, m_groupSize);
     if (RECORDING_START_THRESHOLD <= row[bestIndex]) {
-      Logger::debug(LABEL, "best index, id: {:2d}, frequency: {}{}{}, power: {}{:5.2f}{}", i, BROWN, formatFrequency(m_indexToFrequency(bestIndex)).get(), NC, BROWN, row[bestIndex], NC);
+      Logger::debug(LABEL, "best index, id: {:2d}, frequency: {}, power: {}", i, formatFrequency(m_indexToFrequency(bestIndex), BROWN), formatPower(row[bestIndex], BROWN));
       buffer.push_back(bestIndex);
     }
   }

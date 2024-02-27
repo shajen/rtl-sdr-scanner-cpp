@@ -17,7 +17,7 @@ constexpr auto LABEL = "recorder";
 Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate)
     : m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_connector(tb) {
   Logger::info(LABEL, "starting");
-  Logger::info(LABEL, "bandwidth: {}", formatFrequency(RECORDING_BANDWIDTH).get());
+  Logger::info(LABEL, "bandwidth: {}", formatFrequency(RECORDING_BANDWIDTH));
 
   std::vector<std::shared_ptr<gr::basic_block>> blocks;
   m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);

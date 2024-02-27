@@ -60,7 +60,9 @@ T mostFrequentValue(const std::vector<T>& data) {
   return buffer[buffer.size() / 2].first;
 }
 
-std::unique_ptr<char[]> formatFrequency(const Frequency frequency);
+std::string formatFrequency(const Frequency frequency, const char* color = nullptr);
+
+std::string formatPower(const float power, const char* color = nullptr);
 
 void average(const float* input, float* output, int size, int groupSize);
 
