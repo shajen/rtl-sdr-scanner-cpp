@@ -1,4 +1,6 @@
+#include <config.h>
 #include <logger.h>
+#include <network/mqtt.h>
 #include <scanner.h>
 #include <signal.h>
 
@@ -40,6 +42,8 @@ int main(int argc, char* argv[]) {
   Logger::configure(spdlog::level::info, spdlog::level::off, "");
   Logger::info(LABEL, "starting");
 
+  Config config;
+  Mqtt mqtt(config);
   auto scanner = createScanner(argc >= 2 ? argv[1] : nullptr, 4);
 
   Logger::info(LABEL, "started");

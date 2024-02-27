@@ -21,6 +21,11 @@ find_package(Gnuradio COMPONENTS
     soapy
 )
 
+find_library(MOSQUITTO_LIB mosquitto)
+if(NOT MOSQUITTO_LIB)
+  message(FATAL_ERROR "mosquitto library not found")
+endif()
+
 file(GLOB_RECURSE SOURCES
     "${PROJECT_SOURCE_DIR}/sources/*.h"
     "${PROJECT_SOURCE_DIR}/sources/*.cpp"
@@ -39,11 +44,12 @@ add_library(auto_sdr_libs STATIC ${SOURCES})
 add_executable(auto_sdr "sources/main.cpp")
 target_link_libraries(auto_sdr
     auto_sdr_libs
-    spdlog::spdlog
     gnuradio::gnuradio-blocks
+    gnuradio::gnuradio-fft
     gnuradio::gnuradio-filter
     gnuradio::gnuradio-soapy
-    gnuradio::gnuradio-fft
+    mosquitto
+    spdlog::spdlog
 )
 
 add_executable(auto_sdr_test ${TEST_SOURCES} "tests/test_main.cpp")
