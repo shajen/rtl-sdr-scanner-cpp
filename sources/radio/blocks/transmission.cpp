@@ -11,7 +11,8 @@ Transmission::Transmission(
     const int groupSize,
     TransmissionNotification& notification,
     std::function<Frequency(const Index index)> indexToFrequency,
-    std::function<Frequency(const Index index)> indexToShift)
+    std::function<Frequency(const Index index)> indexToShift,
+    std::function<bool(const int Index)> isIndexInRange)
     : gr::sync_block("Transmission", gr::io_signature::make(1, 1, sizeof(float) * itemSize), gr::io_signature::make(0, 0, 0)),
       m_itemSize(itemSize),
       m_groupSize(groupSize),
@@ -19,6 +20,7 @@ Transmission::Transmission(
       m_notification(notification),
       m_indexToFrequency(indexToFrequency),
       m_indexToShift(indexToShift),
+      m_isIndexInRange(isIndexInRange),
       m_isProcessing(false) {
   Logger::info(LABEL, "group size: {}", m_groupSize);
 }
@@ -83,7 +85,7 @@ void Transmission::clearSignals(const float* power, const std::chrono::milliseco
 void Transmission::addSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now) {
   std::vector<Index> indexes;
   for (int i = 0; i < m_itemSize; ++i) {
-    if (RECORDING_START_THRESHOLD <= avgPower[i]) {
+    if (RECORDING_START_THRESHOLD <= avgPower[i] && m_isIndexInRange(i)) {
       indexes.push_back(i);
     }
   }

@@ -30,10 +30,10 @@ bool NoiseLearner::Noise::add(const float* data, const int size) {
   return false;
 }
 
-NoiseLearner::NoiseLearner(int itemSize, const std::atomic<Frequency>& frequency, std::function<Frequency(const int index)> indexToFrequency)
+NoiseLearner::NoiseLearner(int itemSize, const FrequencyRange& frequencyRange, std::function<Frequency(const int index)> indexToFrequency)
     : gr::sync_block("NoiseLearner", gr::io_signature::make(1, 1, sizeof(float) * itemSize), gr::io_signature::make(1, 1, sizeof(float) * itemSize)),
       m_itemSize(itemSize),
-      m_frequency(frequency),
+      m_frequencyRange(frequencyRange),
       m_indexToFrequency(indexToFrequency),
       m_isProcessing(false) {}
 
@@ -49,12 +49,13 @@ int NoiseLearner::work(int noutput_items, gr_vector_const_void_star& input_items
     return noutput_items;
   }
 
-  auto& noise = m_noise[m_frequency];
+  const auto frequency = (m_frequencyRange.first + m_frequencyRange.second) / 2;
+  auto& noise = m_noise[frequency];
   for (int i = 0; i < noutput_items; ++i) {
     const auto fitIndex = i * m_itemSize;
     if (!noise.m_isReady) {
       if (noise.add(&input_buf[fitIndex], m_itemSize)) {
-        Logger::info(LABEL, "learning completed, frequency: {}", formatFrequency(m_frequency).get());
+        Logger::info(LABEL, "learning completed, frequency: {}", formatFrequency(frequency).get());
       }
       setNoData(&output_buf[fitIndex], m_itemSize);
       continue;

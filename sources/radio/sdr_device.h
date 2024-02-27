@@ -20,10 +20,11 @@ class SdrDevice {
       const std::string& driver, const std::string& serial, const std::map<std::string, float> gains, const Frequency sampleRate, TransmissionNotification& notification, const int recordersCount);
   ~SdrDevice();
 
-  void setFrequency(Frequency frequency);
+  void setFrequencyRange(FrequencyRange frequencyRange);
   bool updateRecordings(const std::vector<FrequencyFlush> sortedShifts);
 
  private:
+  Frequency getFrequency() const;
   void setupGqrxChain();
   void setupPowerChain(TransmissionNotification& notification);
 
@@ -33,7 +34,7 @@ class SdrDevice {
   const Frequency m_sampleRate;
   const int m_fftSize;
   bool m_isInitialized;
-  std::atomic<Frequency> m_frequency;
+  FrequencyRange m_frequencyRange;
 
   std::shared_ptr<gr::top_block> m_tb;
   std::shared_ptr<FileSink> m_gqrxFileSink;

@@ -27,7 +27,7 @@ SdrDevice::SdrDevice(
       m_sampleRate(sampleRate),
       m_fftSize(getFft(m_sampleRate, MAX_STEP_AFTER_FFT)),
       m_isInitialized(false),
-      m_frequency(0),
+      m_frequencyRange({0, 0}),
       m_tb(gr::make_top_block("sdr")),
       m_connector(m_tb) {
   Logger::info(LABEL, "starting");
@@ -66,17 +66,19 @@ SdrDevice::~SdrDevice() {
   Logger::info(LABEL, "stopped");
 }
 
-void SdrDevice::setFrequency(Frequency frequency) {
+void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
+  const auto frequency = (frequencyRange.first + frequencyRange.second) / 2;
   m_noiseLearner->setProcessing(false);
   m_transmission->setProcessing(false);
   if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->stopRecording();
   if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->stopRecording();
 
-  m_frequency = 0;
+  m_frequencyRange = {0, 0};
   for (int i = 0; i < 10; ++i) {
     try {
       m_source->set_frequency(0, frequency);
-      Logger::info(LABEL, "set frequency: {}", formatFrequency(frequency).get());
+      Logger::info(
+          LABEL, "set frequency range: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first).get(), formatFrequency(frequencyRange.second).get(), formatFrequency(frequency).get());
       break;
     } catch (std::exception& e) {
     }
@@ -86,9 +88,9 @@ void SdrDevice::setFrequency(Frequency frequency) {
     std::this_thread::sleep_for(INITIAL_DELAY);
     m_isInitialized = true;
   }
-  m_frequency = frequency;
-  if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->startRecording(getGqrxRawFileName("fr", m_frequency, m_sampleRate));
-  if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->startRecording(getPowerRawFileName("fp", m_frequency, m_fftSize));
+  m_frequencyRange = frequencyRange;
+  if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->startRecording(getGqrxRawFileName("fr", frequency, m_sampleRate));
+  if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->startRecording(getPowerRawFileName("fp", frequency, m_fftSize));
   m_transmission->setProcessing(true);
   m_noiseLearner->setProcessing(true);
 }
@@ -118,7 +120,7 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
       const auto shift = recorder->getShift();
       if (!isWaitingForRecording(shift)) {
         recorder->stopRecording();
-        Logger::info(LABEL, "stop recorder, frequency: {}{}{}, time: {} ms", RED, formatFrequency(m_frequency + shift).get(), NC, recorder->getDuration().count());
+        Logger::info(LABEL, "stop recorder, frequency: {}{}{}, time: {} ms", RED, formatFrequency(getFrequency() + shift).get(), NC, recorder->getDuration().count());
       }
     }
   }
@@ -128,7 +130,7 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
     if (itRecorder != m_recorders.end()) {
       const auto& recorder = *itRecorder;
       if (!recorder->isRecording()) {
-        Logger::warn(LABEL, "start recorder that should be already started, frequency: {}{}{}", GREEN, formatFrequency(m_frequency + shift).get(), NC);
+        Logger::warn(LABEL, "start recorder that should be already started, frequency: {}{}{}", GREEN, formatFrequency(getFrequency() + shift).get(), NC);
       }
       if (flush) {
         recorder->flush();
@@ -137,11 +139,11 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
       const auto itFreeRecorder = getFreeRecorder();
       if (itFreeRecorder != m_recorders.end()) {
         const auto& freeRecorder = *itFreeRecorder;
-        freeRecorder->startRecording(m_frequency, shift);
-        Logger::info(LABEL, "start recorder, frequency: {}{}{}", GREEN, formatFrequency(m_frequency + shift).get(), NC);
+        freeRecorder->startRecording(getFrequency(), shift);
+        Logger::info(LABEL, "start recorder, frequency: {}{}{}", GREEN, formatFrequency(getFrequency() + shift).get(), NC);
       } else {
         if (!ignoredTransmissions.count(shift)) {
-          Logger::info(LABEL, "no recorders available, frequency: {}{}{}", YELLOW, formatFrequency(m_frequency + shift).get(), NC);
+          Logger::info(LABEL, "no recorders available, frequency: {}{}{}", YELLOW, formatFrequency(getFrequency() + shift).get(), NC);
           ignoredTransmissions.insert(shift);
         }
       }
@@ -165,18 +167,24 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
   return false;
 }
 
+Frequency SdrDevice::getFrequency() const { return (m_frequencyRange.first + m_frequencyRange.second) / 2; }
+
 void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   const auto step = static_cast<double>(m_sampleRate) / m_fftSize;
-  const auto indexToFrequency = [this, step](const int index) { return m_frequency + static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
+  const auto indexToFrequency = [this, step](const int index) { return getFrequency() + static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
   const auto indexToShift = [this, step](const int index) { return static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
+  const auto isIndexInRange = [this, indexToFrequency](const int index) {
+    const auto f = indexToFrequency(index);
+    return m_frequencyRange.first <= f && f <= m_frequencyRange.second;
+  };
   const auto indexStep = static_cast<Frequency>(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / m_fftSize));
 
   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize * DECIMATOR_FACTOR);
   const auto decimator = std::make_shared<Decimator>(m_fftSize, DECIMATOR_FACTOR);
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(m_fftSize, gr::fft::window::hamming(m_fftSize), true);
   const auto psd = std::make_shared<PSD>(m_fftSize, m_sampleRate);
-  m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequency, indexToFrequency);
-  m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift);
+  m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequencyRange, indexToFrequency);
+  m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
 
   if (DEBUG_SAVE_ORG_POWER) {

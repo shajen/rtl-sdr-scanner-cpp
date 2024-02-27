@@ -22,19 +22,18 @@ Scanner::~Scanner() {
 }
 
 void Scanner::worker() {
-  auto getFrequency = [](const FrequencyRange& range) { return (range.second + range.first) / 2; };
   Logger::info(LABEL, "thread started");
   if (m_ranges.empty()) {
     Logger::warn(LABEL, "empty scanned ranges");
   } else if (m_ranges.size() == 1) {
-    m_device.setFrequency(getFrequency(m_ranges.front()));
+    m_device.setFrequencyRange(m_ranges.front());
     while (m_isRunning) {
       m_device.updateRecordings(m_notification.wait());
     }
   } else {
     while (m_isRunning) {
       for (const auto& range : m_ranges) {
-        m_device.setFrequency(getFrequency(range));
+        m_device.setFrequencyRange(range);
 
         const auto startScanningTime = getTime();
         bool work = true;

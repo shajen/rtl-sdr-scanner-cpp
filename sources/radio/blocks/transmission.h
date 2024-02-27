@@ -18,7 +18,8 @@ class Transmission : virtual public gr::sync_block {
       const int groupSize,
       TransmissionNotification& notification,
       std::function<Frequency(const int index)> indexToFrequency,
-      std::function<Frequency(const int index)> indexToShift);
+      std::function<Frequency(const int index)> indexToShift,
+      std::function<bool(const int Index)> isIndexInRange);
 
   int work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items) override;
   void setProcessing(const bool isProcessing);
@@ -37,6 +38,7 @@ class Transmission : virtual public gr::sync_block {
   TransmissionNotification& m_notification;
   const std::function<Frequency(const Index index)> m_indexToFrequency;
   const std::function<Frequency(const Index index)> m_indexToShift;
+  const std::function<bool(const Index index)> m_isIndexInRange;
   std::mutex m_mutex;
   std::atomic<bool> m_isProcessing;
   std::map<Index, Signal> m_signals;
