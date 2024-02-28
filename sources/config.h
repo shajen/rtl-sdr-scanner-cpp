@@ -5,11 +5,8 @@
 
 // INTERNAL SETTINGS
 constexpr auto DEBUG_DIR = "";                                   // debug files directory
-constexpr auto DEBUG_SAVE_ORG_POWER = false;                     // save original raw psd results
-constexpr auto DEBUG_SAVE_ORG_RAW_IQ = false;                    // save orgignal sdr data as raw iq to open in gqrx
-constexpr auto DEBUG_SAVE_RECORDING_POWER = true;                // save recordings psd results
-constexpr auto DEBUG_SAVE_RECORDING_POWER_FFT_SIZE = 2048;       // fft of psd
-constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = true;               // save recordings as raw iq to open in gqrx
+constexpr auto DEBUG_SAVE_FULL_RAW_IQ = false;                   // save orgignal sdr data as raw iq
+constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = false;              // save recordings as raw iq
 constexpr auto INITIAL_DELAY = std::chrono::milliseconds(1000);  // delay after first start sdr device to start processing
 constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;               // print stats every n frames
 constexpr auto RESAMPLER_THRESHOLD = 125;                        // max interpolation or decimation factor of RESAMPLER

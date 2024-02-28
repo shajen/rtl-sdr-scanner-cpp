@@ -1,7 +1,6 @@
 #include "sdr_device.h"
 
 #include <config.h>
-#include <gnuradio/blocks/float_to_char.h>
 #include <gnuradio/blocks/stream_to_vector.h>
 #include <gnuradio/fft/fft_v.h>
 #include <gnuradio/fft/window.h>
@@ -43,7 +42,7 @@ SdrDevice::SdrDevice(
 
   m_source = gr::soapy::source::make(getSoapyArgs(driver, serial).c_str(), "fc32", 1);
 
-  setupGqrxChain();
+  setupRawFileChain();
   setupPowerChain(notification);
 
   for (int i = 0; i < recordersCount; ++i) {
@@ -70,8 +69,7 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
   const auto frequency = (frequencyRange.first + frequencyRange.second) / 2;
   m_noiseLearner->setProcessing(false);
   m_transmission->setProcessing(false);
-  if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->stopRecording();
-  if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->stopRecording();
+  if (DEBUG_SAVE_FULL_RAW_IQ) m_rawFileSink->stopRecording();
 
   m_frequencyRange = {0, 0};
   for (int i = 0; i < 10; ++i) {
@@ -88,8 +86,7 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
     m_isInitialized = true;
   }
   m_frequencyRange = frequencyRange;
-  if (DEBUG_SAVE_ORG_RAW_IQ) m_gqrxFileSink->startRecording(getGqrxRawFileName("fr", frequency, m_sampleRate));
-  if (DEBUG_SAVE_ORG_POWER) m_powerFileSink->startRecording(getPowerRawFileName("fp", frequency, m_fftSize));
+  if (DEBUG_SAVE_FULL_RAW_IQ) m_rawFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
   m_transmission->setProcessing(true);
   m_noiseLearner->setProcessing(true);
 }
@@ -185,17 +182,11 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequencyRange, indexToFrequency);
   m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
-
-  if (DEBUG_SAVE_ORG_POWER) {
-    auto f2c = gr::blocks::float_to_char::make(m_fftSize);
-    m_powerFileSink = std::make_shared<FileSink<int8_t>>(m_fftSize, false);
-    m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, f2c, m_powerFileSink);
-  }
 }
 
-void SdrDevice::setupGqrxChain() {
-  if (DEBUG_SAVE_ORG_RAW_IQ) {
-    m_gqrxFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
-    m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, m_gqrxFileSink);
+void SdrDevice::setupRawFileChain() {
+  if (DEBUG_SAVE_FULL_RAW_IQ) {
+    m_rawFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
+    m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, m_rawFileSink);
   }
 }

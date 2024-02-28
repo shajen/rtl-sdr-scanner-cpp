@@ -12,9 +12,7 @@ std::chrono::milliseconds getTime();
 
 void setNoData(float* data, const int size);
 
-std::string getGqrxRawFileName(const char* label, Frequency frequency, Frequency sampleRate);
-
-std::string getPowerRawFileName(const char* label, Frequency frequency, int fftSize);
+std::string getRawFileName(const char* label, const char* extension, Frequency frequency, Frequency sampleRate);
 
 int getFft(const Frequency sampleRate, Frequency maxStep);
 

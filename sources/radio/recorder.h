@@ -35,7 +35,6 @@ class Recorder {
   std::shared_ptr<Blocker> m_blocker;
   std::shared_ptr<gr::blocks::rotator_cc> m_shiftBlock;
   std::shared_ptr<FileSink<gr_complex>> m_rawFileSinkBlock;
-  std::shared_ptr<FileSink<int8_t>> m_powerFileSinkBlock;
   Connector m_connector;
   std::chrono::milliseconds m_firstDataTime;
   std::chrono::milliseconds m_lastDataTime;
