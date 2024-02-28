@@ -12,21 +12,22 @@ constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;               // print stats 
 constexpr auto RESAMPLER_THRESHOLD = 125;                        // max interpolation or decimation factor of RESAMPLER
 
 // SCANNER SETTINGS
-constexpr auto DECIMATOR_FACTOR = 10;          // average n frames into one to prevent CPU usage and noise
-constexpr auto GROUPING_X = 21;                // average n frames in frequency domain
-constexpr auto GROUPING_Y = 21;                // average n frames in time domain
-constexpr auto MAX_STEP_AFTER_FFT = 250;       // max step after fft
+constexpr auto DECIMATOR_FACTOR = 20;          // average n frames into one to prevent CPU usage and noise
+constexpr auto GROUPING_X = 6;                 // average n frames in frequency domain
+constexpr auto GROUPING_Y = 6;                 // average n frames in time domain
+constexpr auto MAX_STEP_AFTER_FFT = 1000;      // max step after fft
 constexpr auto RECORDING_START_THRESHOLD = 5;  // start recording if average power greather than n
 constexpr auto RECORDING_STOP_THRESHOLD = 3;   // stop recording if average power lower than n
 
 // USER SETTINGS
-constexpr auto COLOR_LOG_ENABLED = true;
-constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(2000);  // noise learnig time
-constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(2000);  // waiting time for transmission in single scanning range
-constexpr auto RECORDING_BANDWIDTH = 32000;                            // recording bandwidth
-constexpr auto RECORDING_MIN_TIME = std::chrono::milliseconds(2000);   // drop recording if shorter then n seconds
-constexpr auto RECORDING_TIMEOUT = std::chrono::milliseconds(2000);    // stop recording only after n seconds of silent
-constexpr auto TUNING_STEP = 2500;                                     // tuning step
+constexpr auto COLOR_LOG_ENABLED = true;                                     // colored logs
+constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(2000);        // noise learnig time
+constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(2000);        // waiting time for transmission in single scanning range
+constexpr auto RECORDING_BANDWIDTH = 32000;                                  // recording bandwidth
+constexpr auto RECORDING_MIN_TIME = std::chrono::milliseconds(2000);         // drop recording if shorter then n seconds
+constexpr auto RECORDING_TIMEOUT = std::chrono::milliseconds(2000);          // stop recording only after n seconds of silent
+constexpr auto SEND_SPECTROGRAM_INTERVAL = std::chrono::milliseconds(2000);  // send spectrogram data interval
+constexpr auto TUNING_STEP = 2500;                                           // tuning step
 
 class Config {
  public:

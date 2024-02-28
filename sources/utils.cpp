@@ -55,7 +55,7 @@ std::string getRawFileName(const char* label, const char* extension, Frequency f
   snprintf(
       buf,
       1024,
-      "%s/%s_%04d%02d%02d_%02d%02d%02d_%lu_%lu_%s.raw",
+      "%s/%s_%04d%02d%02d_%02d%02d%02d_%d_%d_%s.raw",
       DEBUG_DIR,
       label,
       tm->tm_year + 1900,

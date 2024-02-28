@@ -1,11 +1,13 @@
 #include "sdr_device.h"
 
 #include <config.h>
+#include <gnuradio/blocks/float_to_char.h>
 #include <gnuradio/blocks/stream_to_vector.h>
 #include <gnuradio/fft/fft_v.h>
 #include <gnuradio/fft/window.h>
 #include <gnuradio/soapy/source.h>
 #include <logger.h>
+#include <radio/blocks/callback.h>
 #include <radio/blocks/decimator.h>
 #include <radio/blocks/psd.h>
 
@@ -20,15 +22,23 @@ std::string getSoapyArgs(const std::string& driver, const std::string& serial) {
 }  // namespace
 
 SdrDevice::SdrDevice(
-    const std::string& driver, const std::string& serial, const std::map<std::string, float> gains, const Frequency sampleRate, TransmissionNotification& notification, const int recordersCount)
+    const std::string& driver,
+    const std::string& serial,
+    const std::map<std::string, float> gains,
+    const Frequency sampleRate,
+    Mqtt& mqtt,
+    TransmissionNotification& notification,
+    const int recordersCount)
     : m_driver(driver),
       m_serial(serial),
       m_sampleRate(sampleRate),
       m_fftSize(getFft(m_sampleRate, MAX_STEP_AFTER_FFT)),
       m_isInitialized(false),
       m_frequencyRange({0, 0}),
+      m_dataController(mqtt, driver + "_" + serial),
       m_tb(gr::make_top_block("sdr")),
-      m_connector(m_tb) {
+      m_connector(m_tb),
+      m_lastSpectogramDataSendTime(0) {
   Logger::info(LABEL, "starting");
   Logger::info(
       LABEL,
@@ -46,7 +56,7 @@ SdrDevice::SdrDevice(
   setupPowerChain(notification);
 
   for (int i = 0; i < recordersCount; ++i) {
-    m_recorders.push_back(std::make_unique<Recorder>(m_tb, m_source, m_sampleRate));
+    m_recorders.push_back(std::make_unique<Recorder>(m_tb, m_source, m_sampleRate, m_dataController));
   }
 
   for (const auto& [key, value] : gains) {
@@ -182,6 +192,19 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequencyRange, indexToFrequency);
   m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
+
+  const auto f2c = gr::blocks::float_to_char::make(m_fftSize);
+  const auto callback = std::make_shared<Callback<int8_t>>(m_fftSize, [this](const int8_t* data, const int size) {
+    const auto now = getTime();
+    const auto frequency = getFrequency();
+    for (int i = 0; i < size; ++i) {
+      if (m_lastSpectogramDataSendTime + SEND_SPECTROGRAM_INTERVAL < now && frequency != 0) {
+        m_dataController.pushSpectrogram(now, frequency, m_sampleRate, data + i * m_fftSize, m_fftSize);
+        m_lastSpectogramDataSendTime = now;
+      }
+    }
+  });
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, f2c, callback);
 }
 
 void SdrDevice::setupRawFileChain() {

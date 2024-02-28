@@ -2,6 +2,8 @@
 
 #include <gnuradio/soapy/source.h>
 #include <gnuradio/top_block.h>
+#include <network/data_controller.h>
+#include <network/mqtt.h>
 #include <notification.h>
 #include <radio/blocks/file_sink.h>
 #include <radio/blocks/noise_learner.h>
@@ -17,7 +19,13 @@
 class SdrDevice {
  public:
   SdrDevice(
-      const std::string& driver, const std::string& serial, const std::map<std::string, float> gains, const Frequency sampleRate, TransmissionNotification& notification, const int recordersCount);
+      const std::string& driver,
+      const std::string& serial,
+      const std::map<std::string, float> gains,
+      const Frequency sampleRate,
+      Mqtt& mqtt,
+      TransmissionNotification& notification,
+      const int recordersCount);
   ~SdrDevice();
 
   void setFrequencyRange(FrequencyRange frequencyRange);
@@ -35,6 +43,7 @@ class SdrDevice {
   const int m_fftSize;
   bool m_isInitialized;
   FrequencyRange m_frequencyRange;
+  DataController m_dataController;
 
   std::shared_ptr<gr::top_block> m_tb;
   std::shared_ptr<FileSink<gr_complex>> m_rawFileSink;
@@ -44,4 +53,5 @@ class SdrDevice {
   std::vector<std::unique_ptr<Recorder>> m_recorders;
   std::set<Frequency> ignoredTransmissions;
   Connector m_connector;
+  std::chrono::milliseconds m_lastSpectogramDataSendTime;
 };

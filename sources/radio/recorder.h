@@ -2,6 +2,7 @@
 
 #include <gnuradio/blocks/rotator_cc.h>
 #include <gnuradio/top_block.h>
+#include <network/data_controller.h>
 #include <radio/blocks/blocker.h>
 #include <radio/blocks/file_sink.h>
 #include <radio/connector.h>
@@ -18,7 +19,7 @@ class Recorder {
   Recorder(const Connection&) = delete;
   Recorder& operator=(const Connection&) = delete;
 
-  Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate);
+  Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController);
   ~Recorder();
 
   Frequency getShift();
@@ -31,6 +32,7 @@ class Recorder {
  private:
   const Frequency m_sampleRate;
   Frequency m_shift;
+  DataController& m_dataController;
 
   std::shared_ptr<Blocker> m_blocker;
   std::shared_ptr<gr::blocks::rotator_cc> m_shiftBlock;

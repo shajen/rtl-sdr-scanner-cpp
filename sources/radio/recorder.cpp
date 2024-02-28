@@ -9,8 +9,8 @@
 
 constexpr auto LABEL = "recorder";
 
-Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate)
-    : m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_connector(tb) {
+Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController)
+    : m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_dataController(dataController), m_connector(tb) {
   Logger::info(LABEL, "starting");
   Logger::info(LABEL, "bandwidth: {}", formatFrequency(RECORDING_BANDWIDTH));
 

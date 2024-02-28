@@ -6,8 +6,14 @@
 constexpr auto LABEL = "scanner";
 
 Scanner::Scanner(
-    const std::string& driver, const std::string& serial, const std::map<std::string, float> gains, const Frequency sampleRate, const std::vector<FrequencyRange> ranges, const int recordersCount)
-    : m_device(driver, serial, gains, sampleRate, m_notification, recordersCount), m_ranges(ranges), m_isRunning(true), m_thread([this]() { worker(); }) {
+    const std::string& driver,
+    const std::string& serial,
+    const std::map<std::string, float> gains,
+    const Frequency sampleRate,
+    const std::vector<FrequencyRange> ranges,
+    Mqtt& mqtt,
+    const int recordersCount)
+    : m_device(driver, serial, gains, sampleRate, mqtt, m_notification, recordersCount), m_ranges(ranges), m_isRunning(true), m_thread([this]() { worker(); }) {
   Logger::info(LABEL, "starting");
   for (const auto& range : ranges) {
     Logger::info(LABEL, "scanned range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));

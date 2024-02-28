@@ -41,7 +41,7 @@ void Mqtt::publish(const std::string &topic, const std::string &data, int qos) {
   std::unique_lock lock(m_mutex);
   if (m_messages.size() < QUEUE_MAX_SIZE) {
     m_messages.emplace(topic, std::vector<uint8_t>{data.begin(), data.end()}, qos);
-    Logger::debug(LABEL, "queue size: {}", m_messages.size());
+    Logger::trace(LABEL, "queue size: {}", m_messages.size());
   }
 }
 
@@ -49,7 +49,7 @@ void Mqtt::publish(const std::string &topic, const std::vector<uint8_t> &data, i
   std::unique_lock lock(m_mutex);
   if (m_messages.size() < QUEUE_MAX_SIZE) {
     m_messages.emplace(topic, data, qos);
-    Logger::debug(LABEL, "queue size: {}", m_messages.size());
+    Logger::trace(LABEL, "queue size: {}", m_messages.size());
   }
 }
 
@@ -57,7 +57,7 @@ void Mqtt::publish(const std::string &topic, const std::vector<uint8_t> &&data, 
   std::unique_lock lock(m_mutex);
   if (m_messages.size() < QUEUE_MAX_SIZE) {
     m_messages.emplace(topic, std::move(data), qos);
-    Logger::debug(LABEL, "queue size: {}", m_messages.size());
+    Logger::trace(LABEL, "queue size: {}", m_messages.size());
   }
 }
 
