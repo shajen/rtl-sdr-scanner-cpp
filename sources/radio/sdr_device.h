@@ -37,8 +37,8 @@ class SdrDevice {
   FrequencyRange m_frequencyRange;
 
   std::shared_ptr<gr::top_block> m_tb;
-  std::shared_ptr<FileSink> m_gqrxFileSink;
-  std::shared_ptr<FileSink> m_powerFileSink;
+  std::shared_ptr<FileSink<gr_complex>> m_gqrxFileSink;
+  std::shared_ptr<FileSink<int8_t>> m_powerFileSink;
   std::shared_ptr<gr::soapy::source> m_source;
   std::shared_ptr<NoiseLearner> m_noiseLearner;
   std::shared_ptr<Transmission> m_transmission;

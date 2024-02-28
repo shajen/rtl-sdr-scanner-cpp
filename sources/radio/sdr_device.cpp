@@ -188,14 +188,14 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
 
   if (DEBUG_SAVE_ORG_POWER) {
     auto f2c = gr::blocks::float_to_char::make(m_fftSize);
-    m_powerFileSink = std::make_shared<FileSink>(m_fftSize, false);
+    m_powerFileSink = std::make_shared<FileSink<int8_t>>(m_fftSize, false);
     m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, f2c, m_powerFileSink);
   }
 }
 
 void SdrDevice::setupGqrxChain() {
   if (DEBUG_SAVE_ORG_RAW_IQ) {
-    m_gqrxFileSink = std::make_shared<FileSink>(sizeof(gr_complex), false);
+    m_gqrxFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
     m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, m_gqrxFileSink);
   }
 }

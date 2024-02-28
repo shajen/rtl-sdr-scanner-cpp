@@ -164,7 +164,7 @@ std::string formatPower(const float power, const char* color) {
     reset = "";
   }
 
-  return fmt::format("{}{:6.2f}{}", color, power, reset);
+  return fmt::format("{}{:5.2f}{}", color, power, reset);
 }
 
 void average(const float* input, float* output, int size, int groupSize) {
