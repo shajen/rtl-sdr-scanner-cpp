@@ -13,24 +13,13 @@ class Decimator : virtual public gr::sync_block {
     T* out = static_cast<T*>(output_items[0]);
 
     for (int i = 0; i < noutput_items; ++i) {
-      average(&in[i * m_itemSize * m_ratio], &out[i * m_itemSize], m_itemSize, m_ratio);
+      decimate(&in[i * m_itemSize * m_ratio], &out[i * m_itemSize]);
     }
     return noutput_items;
   }
 
  private:
-  void average(const T* in, T* out, int size, int ratio) {
-    std::vector<T> buffer;
-    buffer.resize(size);
-    for (int i = 0; i < ratio; ++i) {
-      for (int j = 0; j < size; ++j) {
-        buffer[j] += in[i * size + j];
-      }
-    }
-    for (int j = 0; j < size; ++j) {
-      out[j] = buffer[j] / T(ratio);
-    }
-  }
+  void decimate(const T* in, T* out) { memcpy(out, in, sizeof(T) * m_itemSize); }
 
   const int m_itemSize;
   const int m_ratio;

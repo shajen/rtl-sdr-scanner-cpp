@@ -2,6 +2,7 @@
 
 #include <config.h>
 #include <gnuradio/blocks/float_to_char.h>
+#include <gnuradio/blocks/keep_one_in_n.h>
 #include <gnuradio/blocks/stream_to_vector.h>
 #include <gnuradio/fft/fft_v.h>
 #include <gnuradio/fft/window.h>
@@ -185,13 +186,13 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   };
   const auto indexStep = static_cast<Frequency>(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / m_fftSize));
 
-  const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize * DECIMATOR_FACTOR);
-  const auto decimator = std::make_shared<Decimator<gr_complex>>(m_fftSize, DECIMATOR_FACTOR);
+  const auto decimator = gr::blocks::keep_one_in_n::make(sizeof(gr_complex), DECIMATOR_FACTOR);
+  const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize);
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(m_fftSize, gr::fft::window::hamming(m_fftSize), true);
   const auto psd = std::make_shared<PSD>(m_fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequencyRange, indexToFrequency);
   m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, decimator, s2c, fft, psd, m_noiseLearner, m_transmission);
 
   const auto spectogramFactor = getDecimatorFactor(step, SPECTROGRAM_MIN_STEP);
   const auto spectogramDecimator = std::make_shared<Decimator<float>>(m_fftSize / spectogramFactor, spectogramFactor);
