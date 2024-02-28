@@ -126,6 +126,15 @@ std::vector<std::pair<int, int>> getResamplersFactors(const Frequency sampleRate
   return results;
 }
 
+int getDecimatorFactor(Frequency oldStep, Frequency newStep) {
+  int factor = 1;
+  while (oldStep < newStep) {
+    oldStep = oldStep << 1;
+    factor = factor << 1;
+  }
+  return factor;
+}
+
 Frequency getTunedFrequency(Frequency frequency, Frequency step) {
   const auto rest = frequency < 0 ? frequency % step + step : frequency % step;
   const auto down = frequency - rest;

@@ -186,25 +186,28 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   const auto indexStep = static_cast<Frequency>(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / m_fftSize));
 
   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize * DECIMATOR_FACTOR);
-  const auto decimator = std::make_shared<Decimator>(m_fftSize, DECIMATOR_FACTOR);
+  const auto decimator = std::make_shared<Decimator<gr_complex>>(m_fftSize, DECIMATOR_FACTOR);
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(m_fftSize, gr::fft::window::hamming(m_fftSize), true);
   const auto psd = std::make_shared<PSD>(m_fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequencyRange, indexToFrequency);
   m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
 
-  const auto f2c = gr::blocks::float_to_char::make(m_fftSize);
-  const auto callback = std::make_shared<Callback<int8_t>>(m_fftSize, [this](const int8_t* data, const int size) {
+  const auto spectogramFactor = getDecimatorFactor(step, SPECTROGRAM_MIN_STEP);
+  const auto spectogramDecimator = std::make_shared<Decimator<float>>(m_fftSize / spectogramFactor, spectogramFactor);
+  const auto f2c = gr::blocks::float_to_char::make(m_fftSize / spectogramFactor);
+  const auto callback = std::make_shared<Callback<int8_t>>(m_fftSize / spectogramFactor, [this, spectogramFactor](const int8_t* data, const int size) {
     const auto now = getTime();
     const auto frequency = getFrequency();
+    const auto fftSize = m_fftSize / spectogramFactor;
     for (int i = 0; i < size; ++i) {
-      if (m_lastSpectogramDataSendTime + SEND_SPECTROGRAM_INTERVAL < now && frequency != 0) {
-        m_dataController.pushSpectrogram(now, frequency, m_sampleRate, data + i * m_fftSize, m_fftSize);
+      if (m_lastSpectogramDataSendTime + SPECTROGRAM_SEND_INTERVAL < now && frequency != 0) {
+        m_dataController.pushSpectrogram(now, frequency, m_sampleRate, data + i * fftSize, fftSize);
         m_lastSpectogramDataSendTime = now;
       }
     }
   });
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, f2c, callback);
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, spectogramDecimator, f2c, callback);
 }
 
 void SdrDevice::setupRawFileChain() {

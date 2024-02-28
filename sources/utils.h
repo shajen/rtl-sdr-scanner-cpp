@@ -20,6 +20,8 @@ std::vector<int> getPrimeFactors(int n);
 
 std::vector<std::pair<int, int>> getResamplersFactors(const Frequency sampleRate, const Frequency bandwidth, const int threshold);
 
+int getDecimatorFactor(Frequency oldStep, Frequency newStep);
+
 Frequency getTunedFrequency(Frequency frequency, Frequency step);
 
 template <typename T>
