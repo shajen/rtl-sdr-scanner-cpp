@@ -30,7 +30,7 @@ std::string colored(const char* color, const char* fmt, const Args&... args) {
 
 class Logger {
  public:
-  static void configure(const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logDir);
+  static void configure(const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logFile);
 
   template <typename... Args>
   static void trace(const char* label, const char* fmt, const Args&... args) {

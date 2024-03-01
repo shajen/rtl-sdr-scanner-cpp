@@ -41,15 +41,7 @@ SdrDevice::SdrDevice(
       m_connector(m_tb),
       m_lastSpectogramDataSendTime(0) {
   Logger::info(LABEL, "starting");
-  Logger::info(
-      LABEL,
-      "driver: {}, serial: {}, sample rate: {}, fft size: {}, step: {}, recorders: {}",
-      m_driver,
-      m_serial,
-      formatFrequency(m_sampleRate),
-      m_fftSize,
-      formatFrequency(TUNING_STEP),
-      recordersCount);
+  Logger::info(LABEL, "driver: {}, serial: {}, sample rate: {}, recorders: {}", m_driver, m_serial, formatFrequency(m_sampleRate), recordersCount);
 
   m_source = gr::soapy::source::make(getSoapyArgs(driver, serial).c_str(), "fc32", 1);
 

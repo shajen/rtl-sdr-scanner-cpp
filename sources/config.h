@@ -8,6 +8,9 @@ constexpr auto DEBUG_DIR = "";                                   // debug files 
 constexpr auto DEBUG_SAVE_FULL_RAW_IQ = false;                   // save orgignal sdr data as raw iq
 constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = false;              // save recordings as raw iq
 constexpr auto INITIAL_DELAY = std::chrono::milliseconds(1000);  // delay after first start sdr device to start processing
+constexpr auto LOG_FILE_NAME = "log.txt";                        // log filename
+constexpr auto LOG_FILE_SIZE = 100 * 1024 * 1024;                // single log file max size
+constexpr auto LOG_FILES_COUNT = 9;                              // keep last n log files
 constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;               // print stats every n frames
 constexpr auto RESAMPLER_THRESHOLD = 125;                        // max interpolation or decimation factor of RESAMPLER
 

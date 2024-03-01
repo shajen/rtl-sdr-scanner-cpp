@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   signal(SIGINT, handler);
   signal(SIGTERM, handler);
 
-  Logger::configure(spdlog::level::info, spdlog::level::off, "");
+  Logger::configure(spdlog::level::info, spdlog::level::debug, LOG_FILE_NAME);
   Logger::info(LABEL, "starting");
 
   Config config;
