@@ -16,7 +16,7 @@ int PSD::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vect
     m_performanceLogger.kick();
   }
   for (int i = 0; i < m_itemSize * noutput_items; ++i) {
-    output_buf[i] = 10.0f * std::log10(std::abs(input_buf[i]) / m_sampleRate);
+    output_buf[i] = 10.0f * std::log10(std::pow(std::abs(input_buf[i]), 2.0f) / m_sampleRate);
   }
   return noutput_items;
 }

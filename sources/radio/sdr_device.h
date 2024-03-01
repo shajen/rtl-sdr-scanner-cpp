@@ -33,14 +33,13 @@ class SdrDevice {
 
  private:
   Frequency getFrequency() const;
-  void setupRawFileChain();
   void setupPowerChain(TransmissionNotification& notification);
+  void setupRawFileChain();
 
   const std::string m_driver;
   const std::string m_serial;
 
   const Frequency m_sampleRate;
-  const int m_fftSize;
   bool m_isInitialized;
   FrequencyRange m_frequencyRange;
   DataController m_dataController;
@@ -53,5 +52,4 @@ class SdrDevice {
   std::vector<std::unique_ptr<Recorder>> m_recorders;
   std::set<Frequency> ignoredTransmissions;
   Connector m_connector;
-  std::chrono::milliseconds m_lastSpectogramDataSendTime;
 };

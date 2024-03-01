@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
   Config config;
   Mqtt mqtt(config);
-  auto scanner = createScanner(argc >= 2 ? argv[1] : nullptr, mqtt, 1);
+  auto scanner = createScanner(argc >= 2 ? argv[1] : nullptr, mqtt, 4);
 
   Logger::info(LABEL, "started");
   while (isRunning) {

@@ -2,15 +2,14 @@
 
 #include <config.h>
 #include <gnuradio/blocks/float_to_char.h>
-#include <gnuradio/blocks/keep_one_in_n.h>
 #include <gnuradio/blocks/stream_to_vector.h>
 #include <gnuradio/fft/fft_v.h>
 #include <gnuradio/fft/window.h>
 #include <gnuradio/soapy/source.h>
 #include <logger.h>
-#include <radio/blocks/callback.h>
 #include <radio/blocks/decimator.h>
 #include <radio/blocks/psd.h>
+#include <radio/blocks/spectrogram.h>
 
 constexpr auto LABEL = "sdr";
 
@@ -33,26 +32,26 @@ SdrDevice::SdrDevice(
     : m_driver(driver),
       m_serial(serial),
       m_sampleRate(sampleRate),
-      m_fftSize(getFft(m_sampleRate, MAX_STEP_AFTER_FFT)),
       m_isInitialized(false),
       m_frequencyRange({0, 0}),
       m_dataController(mqtt, driver + "_" + serial),
       m_tb(gr::make_top_block("sdr")),
-      m_connector(m_tb),
-      m_lastSpectogramDataSendTime(0) {
+      m_connector(m_tb) {
   Logger::info(LABEL, "starting");
   Logger::info(LABEL, "driver: {}, serial: {}, sample rate: {}, recorders: {}", m_driver, m_serial, formatFrequency(m_sampleRate), recordersCount);
 
   m_source = gr::soapy::source::make(getSoapyArgs(driver, serial).c_str(), "fc32", 1);
 
-  setupRawFileChain();
   setupPowerChain(notification);
+  setupRawFileChain();
 
   for (int i = 0; i < recordersCount; ++i) {
     m_recorders.push_back(std::make_unique<Recorder>(m_tb, m_source, m_sampleRate, m_dataController));
   }
 
+  m_source->set_gain_mode(0, false);
   for (const auto& [key, value] : gains) {
+    Logger::info(LABEL, "set gain, key: {}, value: {}", key, value);
     m_source->set_gain(0, key.c_str(), value);
   }
   m_source->set_sample_rate(0, sampleRate);
@@ -169,38 +168,28 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
 Frequency SdrDevice::getFrequency() const { return (m_frequencyRange.first + m_frequencyRange.second) / 2; }
 
 void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
-  const auto step = static_cast<double>(m_sampleRate) / m_fftSize;
+  const auto fftSize = getFft(m_sampleRate, SIGNAL_DETECTION_MAX_STEP);
+  const auto step = static_cast<double>(m_sampleRate) / fftSize;
+  const auto indexStep = static_cast<Frequency>(std::ceil(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / fftSize)));
+  const auto decimatorFactor = std::max(1, static_cast<int>(step / SIGNAL_DETECTION_FPS));
   const auto indexToFrequency = [this, step](const int index) { return getFrequency() + static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
   const auto indexToShift = [this, step](const int index) { return static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
   const auto isIndexInRange = [this, indexToFrequency](const int index) {
     const auto f = indexToFrequency(index);
     return m_frequencyRange.first <= f && f <= m_frequencyRange.second;
   };
-  const auto indexStep = static_cast<Frequency>(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / m_fftSize));
+  Logger::info(LABEL, "signal detection, fft: {}, step: {}, decimator factor: {}", fftSize, formatFrequency(step), decimatorFactor);
 
-  const auto decimator = gr::blocks::keep_one_in_n::make(sizeof(gr_complex), DECIMATOR_FACTOR);
-  const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), m_fftSize);
-  const auto fft = gr::fft::fft_v<gr_complex, true>::make(m_fftSize, gr::fft::window::hamming(m_fftSize), true);
-  const auto psd = std::make_shared<PSD>(m_fftSize, m_sampleRate);
-  m_noiseLearner = std::make_shared<NoiseLearner>(m_fftSize, m_frequencyRange, indexToFrequency);
-  m_transmission = std::make_shared<Transmission>(m_fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, decimator, s2c, fft, psd, m_noiseLearner, m_transmission);
+  const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), fftSize * decimatorFactor);
+  const auto decimator = std::make_shared<Decimator<gr_complex>>(fftSize, decimatorFactor);
+  const auto fft = gr::fft::fft_v<gr_complex, true>::make(fftSize, gr::fft::window::hamming(fftSize), true);
+  const auto psd = std::make_shared<PSD>(fftSize, m_sampleRate);
+  m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, m_frequencyRange, indexToFrequency);
+  m_transmission = std::make_shared<Transmission>(fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
 
-  const auto spectogramFactor = getDecimatorFactor(step, SPECTROGRAM_MIN_STEP);
-  const auto spectogramDecimator = std::make_shared<Decimator<float>>(m_fftSize / spectogramFactor, spectogramFactor);
-  const auto f2c = gr::blocks::float_to_char::make(m_fftSize / spectogramFactor);
-  const auto callback = std::make_shared<Callback<int8_t>>(m_fftSize / spectogramFactor, [this, spectogramFactor](const int8_t* data, const int size) {
-    const auto now = getTime();
-    const auto frequency = getFrequency();
-    const auto fftSize = m_fftSize / spectogramFactor;
-    for (int i = 0; i < size; ++i) {
-      if (m_lastSpectogramDataSendTime + SPECTROGRAM_SEND_INTERVAL < now && frequency != 0) {
-        m_dataController.pushSpectrogram(now, frequency, m_sampleRate, data + i * fftSize, fftSize);
-        m_lastSpectogramDataSendTime = now;
-      }
-    }
-  });
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, spectogramDecimator, f2c, callback);
+  const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));
+  m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, spectrogram);
 }
 
 void SdrDevice::setupRawFileChain() {

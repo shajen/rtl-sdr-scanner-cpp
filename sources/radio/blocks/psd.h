@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gnuradio/sync_block.h>
-#include <radio/help_structures.h>
 #include <performance_logger.h>
+#include <radio/help_structures.h>
 
 class PSD : virtual public gr::sync_block {
  public:
