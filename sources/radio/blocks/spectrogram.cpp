@@ -17,7 +17,13 @@ Spectrogram::Spectrogram(const int itemSize, const Frequency sampleRate, DataCon
       m_counter(0),
       m_lastDataSendTime(getTime()) {
   const auto step = m_sampleRate / m_outputSize;
-  Logger::info(LABEL, "input fft: {}, output fft: {}, step: {}, decimator factor: {}", m_inputSize, m_outputSize, formatFrequency(step), m_decimatorFactor);
+  Logger::info(
+      LABEL,
+      "input fft: {}, output fft: {}, step: {}, decimator factor: {}",
+      colored(GREEN, "{}", m_inputSize),
+      colored(GREEN, "{}", m_outputSize),
+      formatFrequency(step),
+      colored(GREEN, "{}", m_decimatorFactor));
   m_sum.resize(m_outputSize);
 }
 

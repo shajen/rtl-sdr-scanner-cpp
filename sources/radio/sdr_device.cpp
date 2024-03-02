@@ -38,7 +38,13 @@ SdrDevice::SdrDevice(
       m_tb(gr::make_top_block("sdr")),
       m_connector(m_tb) {
   Logger::info(LABEL, "starting");
-  Logger::info(LABEL, "driver: {}, serial: {}, sample rate: {}, recorders: {}", m_driver, m_serial, formatFrequency(m_sampleRate), recordersCount);
+  Logger::info(
+      LABEL,
+      "driver: {}, serial: {}, sample rate: {}, recorders: {}",
+      colored(GREEN, "{}", m_driver),
+      colored(GREEN, "{}", m_serial),
+      formatFrequency(m_sampleRate),
+      colored(GREEN, "{}", recordersCount));
 
   m_source = gr::soapy::source::make(getSoapyArgs(driver, serial).c_str(), "fc32", 1);
 
@@ -51,7 +57,7 @@ SdrDevice::SdrDevice(
 
   m_source->set_gain_mode(0, false);
   for (const auto& [key, value] : gains) {
-    Logger::info(LABEL, "set gain, key: {}, value: {}", key, value);
+    Logger::info(LABEL, "set gain, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value));
     m_source->set_gain(0, key.c_str(), value);
   }
   m_source->set_sample_rate(0, sampleRate);
@@ -178,7 +184,7 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
     const auto f = indexToFrequency(index);
     return m_frequencyRange.first <= f && f <= m_frequencyRange.second;
   };
-  Logger::info(LABEL, "signal detection, fft: {}, step: {}, decimator factor: {}", fftSize, formatFrequency(step), decimatorFactor);
+  Logger::info(LABEL, "signal detection, fft: {}, step: {}, decimator factor: {}", colored(GREEN, "{}", fftSize), formatFrequency(step), colored(GREEN, "{}", decimatorFactor));
 
   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), fftSize * decimatorFactor);
   const auto decimator = std::make_shared<Decimator<gr_complex>>(fftSize, decimatorFactor);

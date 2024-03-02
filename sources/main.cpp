@@ -12,7 +12,7 @@ constexpr auto LABEL = "main";
 volatile bool isRunning{true};
 
 void handler(int) {
-  Logger::warn(LABEL, "received stop signal");
+  Logger::warn(LABEL, "{}", colored(RED, "{}", "received stop signal"));
   isRunning = false;
 }
 
@@ -40,17 +40,17 @@ int main(int argc, char* argv[]) {
   signal(SIGTERM, handler);
 
   Logger::configure(spdlog::level::info, spdlog::level::debug, LOG_FILE_NAME);
-  Logger::info(LABEL, "starting");
+  Logger::info(LABEL, "{}", colored(GREEN, "starting"));
 
   Config config;
   Mqtt mqtt(config);
   auto scanner = createScanner(argc >= 2 ? argv[1] : nullptr, mqtt, 4);
 
-  Logger::info(LABEL, "started");
+  Logger::info(LABEL, "{}", colored(GREEN, "started"));
   while (isRunning) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  Logger::info(LABEL, "stopped");
+  Logger::info(LABEL, "{}", colored(GREEN, "stopped"));
   return 0;
 }

@@ -113,7 +113,7 @@ void Transmission::updateSignals(const float* avgPower, const float* rawPower, c
     signal.newData(bestAvgIndex, avgPower[bestAvgIndex], bestRawIndex, rawPower[bestRawIndex], now);
     Logger::debug(
         LABEL,
-        "avg, f: {}, p: {}, raw, f: {}, p: {}, d: {:5d} ms, ld: {:5d} ms ago, f: {}",
+        "avg, f: {}, p: {}, raw, f: {}, p: {}, d: {:5d} ms, ld: {:5d} ms ago, fl: {}",
         formatFrequency(m_indexToFrequency(bestAvgIndex), CYAN),
         formatPower(avgPower[bestAvgIndex], CYAN),
         formatFrequency(m_indexToFrequency(bestRawIndex), MAGENTA),
