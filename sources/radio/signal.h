@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <radio/help_structures.h>
 
 #include <chrono>
@@ -9,7 +10,8 @@ class Signal {
   using Index = int;
 
  public:
-  Signal(const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now);
+  Signal(
+      const Config& config, const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now);
   ~Signal();
 
   void newData(const Index avgIndex, const float avgPower, const Index rawIndex, const float rawPower, const std::chrono::milliseconds& now);
@@ -23,6 +25,7 @@ class Signal {
   std::chrono::milliseconds getLastDataTime(const std::chrono::milliseconds& now) const;
 
  private:
+  const Config& m_config;
   std::function<Frequency(const Index index)> m_indexToFrequency;
   std::function<Frequency(const Index index)> m_indexToShift;
   std::chrono::milliseconds m_firstDataTime;

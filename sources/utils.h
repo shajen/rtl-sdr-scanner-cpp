@@ -5,12 +5,15 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 
 std::chrono::milliseconds getTime();
 
 void setNoData(float* data, const int size);
+
+std::string removeZerosFromBegging(const std::string& string);
 
 std::string getRawFileName(const char* label, const char* extension, Frequency frequency, Frequency sampleRate);
 
@@ -58,6 +61,23 @@ T mostFrequentValue(const std::vector<T>& data) {
   buffer.erase(std::remove_if(buffer.begin(), buffer.end(), [it](const auto& kv) { return kv.second != it->second; }), buffer.end());
   std::sort(buffer.begin(), buffer.end(), f);
   return buffer[buffer.size() / 2].first;
+}
+
+template <typename T>
+T getNearestElement(const std::set<T>& data, const T& value) {
+  const auto next = data.lower_bound(value);
+  if (next == data.end()) {
+    return *data.rbegin();
+  } else if (next == data.begin()) {
+    return *next;
+  } else {
+    const auto prev = std::prev(next);
+    if (*next - value <= value - *prev) {
+      return *next;
+    } else {
+      return *prev;
+    }
+  }
 }
 
 std::string formatFrequency(const Frequency frequency, const char* color = nullptr);

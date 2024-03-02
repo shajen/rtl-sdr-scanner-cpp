@@ -9,10 +9,10 @@
 
 constexpr auto LABEL = "recorder";
 
-Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController)
-    : m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_dataController(dataController), m_connector(tb) {
+Recorder::Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController)
+    : m_config(config), m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_dataController(dataController), m_connector(tb) {
   Logger::info(LABEL, "starting");
-  Logger::info(LABEL, "bandwidth: {}", formatFrequency(RECORDING_BANDWIDTH));
+  Logger::info(LABEL, "bandwidth: {}", formatFrequency(config.recordingBandwidth()));
 
   std::vector<std::shared_ptr<gr::basic_block>> blocks;
   m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
@@ -22,8 +22,8 @@ Recorder::Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block>
   blocks.push_back(m_shiftBlock);
 
   std::shared_ptr<gr::basic_block> lastResampler;
-  for (const auto& [factor1, factor2] : getResamplersFactors(m_sampleRate, RECORDING_BANDWIDTH, RESAMPLER_THRESHOLD)) {
-    Logger::info(LABEL, "rational resampler factors: {}, {}", factor1, factor2);
+  for (const auto& [factor1, factor2] : getResamplersFactors(m_sampleRate, config.recordingBandwidth(), RESAMPLER_THRESHOLD)) {
+    Logger::info(LABEL, "rational resampler factors: {}, {}", colored(GREEN, "{}", factor1), colored(GREEN, "{}", factor2));
     blocks.push_back(gr::filter::rational_resampler<gr_complex, gr_complex, gr_complex>::make(factor1, factor2));
   }
   m_rawFileSinkBlock = std::make_shared<FileSink<gr_complex>>(1, true);
@@ -50,7 +50,7 @@ void Recorder::startRecording(Frequency frequency, Frequency shift) {
     m_shift = shift;
     m_shiftBlock->set_phase_inc(2.0l * M_PIl * (static_cast<double>(-shift) / static_cast<float>(m_sampleRate)));
     if (DEBUG_SAVE_RECORDING_RAW_IQ) {
-      m_rawFileSinkBlock->startRecording(getRawFileName("recording", "fc", frequency + shift, RECORDING_BANDWIDTH));
+      m_rawFileSinkBlock->startRecording(getRawFileName("recording", "fc", frequency + shift, m_config.recordingBandwidth()));
     }
     m_blocker->setBlocking(false);
   } else {

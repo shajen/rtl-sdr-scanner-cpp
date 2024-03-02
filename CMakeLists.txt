@@ -20,6 +20,7 @@ find_package(Gnuradio COMPONENTS
     network
     soapy
 )
+find_package(nlohmann_json REQUIRED)
 
 find_library(MOSQUITTO_LIB mosquitto)
 if(NOT MOSQUITTO_LIB)
@@ -49,6 +50,7 @@ target_link_libraries(auto_sdr
     gnuradio::gnuradio-filter
     gnuradio::gnuradio-soapy
     mosquitto
+    nlohmann_json::nlohmann_json
     spdlog::spdlog
 )
 

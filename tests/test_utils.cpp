@@ -158,6 +158,22 @@ TEST(Utils, mostFrequentValue) {
   EXPECT_EQ(mostFrequentValue(v5), 1);
 }
 
+TEST(Utils, getNearestElement) {
+  std::set<int> data({10, 20, 30, 40});
+
+  EXPECT_EQ(getNearestElement(data, 9), 10);
+  EXPECT_EQ(getNearestElement(data, 10), 10);
+  EXPECT_EQ(getNearestElement(data, 11), 10);
+
+  EXPECT_EQ(getNearestElement(data, 24), 20);
+  EXPECT_EQ(getNearestElement(data, 25), 30);
+  EXPECT_EQ(getNearestElement(data, 26), 30);
+
+  EXPECT_EQ(getNearestElement(data, 39), 40);
+  EXPECT_EQ(getNearestElement(data, 40), 40);
+  EXPECT_EQ(getNearestElement(data, 41), 40);
+}
+
 TEST(Utils, getMaxIndex) {
   std::vector<float> data({1, 2, 3, 4, 5, 4, 3, 2, 1});
   EXPECT_EQ(getMaxIndex(data.data(), data.size(), 0, 0), 0);

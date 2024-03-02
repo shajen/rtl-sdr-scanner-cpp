@@ -1,24 +1,16 @@
 {
-    "cores": 0,
-    "detection": {
-        "frequency_grouping_size": 10000,
-        "frequency_range_scanning_time_ms": 64,
-        "noise_detection_margin": 20,
-        "noise_learning_time_seconds": 30,
-        "torn_transmission_learning_time_seconds": 60
-    },
     "ignored_frequencies": [],
-    "memory_limit_mb": 0,
     "output": {
+        "color_log_enabled": true,
         "console_log_level": "info",
-        "file_log_level": "info",
-        "logs": "sdr/logs"
+        "file_log_level": "debug"
     },
     "recording": {
-        "max_noise_time_ms": 500,
-        "min_sample_rate": 16000,
-        "min_time_ms": 2000
+        "max_noise_time_ms": 2000,
+        "min_sample_rate": 32000,
+        "min_time_ms": 2000,
+        "step": 2500
     },
     "scanned_frequencies": [],
-    "version": 1
+    "version": 2
 }

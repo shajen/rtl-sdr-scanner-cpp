@@ -3,8 +3,9 @@
 #include <config.h>
 #include <utils.h>
 
-Signal::Signal(const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now)
-    : m_indexToFrequency(indexToFrequency), m_indexToShift(indexToShift), m_firstDataTime(now), m_lastDataTime(now), m_power(0.0) {}
+Signal::Signal(
+    const Config& config, const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now)
+    : m_config(config), m_indexToFrequency(indexToFrequency), m_indexToShift(indexToShift), m_firstDataTime(now), m_lastDataTime(now), m_power(0.0) {}
 
 Signal::~Signal() {}
 
@@ -18,9 +19,9 @@ void Signal::newData(const Index, const float avgPower, const Index rawIndex, co
   }
 }
 
-bool Signal::isMinimalTime(const std::chrono::milliseconds& now) const { return m_firstDataTime + RECORDING_MIN_TIME <= now; }
+bool Signal::isMinimalTime(const std::chrono::milliseconds& now) const { return m_firstDataTime + m_config.recordingMinTime() <= now; }
 
-bool Signal::isTimeout(const std::chrono::milliseconds& now) const { return m_lastDataTime + RECORDING_TIMEOUT <= now; }
+bool Signal::isTimeout(const std::chrono::milliseconds& now) const { return m_lastDataTime + m_config.recordingTimeout() <= now; }
 
 bool Signal::needFlush(const std::chrono::milliseconds& now) const { return m_lastDataTime == now && isMinimalTime(now); }
 

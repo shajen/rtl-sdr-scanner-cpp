@@ -18,14 +18,7 @@
 
 class SdrDevice {
  public:
-  SdrDevice(
-      const std::string& driver,
-      const std::string& serial,
-      const std::map<std::string, float> gains,
-      const Frequency sampleRate,
-      Mqtt& mqtt,
-      TransmissionNotification& notification,
-      const int recordersCount);
+  SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, TransmissionNotification& notification, const int recordersCount);
   ~SdrDevice();
 
   void setFrequencyRange(FrequencyRange frequencyRange);
@@ -33,11 +26,8 @@ class SdrDevice {
 
  private:
   Frequency getFrequency() const;
-  void setupPowerChain(TransmissionNotification& notification);
+  void setupPowerChain(const Config& config, TransmissionNotification& notification);
   void setupRawFileChain();
-
-  const std::string m_driver;
-  const std::string m_serial;
 
   const Frequency m_sampleRate;
   bool m_isInitialized;

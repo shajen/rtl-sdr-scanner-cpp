@@ -7,6 +7,7 @@
 constexpr auto LABEL = "transmission";
 
 Transmission::Transmission(
+    const Config& config,
     const int itemSize,
     const int groupSize,
     TransmissionNotification& notification,
@@ -14,6 +15,7 @@ Transmission::Transmission(
     std::function<Frequency(const Index index)> indexToShift,
     std::function<bool(const int Index)> isIndexInRange)
     : gr::sync_block("Transmission", gr::io_signature::make(1, 1, sizeof(float) * itemSize), gr::io_signature::make(0, 0, 0)),
+      m_config(config),
       m_itemSize(itemSize),
       m_groupSize(groupSize),
       m_averager(itemSize, GROUPING_Y),
@@ -86,7 +88,7 @@ void Transmission::clearSignals(const float* avgPower, const float* rawPower, co
 void Transmission::addSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now) {
   std::vector<Index> indexes;
   for (int i = 0; i < m_itemSize; ++i) {
-    if (RECORDING_START_THRESHOLD <= avgPower[i] && m_isIndexInRange(i)) {
+    if (RECORDING_START_THRESHOLD <= avgPower[i] && m_isIndexInRange(i) && !isIndexIgnored(i)) {
       indexes.push_back(i);
     }
   }
@@ -101,7 +103,7 @@ void Transmission::addSignals(const float* avgPower, const float* rawPower, cons
           formatFrequency(m_indexToFrequency(bestIndex), BLUE),
           formatPower(avgPower[bestIndex], BLUE),
           formatPower(rawPower[bestIndex], BLUE));
-      m_signals.insert({bestIndex, {m_indexToFrequency, m_indexToShift, now}});
+      m_signals.insert({bestIndex, {m_config, m_indexToFrequency, m_indexToShift, now}});
     }
   }
 }
@@ -139,13 +141,23 @@ Transmission::Index Transmission::getBestIndex(Index index) const {
   return mostFrequentValue(buffer);
 }
 
+bool Transmission::isIndexIgnored(const Index& index) const {
+  const auto frequency = m_indexToFrequency(index);
+  for (const auto& range : m_config.ignoredRanges()) {
+    if (range.first <= frequency && frequency <= range.second) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::vector<FrequencyFlush> Transmission::getSortedTransmissions(const std::chrono::milliseconds now) const {
   std::vector<Index> indexes;
   std::transform(m_signals.begin(), m_signals.end(), std::back_inserter(indexes), [](auto& kv) { return kv.first; });
   std::sort(indexes.begin(), indexes.end(), [this](const Index& i1, const Index& i2) { return m_signals.at(i1).getPower() > m_signals.at(i2).getPower(); });
   std::vector<FrequencyFlush> transmissions;
   for (const auto& index : indexes) {
-    const auto frequency = getTunedFrequency(m_indexToShift(index), TUNING_STEP);
+    const auto frequency = getTunedFrequency(m_indexToShift(index), m_config.recordingTuningStep());
     transmissions.emplace_back(frequency, m_signals.at(index).needFlush(now));
   }
   return transmissions;

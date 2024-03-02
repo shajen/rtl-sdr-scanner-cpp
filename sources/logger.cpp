@@ -5,7 +5,11 @@
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-void Logger::Logger::configure(const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logFile) {
+void Logger::Logger::configure(
+    const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logFile, int fileSize, int filesCount, bool isColorLogEnabled) {
+  spdlog::drop_all();
+  _logger.reset();
+
   auto consoleLogger = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   consoleLogger->set_level(logLevelConsole);
 
@@ -13,7 +17,7 @@ void Logger::Logger::configure(const spdlog::level::level_enum logLevelConsole, 
     std::initializer_list<spdlog::sink_ptr> loggers{consoleLogger};
     Logger::_logger = std::make_shared<spdlog::logger>("auto_sdr", loggers);
   } else {
-    auto fileLogger = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logFile, LOG_FILE_SIZE, LOG_FILES_COUNT);
+    auto fileLogger = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(logFile, fileSize, filesCount);
     fileLogger->set_level(logLevelFile);
 
     std::initializer_list<spdlog::sink_ptr> loggers{consoleLogger, fileLogger};
@@ -24,4 +28,5 @@ void Logger::Logger::configure(const spdlog::level::level_enum logLevelConsole, 
   _logger->set_pattern("[%Y-%m-%d %H:%M:%S.%f] [%-7l] %v");
   spdlog::register_logger(_logger);
   spdlog::flush_every(std::chrono::seconds(10));
+  _isColorLogEnabled = isColorLogEnabled;
 }

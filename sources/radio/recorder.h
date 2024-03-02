@@ -19,7 +19,7 @@ class Recorder {
   Recorder(const Connection&) = delete;
   Recorder& operator=(const Connection&) = delete;
 
-  Recorder(std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController);
+  Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController);
   ~Recorder();
 
   Frequency getShift();
@@ -30,6 +30,7 @@ class Recorder {
   std::chrono::milliseconds getDuration() const;
 
  private:
+  const Config& m_config;
   const Frequency m_sampleRate;
   Frequency m_shift;
   DataController& m_dataController;

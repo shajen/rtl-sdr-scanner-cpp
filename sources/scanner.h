@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <network/mqtt.h>
 #include <notification.h>
 #include <radio/sdr_device.h>
@@ -10,14 +11,7 @@
 
 class Scanner {
  public:
-  Scanner(
-      const std::string& driver,
-      const std::string& serial,
-      const std::map<std::string, float> gains,
-      const Frequency sampleRate,
-      const std::vector<FrequencyRange> ranges,
-      Mqtt& mqtt,
-      const int recordersCount);
+  Scanner(const Config& config, const Device& device, Mqtt& mqtt, const int recordersCount);
   ~Scanner();
 
  private:

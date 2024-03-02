@@ -1,5 +1,6 @@
 #pragma once
 
+#include <config.h>
 #include <gnuradio/sync_block.h>
 #include <radio/averager.h>
 #include <radio/help_structures.h>
@@ -14,6 +15,7 @@ class Transmission : virtual public gr::sync_block {
 
  public:
   Transmission(
+      const Config& config,
       const int itemSize,
       const int groupSize,
       TransmissionNotification& notification,
@@ -30,8 +32,10 @@ class Transmission : virtual public gr::sync_block {
   void addSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
   void updateSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now);
   Index getBestIndex(Index index) const;
+  bool isIndexIgnored(const Index& index) const;
   std::vector<FrequencyFlush> getSortedTransmissions(const std::chrono::milliseconds now) const;
 
+  const Config& m_config;
   const int m_itemSize;
   const int m_groupSize;
   Averager m_averager;

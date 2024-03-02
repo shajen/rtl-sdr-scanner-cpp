@@ -1,7 +1,5 @@
 #include "utils.h"
 
-#define FMT_HEADER_ONLY
-
 #include <config.h>
 #include <logger.h>
 #include <math.h>
@@ -48,25 +46,19 @@ void setNoData(float* data, const int size) {
   }
 }
 
+std::string removeZerosFromBegging(const std::string& string) {
+  uint32_t i = 0;
+  while (i < string.length() && string[i] == '0') {
+    i++;
+  }
+  return string.substr(i, string.length() - i);
+}
+
 std::string getRawFileName(const char* label, const char* extension, Frequency frequency, Frequency sampleRate) {
   char buf[1024];
   time_t rawtime = time(nullptr);
   struct tm* tm = localtime(&rawtime);
-  snprintf(
-      buf,
-      1024,
-      "%s/%s_%04d%02d%02d_%02d%02d%02d_%d_%d_%s.raw",
-      DEBUG_DIR,
-      label,
-      tm->tm_year + 1900,
-      tm->tm_mon + 1,
-      tm->tm_mday,
-      tm->tm_hour,
-      tm->tm_min,
-      tm->tm_sec,
-      frequency,
-      sampleRate,
-      extension);
+  snprintf(buf, 1024, "./%s_%04d%02d%02d_%02d%02d%02d_%d_%d_%s.raw", label, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, frequency, sampleRate, extension);
   return buf;
 }
 
@@ -152,7 +144,7 @@ std::string formatFrequency(const Frequency frequency, const char* color) {
   if (!color) {
     color = GREEN;
   }
-  if (!COLOR_LOG_ENABLED) {
+  if (!Logger::isColorLogEnabled()) {
     color = "";
     reset = "";
   }
@@ -174,7 +166,7 @@ std::string formatPower(const float power, const char* color) {
   if (!color) {
     color = GREEN;
   }
-  if (!COLOR_LOG_ENABLED) {
+  if (!Logger::isColorLogEnabled()) {
     color = "";
     reset = "";
   }

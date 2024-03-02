@@ -5,17 +5,15 @@
 
 constexpr auto LABEL = "scanner";
 
-Scanner::Scanner(
-    const std::string& driver,
-    const std::string& serial,
-    const std::map<std::string, float> gains,
-    const Frequency sampleRate,
-    const std::vector<FrequencyRange> ranges,
-    Mqtt& mqtt,
-    const int recordersCount)
-    : m_device(driver, serial, gains, sampleRate, mqtt, m_notification, recordersCount), m_ranges(ranges), m_isRunning(true), m_thread([this]() { worker(); }) {
+Scanner::Scanner(const Config& config, const Device& device, Mqtt& mqtt, const int recordersCount)
+    : m_device(config, device, mqtt, m_notification, recordersCount), m_ranges(device.m_ranges), m_isRunning(true), m_thread([this]() { worker(); }) {
   Logger::info(LABEL, "starting");
-  for (const auto& range : ranges) {
+  Logger::info(LABEL, "ignored ranges: {}", colored(GREEN, "{}", config.ignoredRanges().size()));
+  for (const auto& range : config.ignoredRanges()) {
+    Logger::info(LABEL, "ignored range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
+  }
+  Logger::info(LABEL, "scanned ranges: {}", colored(GREEN, "{}", m_ranges.size()));
+  for (const auto& range : m_ranges) {
     Logger::info(LABEL, "scanned range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
   }
   Logger::info(LABEL, "started");

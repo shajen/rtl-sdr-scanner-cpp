@@ -13,54 +13,32 @@
 
 constexpr auto LABEL = "sdr";
 
-namespace {
-std::string getSoapyArgs(const std::string& driver, const std::string& serial) {
-  char tmp[1024];
-  snprintf(tmp, 1024, "driver=%s,serial=%s", driver.c_str(), serial.c_str());
-  return {tmp};
-}
-}  // namespace
-
-SdrDevice::SdrDevice(
-    const std::string& driver,
-    const std::string& serial,
-    const std::map<std::string, float> gains,
-    const Frequency sampleRate,
-    Mqtt& mqtt,
-    TransmissionNotification& notification,
-    const int recordersCount)
-    : m_driver(driver),
-      m_serial(serial),
-      m_sampleRate(sampleRate),
-      m_isInitialized(false),
-      m_frequencyRange({0, 0}),
-      m_dataController(mqtt, driver + "_" + serial),
-      m_tb(gr::make_top_block("sdr")),
-      m_connector(m_tb) {
+SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, TransmissionNotification& notification, const int recordersCount)
+    : m_sampleRate(device.m_sampleRate), m_isInitialized(false), m_frequencyRange({0, 0}), m_dataController(mqtt, device.getName()), m_tb(gr::make_top_block("sdr")), m_connector(m_tb) {
   Logger::info(LABEL, "starting");
   Logger::info(
       LABEL,
       "driver: {}, serial: {}, sample rate: {}, recorders: {}",
-      colored(GREEN, "{}", m_driver),
-      colored(GREEN, "{}", m_serial),
+      colored(GREEN, "{}", device.m_driver),
+      colored(GREEN, "{}", device.m_serial),
       formatFrequency(m_sampleRate),
       colored(GREEN, "{}", recordersCount));
 
-  m_source = gr::soapy::source::make(getSoapyArgs(driver, serial).c_str(), "fc32", 1);
+  m_source = gr::soapy::source::make(fmt::format("driver={},serial={}", device.m_driver, device.m_serial), "fc32", 1);
 
-  setupPowerChain(notification);
+  setupPowerChain(config, notification);
   setupRawFileChain();
 
   for (int i = 0; i < recordersCount; ++i) {
-    m_recorders.push_back(std::make_unique<Recorder>(m_tb, m_source, m_sampleRate, m_dataController));
+    m_recorders.push_back(std::make_unique<Recorder>(config, m_tb, m_source, m_sampleRate, m_dataController));
   }
 
   m_source->set_gain_mode(0, false);
-  for (const auto& [key, value] : gains) {
+  for (const auto& [key, value] : device.m_gains) {
     Logger::info(LABEL, "set gain, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value));
     m_source->set_gain(0, key.c_str(), value);
   }
-  m_source->set_sample_rate(0, sampleRate);
+  m_source->set_sample_rate(0, m_sampleRate);
 
   m_tb->start();
   Logger::info(LABEL, "started");
@@ -173,10 +151,10 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
 
 Frequency SdrDevice::getFrequency() const { return (m_frequencyRange.first + m_frequencyRange.second) / 2; }
 
-void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
+void SdrDevice::setupPowerChain(const Config& config, TransmissionNotification& notification) {
   const auto fftSize = getFft(m_sampleRate, SIGNAL_DETECTION_MAX_STEP);
   const auto step = static_cast<double>(m_sampleRate) / fftSize;
-  const auto indexStep = static_cast<Frequency>(std::ceil(RECORDING_BANDWIDTH / (static_cast<double>(m_sampleRate) / fftSize)));
+  const auto indexStep = static_cast<Frequency>(std::ceil(config.recordingBandwidth() / (static_cast<double>(m_sampleRate) / fftSize)));
   const auto decimatorFactor = std::max(1, static_cast<int>(step / SIGNAL_DETECTION_FPS));
   const auto indexToFrequency = [this, step](const int index) { return getFrequency() + static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
   const auto indexToShift = [this, step](const int index) { return static_cast<Frequency>(step * (index + 0.5)) - m_sampleRate / 2; };
@@ -191,7 +169,7 @@ void SdrDevice::setupPowerChain(TransmissionNotification& notification) {
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(fftSize, gr::fft::window::hamming(fftSize), true);
   const auto psd = std::make_shared<PSD>(fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, m_frequencyRange, indexToFrequency);
-  m_transmission = std::make_shared<Transmission>(fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
+  m_transmission = std::make_shared<Transmission>(config, fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
   m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
 
   const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));

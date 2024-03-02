@@ -1,7 +1,6 @@
 #pragma once
 
 #define FMT_HEADER_ONLY
-#include <config.h>
 #include <spdlog/spdlog.h>
 
 constexpr auto LOGGER_BUFFER_SIZE = 1024;
@@ -14,23 +13,10 @@ constexpr auto YELLOW = "\033[0;93m";
 constexpr auto BLUE = "\033[0;94m";
 constexpr auto NC = "\033[0m";
 
-template <typename... Args>
-std::string colored(const char* color, const char* fmt, const Args&... args) {
-  if (COLOR_LOG_ENABLED) {
-    char buf[20];
-    buf[0] = 0;
-    strcat(buf, "{}");
-    strcat(buf, fmt);
-    strcat(buf, "{}");
-    return fmt::format(buf, color, args..., NC);
-  } else {
-    return fmt::format(fmt, args...);
-  }
-}
-
 class Logger {
  public:
-  static void configure(const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logFile);
+  static void configure(
+      const spdlog::level::level_enum logLevelConsole, const spdlog::level::level_enum logLevelFile, const std::string& logFile, int fileSize, int filesCount, bool isColorLogEnabled);
 
   template <typename... Args>
   static void trace(const char* label, const char* fmt, const Args&... args) {
@@ -87,10 +73,26 @@ class Logger {
   }
 
   static void flush() { Logger::_logger->flush(); }
+  static bool isColorLogEnabled() { return _isColorLogEnabled; }
 
  private:
   Logger() = delete;
   ~Logger() = delete;
 
   inline static std::shared_ptr<spdlog::logger> _logger = nullptr;
+  inline static bool _isColorLogEnabled = true;
 };
+
+template <typename... Args>
+std::string colored(const char* color, const char* fmt, const Args&... args) {
+  if (Logger::isColorLogEnabled()) {
+    char buf[20];
+    buf[0] = 0;
+    strcat(buf, "{}");
+    strcat(buf, fmt);
+    strcat(buf, "{}");
+    return fmt::format(buf, color, args..., NC);
+  } else {
+    return fmt::format(fmt, args...);
+  }
+}
