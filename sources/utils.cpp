@@ -7,6 +7,8 @@
 #include <time.h>
 
 #include <algorithm>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <numeric>
 
 namespace {
@@ -137,6 +139,13 @@ Frequency getTunedFrequency(Frequency frequency, Frequency step) {
   } else {
     return up;
   }
+}
+
+std::string generateRandomHash() {
+  auto generator = boost::uuids::random_generator();
+  auto uuid = boost::uuids::to_string(generator());
+  std::remove(uuid.begin(), uuid.end(), '-');
+  return uuid;
 }
 
 std::string formatFrequency(const Frequency frequency, const char* color) {

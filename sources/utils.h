@@ -27,6 +27,8 @@ int getDecimatorFactor(Frequency oldStep, Frequency newStep);
 
 Frequency getTunedFrequency(Frequency frequency, Frequency step);
 
+std::string generateRandomHash();
+
 template <typename T>
 std::optional<int> containsWithMargin(const std::map<int, T>& indexes, const int index, const int margin) {
   const auto submargin = margin % 2 == 0 ? margin / 2 : margin / 2 + 1;

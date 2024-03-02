@@ -231,18 +231,21 @@ Config Config::loadFromFile(const std::string& path) {
   }
 }
 
-Config Config::loadFromData(const std::string& data) {
-  try {
-    auto json = nlohmann::json::parse(data);
-    ConfigMigrator::update(json);
-    return Config(json);
-  } catch (const nlohmann::json::parse_error& exception) {
-    throw std::runtime_error("can not parse config file, invalid json format");
+void Config::saveToFile(const std::string& path, const nlohmann::json& json) {
+  FILE* file = fopen(path.c_str(), "w");
+  if (file) {
+    const auto data = json.dump(4, ' ');
+    if (fwrite(data.c_str(), 1, data.size(), file) != data.size()) {
+      Logger::warn(LABEL, "save new config failed");
+    }
+    fclose(file);
+  } else {
+    Logger::warn(LABEL, "save new config failed");
   }
 }
 
-std::string Config::dumpJson() const { return m_json.dump(); }
-std::string Config::dumpMqtt() const { return fmt::format("{}@{}:{}", m_mqttUsername, m_mqttHostname, m_mqttPort); };
+nlohmann::json Config::json() const { return m_json; }
+std::string Config::mqtt() const { return fmt::format("{}@{}:{}", m_mqttUsername, m_mqttHostname, m_mqttPort); };
 
 std::vector<Device> Config::devices() const { return m_devices; }
 

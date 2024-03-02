@@ -61,17 +61,22 @@ void Mqtt::publish(const std::string &topic, const std::vector<uint8_t> &&data, 
   }
 }
 
-void Mqtt::setMessageCallback(std::function<void(const std::string &, const std::string &)> callback) { m_callbacks.push_back(callback); }
+void Mqtt::setMessageCallback(const std::string &topic, std::function<void(const std::string &)> callback) {
+  subscribe(topic);
+  m_callbacks.emplace_back(topic, callback);
+}
 
 void Mqtt::subscribe(const std::string &topic) {
-  mosquitto_subscribe(m_client, nullptr, topic.c_str(), QOS_SUB);
-  m_topics.push_back(topic);
+  if (m_topics.count(topic) == 0) {
+    mosquitto_subscribe(m_client, nullptr, topic.c_str(), QOS_SUB);
+    m_topics.insert(topic);
+  }
 }
 
 void Mqtt::onConnect() {
   Logger::info(LABEL, "connected");
   for (const auto &topic : m_topics) {
-    Logger::info(LABEL, "subscribe: {}", topic);
+    Logger::info(LABEL, "subscribe: {}", colored(GREEN, "{}", topic));
     mosquitto_subscribe(m_client, nullptr, topic.c_str(), QOS_SUB);
   }
 }
@@ -94,9 +99,10 @@ void Mqtt::onDisconnect() {
 
 void Mqtt::onMessage(const mosquitto_message *message) {
   Logger::info(LABEL, "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload));
-  const std::string topic(message->topic);
   const std::string data(static_cast<char *>(message->payload), message->payloadlen);
-  for (auto &callback : m_callbacks) {
-    callback(topic, data);
+  for (auto &[topic, callback] : m_callbacks) {
+    if (strcmp(message->topic, topic.c_str()) == 0) {
+      callback(data);
+    }
   }
 }

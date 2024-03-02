@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic -Wno-missing-braces")
 
+find_package(Boost REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(Gnuradio COMPONENTS
     blocks

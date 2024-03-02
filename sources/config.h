@@ -38,9 +38,9 @@ constexpr auto SPECTROGRAM_SEND_INTERVAL = std::chrono::milliseconds(1000);  // 
 class Config {
  public:
   static Config loadFromFile(const std::string& path);
-  static Config loadFromData(const std::string& data);
-  std::string dumpJson() const;
-  std::string dumpMqtt() const;
+  static void saveToFile(const std::string& path, const nlohmann::json& json);
+  nlohmann::json json() const;
+  std::string mqtt() const;
 
   std::vector<Device> devices() const;
 
