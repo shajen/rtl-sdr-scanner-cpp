@@ -2,10 +2,8 @@
 
 #include <config_migrator.h>
 #include <logger.h>
+#include <radio/sdr_device_reader.h>
 #include <utils.h>
-
-#include <SoapySDR/Device.hpp>
-#include <set>
 
 constexpr auto LABEL = "config";
 
@@ -55,16 +53,6 @@ T readKey(const nlohmann::json& json, const std::vector<std::string>& keys) {
   return tmp.get<T>();
 }
 
-std::vector<FrequencyRange> readRanges(const nlohmann::json& json) {
-  std::vector<FrequencyRange> ranges;
-  for (const auto& item : json.items()) {
-    const auto start = item.value()["start"].get<Frequency>();
-    const auto stop = item.value()["stop"].get<Frequency>();
-    ranges.emplace_back(start, stop);
-  }
-  return ranges;
-}
-
 std::vector<FrequencyRange> readIgnoredRanges(const nlohmann::json& json) {
   std::vector<FrequencyRange> ranges;
   for (const auto& item : json.items()) {
@@ -75,129 +63,9 @@ std::vector<FrequencyRange> readIgnoredRanges(const nlohmann::json& json) {
   return ranges;
 }
 
-void readSoapyDevices(std::vector<Device>& devices) {
-  Logger::info(LABEL, "scanning connected devices");
-  const SoapySDR::KwargsList results = SoapySDR::Device::enumerate("remote=");
-  Logger::info(LABEL, "found {} devices:", colored(GREEN, "{}", results.size()));
-
-  for (uint32_t i = 0; i < results.size(); ++i) {
-    const auto data = results[i];
-    const auto serial = removeZerosFromBegging(data.at("serial"));
-    const auto driver = data.at("driver");
-    const auto it = std::find_if(devices.begin(), devices.end(), [serial](const auto& device) { return device.m_serial == serial; });
-    const auto isNewDevice = it == devices.end();
-    Logger::info(LABEL, "driver: {}, serial: {}", colored(GREEN, "{}", driver), colored(GREEN, "{}", serial));
-
-    SoapySDR::Device* sdr;
-    try {
-      sdr = SoapySDR::Device::make(results[i]);
-      if (sdr == nullptr) {
-        Logger::warn(LABEL, "#{} open device failed", i);
-        continue;
-      }
-    } catch (const std::runtime_error&) {
-      Logger::warn(LABEL, "#{} open device failed", i);
-      continue;
-    }
-
-    if (isNewDevice) {
-      devices.emplace_back();
-    }
-    auto& device = isNewDevice ? devices.back() : *it;
-
-    if (device.m_driver.empty()) {
-      device.m_driver = driver;
-    }
-    if (isNewDevice) {
-      device.m_enabled = true;
-      device.m_serial = serial;
-    }
-
-    for (const auto& gain : sdr->listGains(SOAPY_SDR_RX, 0)) {
-      const auto gainRange = sdr->getGainRange(SOAPY_SDR_RX, 0, gain);
-      Logger::info(
-          LABEL,
-          "  supported gain: {}, min: {}, max: {}, step: {}",
-          colored(GREEN, "{}", gain),
-          colored(GREEN, "{}", gainRange.minimum()),
-          colored(GREEN, "{}", gainRange.maximum()),
-          colored(GREEN, "{}", gainRange.step()));
-      if (isNewDevice) {
-        device.m_gains.emplace_back(gain, gainRange.maximum());
-      }
-    }
-
-    std::set<Frequency> sampleRates;
-    for (const auto value : sdr->listSampleRates(SOAPY_SDR_RX, 0)) {
-      const auto sampleRate = static_cast<Frequency>(value);
-      Logger::info(LABEL, "  supported sample rate: {}", formatFrequency(sampleRate));
-      sampleRates.insert(sampleRate);
-    }
-
-    if (device.m_ranges.empty()) {
-      if (sampleRates.count(20480000)) {
-        device.m_ranges.emplace_back(140000000, 160000000);
-        device.m_sampleRate = 20480000;
-      } else if (sampleRates.count(20000000)) {
-        device.m_ranges.emplace_back(140000000, 160000000);
-        device.m_sampleRate = 20000000;
-      } else if (sampleRates.count(2048000)) {
-        device.m_ranges.emplace_back(144000000, 146000000);
-        device.m_sampleRate = 2048000;
-      } else if (sampleRates.count(2000000)) {
-        device.m_ranges.emplace_back(144000000, 146000000);
-        device.m_sampleRate = 2000000;
-      } else if (sampleRates.count(1024000)) {
-        device.m_ranges.emplace_back(144000000, 145000000);
-        device.m_sampleRate = 1024000;
-      } else if (sampleRates.count(1000000)) {
-        device.m_ranges.emplace_back(144000000, 145000000);
-        device.m_sampleRate = 1000000;
-      } else {
-        device.m_ranges.emplace_back(144000000, 146000000);
-        device.m_sampleRate = *sampleRates.rbegin();
-      }
-    }
-
-    if (sampleRates.count(device.m_sampleRate) == 0) {
-      device.m_sampleRate = getNearestElement(sampleRates, device.m_sampleRate);
-    }
-
-    SoapySDR::Device::unmake(sdr);
-  }
-}
-
-Device readDevice(const nlohmann::json& json) {
-  Device device;
-  device.m_driver = json["device_driver"].get<std::string>();
-  device.m_enabled = json["device_enabled"].get<bool>();
-  for (const auto& item : json["device_gains"]) {
-    const auto key = item["name"].get<std::string>();
-    const auto value = item["value"].get<float>();
-    device.m_gains.emplace_back(key, value);
-  }
-  device.m_serial = removeZerosFromBegging(json["device_serial"].get<std::string>());
-  device.m_sampleRate = json["device_sample_rate"].get<Frequency>();
-  device.m_ranges = readRanges(json["ranges"]);
-  return device;
-}
-
-std::vector<Device> readDevices(const nlohmann::json& json) {
-  std::vector<Device> devices;
-  for (const auto& device : json["scanned_frequencies"]) {
-    try {
-      devices.push_back(readDevice(device));
-    } catch (const std::exception& exception) {
-      Logger::warn(LABEL, "read device exception: {}", exception.what());
-    }
-  }
-  readSoapyDevices(devices);
-  return devices;
-}
-
 Config::Config(const nlohmann::json& json)
     : m_json(json),
-      m_devices(readDevices(json)),
+      m_devices(SdrDeviceReader::readDevices(json)),
       m_isColorLogEnabled(readKey<bool>(json, {"output", "color_log_enabled"})),
       m_consoleLogLevel(parseLogLevel(readKey<std::string>(json, {"output", "console_log_level"}))),
       m_fileLogLevel(parseLogLevel(readKey<std::string>(json, {"output", "file_log_level"}))),
@@ -222,6 +90,7 @@ Config Config::loadFromFile(const std::string& path) {
     try {
       auto json = nlohmann::json::parse(std::string{buffer, size});
       ConfigMigrator::update(json);
+      SdrDeviceReader::scanSoapyDevices(json);
       return Config(json);
     } catch (const nlohmann::json::parse_error& exception) {
       throw std::runtime_error(fmt::format("can not parse config file, invalid json format: {}", path));
@@ -234,7 +103,9 @@ Config Config::loadFromFile(const std::string& path) {
 void Config::saveToFile(const std::string& path, const nlohmann::json& json) {
   FILE* file = fopen(path.c_str(), "w");
   if (file) {
-    const auto data = json.dump(4, ' ');
+    auto tmp = json;
+    SdrDeviceReader::clearDevices(tmp);
+    const auto data = tmp.dump(4, ' ');
     if (fwrite(data.c_str(), 1, data.size(), file) != data.size()) {
       Logger::warn(LABEL, "save new config failed");
     }
