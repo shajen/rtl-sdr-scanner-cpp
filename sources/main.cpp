@@ -24,7 +24,7 @@ int main(int, char**) {
 
   try {
     Logger::configure(spdlog::level::info, spdlog::level::info, LOG_FILE_NAME, LOG_FILE_SIZE, LOG_FILES_COUNT, true);
-    Logger::info(LABEL, "{}", colored(GREEN, "starting"));
+    Logger::info(LABEL, "{}", colored(GREEN, "{}", "starting"));
 
     const auto id = generateRandomHash();
     while (isRunning) {
@@ -36,7 +36,7 @@ int main(int, char**) {
 
       Mqtt mqtt(config);
       RemoteController remoteController(config, id, mqtt, [&reload](const nlohmann::json& json) {
-        Logger::info(LABEL, "reload config: {}");
+        Logger::info(LABEL, "reload config: {}", colored(GREEN, "{}", json.dump()));
         Config::saveToFile(CONFIG_FILE, json);
         reload = true;
       });
@@ -55,15 +55,15 @@ int main(int, char**) {
         }
       }
       if (scanners.empty()) {
-        Logger::warn(LABEL, "{}", colored(RED, "empty devices list"));
+        Logger::warn(LABEL, "{}", colored(RED, "{}", "empty devices list"));
       }
 
-      Logger::info(LABEL, "{}", colored(GREEN, "started"));
+      Logger::info(LABEL, "{}", colored(GREEN, "{}", "started"));
       while (isRunning && !reload) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
     }
-    Logger::info(LABEL, "{}", colored(GREEN, "stopped"));
+    Logger::info(LABEL, "{}", colored(GREEN, "{}", "stopped"));
   } catch (const std::exception& exception) {
     Logger::error(LABEL, "exception: {}", exception.what());
   }

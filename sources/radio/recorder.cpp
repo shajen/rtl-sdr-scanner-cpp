@@ -11,9 +11,6 @@ constexpr auto LABEL = "recorder";
 
 Recorder::Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController)
     : m_config(config), m_sampleRate(sampleRate), m_shift(std::numeric_limits<Frequency>::max()), m_dataController(dataController), m_connector(tb) {
-  Logger::info(LABEL, "starting");
-  Logger::info(LABEL, "bandwidth: {}", formatFrequency(config.recordingBandwidth()));
-
   std::vector<std::shared_ptr<gr::basic_block>> blocks;
   m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
   m_shiftBlock = gr::blocks::rotator_cc::make();
@@ -29,8 +26,6 @@ Recorder::Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std:
   m_rawFileSinkBlock = std::make_shared<FileSink<gr_complex>>(1, true);
   blocks.push_back(m_rawFileSinkBlock);
   m_connector.connect(blocks);
-
-  Logger::info(LABEL, "started");
 }
 
 Recorder::~Recorder() {

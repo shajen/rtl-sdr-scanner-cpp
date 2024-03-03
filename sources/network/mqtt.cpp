@@ -98,7 +98,7 @@ void Mqtt::onDisconnect() {
 }
 
 void Mqtt::onMessage(const mosquitto_message *message) {
-  Logger::info(LABEL, "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload));
+  Logger::debug(LABEL, "topic: {}, data: {}", message->topic, static_cast<char *>(message->payload));
   const std::string data(static_cast<char *>(message->payload), message->payloadlen);
   for (auto &[topic, callback] : m_callbacks) {
     if (strcmp(message->topic, topic.c_str()) == 0) {

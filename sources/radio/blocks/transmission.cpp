@@ -24,7 +24,7 @@ Transmission::Transmission(
       m_indexToShift(indexToShift),
       m_isIndexInRange(isIndexInRange),
       m_isProcessing(false) {
-  Logger::info(LABEL, "group size: {}", m_groupSize);
+  Logger::info(LABEL, "group size: {}", colored(GREEN, "{}", m_groupSize));
 }
 
 int Transmission::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star&) {

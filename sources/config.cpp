@@ -31,7 +31,7 @@ std::string getEnv(const std::string& key) {
     if (key.find("PASSWORD") == std::string::npos) {
       Logger::info(LABEL, "read env variable, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value));
     } else {
-      Logger::info(LABEL, "read env variable, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "*****"));
+      Logger::info(LABEL, "read env variable, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", "*****"));
     }
     return {value};
   } else {

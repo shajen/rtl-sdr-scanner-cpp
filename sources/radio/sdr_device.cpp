@@ -33,11 +33,13 @@ SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, Tra
     m_recorders.push_back(std::make_unique<Recorder>(config, m_tb, m_source, m_sampleRate, m_dataController));
   }
 
+  Logger::info(LABEL, "recording bandwidth: {}", formatFrequency(config.recordingBandwidth()));
   m_source->set_gain_mode(0, false);
   for (const auto& [key, value] : device.m_gains) {
     Logger::info(LABEL, "set gain, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value));
     m_source->set_gain(0, key.c_str(), value);
   }
+  Logger::info(LABEL, "sample rate: {}", formatFrequency(m_sampleRate));
   m_source->set_sample_rate(0, m_sampleRate);
 
   m_tb->start();
