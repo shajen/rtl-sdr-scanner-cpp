@@ -39,28 +39,34 @@ std::string getEnv(const std::string& key) {
 
 template <typename T>
 T readKey(const nlohmann::json& json, const std::vector<std::string>& keys) {
-  nlohmann::json tmp = json;
-  std::string _key;
-  for (const auto& key : keys) {
-    tmp = tmp[key];
-    _key += key + ".";
+  std::string key;
+  try {
+    nlohmann::json value = json;
+    for (const auto& _key : keys) {
+      value = value.at(_key);
+      key += _key + ".";
+    }
+    key.pop_back();
+    Logger::info(LABEL, "read json variable, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value.get<T>()));
+    return value.get<T>();
+  } catch (const std::exception& exception) {
+    throw std::runtime_error(fmt::format("key not found in json config: {}", key));
   }
-  _key.pop_back();
-  if (tmp.empty()) {
-    throw std::runtime_error(fmt::format("key not found in json config: {}", tmp));
-  }
-  Logger::info(LABEL, "read json variable, key: {}, value: {}", colored(GREEN, "{}", _key), colored(GREEN, "{}", tmp.get<T>()));
-  return tmp.get<T>();
 }
 
 std::vector<FrequencyRange> readIgnoredRanges(const nlohmann::json& json) {
-  std::vector<FrequencyRange> ranges;
-  for (const auto& item : json.items()) {
-    const auto frequency = item.value()["frequency"].get<Frequency>();
-    const auto bandwidth = item.value()["bandwidth"].get<Frequency>();
-    ranges.emplace_back(frequency - bandwidth / 2, frequency + bandwidth / 2);
+  constexpr auto KEY = "ignored_frequencies";
+  try {
+    std::vector<FrequencyRange> ranges;
+    for (const auto& item : json.at(KEY)) {
+      const auto frequency = item.at("frequency").get<Frequency>();
+      const auto bandwidth = item.at("bandwidth").get<Frequency>();
+      ranges.emplace_back(frequency - bandwidth / 2, frequency + bandwidth / 2);
+    }
+    return ranges;
+  } catch (const std::exception& exception) {
+    throw std::runtime_error(fmt::format("key not found or invalid value in json: {}", KEY));
   }
-  return ranges;
 }
 
 Config::Config(const nlohmann::json& json)
@@ -69,7 +75,7 @@ Config::Config(const nlohmann::json& json)
       m_isColorLogEnabled(readKey<bool>(json, {"output", "color_log_enabled"})),
       m_consoleLogLevel(parseLogLevel(readKey<std::string>(json, {"output", "console_log_level"}))),
       m_fileLogLevel(parseLogLevel(readKey<std::string>(json, {"output", "file_log_level"}))),
-      m_ignoredRanges(readIgnoredRanges(json["ignored_frequencies"])),
+      m_ignoredRanges(readIgnoredRanges(json)),
       m_recordingBandwidth(readKey<Frequency>(json, {"recording", "min_sample_rate"})),
       m_recordingMinTime(std::chrono::milliseconds(readKey<int>(json, {"recording", "min_time_ms"}))),
       m_recordingTimeout(std::chrono::milliseconds(readKey<int>(json, {"recording", "max_noise_time_ms"}))),
@@ -91,6 +97,7 @@ Config Config::loadFromFile(const std::string& path) {
       auto json = nlohmann::json::parse(std::string{buffer, size});
       ConfigMigrator::update(json);
       SdrDeviceReader::scanSoapyDevices(json);
+      ConfigMigrator::sort(json);
       return Config(json);
     } catch (const nlohmann::json::parse_error& exception) {
       throw std::runtime_error(fmt::format("can not parse config file, invalid json format: {}", path));

@@ -5,6 +5,7 @@
 class ConfigMigrator {
  public:
   static void update(nlohmann::json& config);
+  static void sort(nlohmann::json& json);
 
  private:
   ConfigMigrator() = delete;
