@@ -54,7 +54,7 @@ class FileSink : public Buffer<T> {
 
   void flush() {
     std::unique_lock<std::mutex> lock(m_mutex);
-    Buffer<T>::pop([this](const T* data, int size) { save(data, size); });
+    Buffer<T>::popAllSamples([this](const T* data, int count, int) { save(data, count); });
   }
 
  private:

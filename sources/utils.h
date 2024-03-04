@@ -89,3 +89,5 @@ std::string formatPower(const float power, const char* color = nullptr);
 void average(const float* input, float* output, int size, int groupSize);
 
 int getMaxIndex(const float* data, const int size, const int index, const int groupSize);
+
+int roundUp(const int value, const int factor);

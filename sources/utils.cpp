@@ -213,3 +213,5 @@ int getMaxIndex(const float* data, const int size, const int index, const int gr
   const auto it = std::max_element(data + min, data + max);
   return std::distance(data, it);
 }
+
+int roundUp(const int value, const int factor) { return static_cast<int>(std::ceil(static_cast<float>(value) / factor) * factor); }

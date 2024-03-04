@@ -3,6 +3,7 @@
 #include <notification.h>
 
 #include <algorithm>
+#include <complex>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -13,6 +14,7 @@ using Frequency = int32_t;
 using FrequencyRange = std::pair<Frequency, Frequency>;
 using FrequencyFlush = std::pair<Frequency, bool>;
 using TransmissionNotification = Notification<std::vector<FrequencyFlush>>;
+using SimpleComplex = std::complex<int8_t>;
 
 struct Device {
   bool m_enabled{};

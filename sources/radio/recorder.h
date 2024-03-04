@@ -4,6 +4,7 @@
 #include <gnuradio/top_block.h>
 #include <network/data_controller.h>
 #include <radio/blocks/blocker.h>
+#include <radio/blocks/buffer.h>
 #include <radio/blocks/file_sink.h>
 #include <radio/connector.h>
 #include <radio/help_structures.h>
@@ -32,12 +33,14 @@ class Recorder {
  private:
   const Config& m_config;
   const Frequency m_sampleRate;
+  Frequency m_frequency;
   Frequency m_shift;
   DataController& m_dataController;
 
   std::shared_ptr<Blocker> m_blocker;
   std::shared_ptr<gr::blocks::rotator_cc> m_shiftBlock;
   std::shared_ptr<FileSink<gr_complex>> m_rawFileSinkBlock;
+  std::shared_ptr<Buffer<SimpleComplex>> m_buffer;
   Connector m_connector;
   std::chrono::milliseconds m_firstDataTime;
   std::chrono::milliseconds m_lastDataTime;

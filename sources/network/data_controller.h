@@ -8,7 +8,7 @@
 
 class DataController {
  public:
-  using TransmissionData = std::complex<int8_t>;
+  using TransmissionData = SimpleComplex;
   using SpectrogramData = int8_t;
 
   DataController(Mqtt& mqtt, const std::string& deviceName);
