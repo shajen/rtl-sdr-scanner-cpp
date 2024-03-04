@@ -1,3 +1,4 @@
+#include <SoapySDR/Logger.h>
 #include <config.h>
 #include <logger.h>
 #include <network/mqtt.h>
@@ -19,6 +20,7 @@ void handler(int) {
 
 int main(int, char**) {
   dup2(fileno(fopen("/dev/null", "w")), fileno(stderr));
+  SoapySDR_setLogLevel(SoapySDRLogLevel::SOAPY_SDR_WARNING);
   signal(SIGINT, handler);
   signal(SIGTERM, handler);
 
