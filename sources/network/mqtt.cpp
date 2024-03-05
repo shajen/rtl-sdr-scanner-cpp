@@ -1,7 +1,7 @@
 #include "mqtt.h"
 
 #include <logger.h>
-#include <utils.h>
+#include <utils/utils.h>
 
 constexpr auto LABEL = "mqtt";
 constexpr auto KEEP_ALIVE = 60;

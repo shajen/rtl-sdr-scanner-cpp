@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gnuradio/sync_block.h>
-#include <utils.h>
+#include <utils/utils.h>
 
 #include <cstdint>
 #include <cstring>

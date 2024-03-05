@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <radio/averager.h>
-#include <utils.h>
+#include <utils/utils.h>
 
 #include <deque>
 

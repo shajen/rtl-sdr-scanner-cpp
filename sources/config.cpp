@@ -3,7 +3,7 @@
 #include <config_migrator.h>
 #include <logger.h>
 #include <radio/sdr_device_reader.h>
-#include <utils.h>
+#include <utils/utils.h>
 
 constexpr auto LABEL = "config";
 

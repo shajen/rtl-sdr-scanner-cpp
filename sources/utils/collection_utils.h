@@ -1,33 +1,17 @@
 #pragma once
 
-#include <radio/help_structures.h>
-
 #include <algorithm>
-#include <chrono>
 #include <map>
 #include <set>
-#include <string>
 #include <unordered_map>
 
-std::chrono::milliseconds getTime();
-
-void setNoData(float* data, const int size);
-
-std::string removeZerosFromBegging(const std::string& string);
-
-std::string getRawFileName(const char* label, const char* extension, Frequency frequency, Frequency sampleRate);
-
-int getFft(const Frequency sampleRate, Frequency maxStep);
-
-std::vector<int> getPrimeFactors(int n);
-
-std::vector<std::pair<int, int>> getResamplersFactors(const Frequency sampleRate, const Frequency bandwidth, const int threshold);
-
-int getDecimatorFactor(Frequency oldStep, Frequency newStep);
-
-Frequency getTunedFrequency(Frequency frequency, Frequency step);
-
-std::string generateRandomHash();
+template <typename T>
+int getMaxIndex(const T* data, const int size, const int index, const int groupSize) {
+  const auto min = std::max(0, index - groupSize / 2);
+  const auto max = std::min(size, index + groupSize / 2 + 1);
+  const auto it = std::max_element(data + min, data + max);
+  return std::distance(data, it);
+}
 
 template <typename T>
 std::optional<int> containsWithMargin(const std::map<int, T>& indexes, const int index, const int margin) {
@@ -81,13 +65,3 @@ T getNearestElement(const std::set<T>& data, const T& value) {
     }
   }
 }
-
-std::string formatFrequency(const Frequency frequency, const char* color = nullptr);
-
-std::string formatPower(const float power, const char* color = nullptr);
-
-void average(const float* input, float* output, int size, int groupSize);
-
-int getMaxIndex(const float* data, const int size, const int index, const int groupSize);
-
-int roundUp(const int value, const int factor);

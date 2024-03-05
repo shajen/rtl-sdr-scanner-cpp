@@ -2,7 +2,7 @@
 
 #include <config.h>
 #include <logger.h>
-#include <utils.h>
+#include <utils/utils.h>
 
 PerformanceLogger::PerformanceLogger(const std::string& label, const std::string& name) : m_label(label), m_name(name), m_samplesCount(0), m_lastLog(getTime()) {}
 

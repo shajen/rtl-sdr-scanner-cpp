@@ -1,7 +1,7 @@
 #include "signal.h"
 
 #include <config.h>
-#include <utils.h>
+#include <utils/utils.h>
 
 Signal::Signal(
     const Config& config, const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now)
