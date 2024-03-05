@@ -58,14 +58,17 @@ void Spectrogram::process(const float* data) {
 void Spectrogram::send() {
   const auto now = getTime();
   const auto frequency = m_getFrequency();
-  if (m_lastDataSendTime + SPECTROGRAM_SEND_INTERVAL < now && frequency != 0) {
+  if (frequency == 0) {
+    std::memset(m_sum.data(), 0, sizeof(float) * m_sum.size());
+    m_counter = 0;
+  } else if (m_lastDataSendTime + SPECTROGRAM_SEND_INTERVAL < now) {
     std::vector<int8_t> tmp(m_outputSize);
     for (int j = 0; j < m_outputSize; ++j) {
       tmp[j] = m_sum[j] / m_counter;
     }
     m_dataController.pushSpectrogram(now, frequency, m_sampleRate, tmp.data(), m_outputSize);
-    m_lastDataSendTime = now;
     std::memset(m_sum.data(), 0, sizeof(float) * m_sum.size());
     m_counter = 0;
   }
+  m_lastDataSendTime = now;
 }

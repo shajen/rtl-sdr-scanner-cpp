@@ -18,14 +18,14 @@ Recorder::Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std:
       m_shift(std::numeric_limits<Frequency>::max()),
       m_dataController(dataController),
       m_connector(tb) {
-  std::vector<std::shared_ptr<gr::basic_block>> blocks;
+  std::vector<Block> blocks;
   m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
   m_shiftBlock = gr::blocks::rotator_cc::make();
   blocks.push_back(source);
   blocks.push_back(m_blocker);
   blocks.push_back(m_shiftBlock);
 
-  std::shared_ptr<gr::basic_block> lastResampler;
+  Block lastResampler;
   for (const auto& [factor1, factor2] : getResamplersFactors(m_sampleRate, config.recordingBandwidth(), RESAMPLER_THRESHOLD)) {
     Logger::info(LABEL, "rational resampler factors: {}, {}", colored(GREEN, "{}", factor1), colored(GREEN, "{}", factor2));
     lastResampler = gr::filter::rational_resampler<gr_complex, gr_complex, gr_complex>::make(factor1, factor2);

@@ -17,7 +17,7 @@ class Connector {
     connect<T>(v2, params...);
   }
 
-  void connect(std::vector<std::shared_ptr<gr::basic_block>> blocks) {
+  void connect(std::vector<Block> blocks) {
     for (auto it = blocks.begin(); it != blocks.end(); it++) {
       auto next = it + 1;
       if (next != blocks.end()) {
@@ -26,8 +26,21 @@ class Connector {
     }
   }
 
-  void connect(std ::shared_ptr<gr::basic_block> block1, std ::shared_ptr<gr::basic_block> block2, const int index1 = 0, const int index2 = 0) {
-    m_connections.emplace_back(m_tb, block1, block2, index1, index2);
+  void connect(Block block1, Block block2, const int index1 = 0, const int index2 = 0) { m_connections.emplace_back(m_tb, block1, block2, index1, index2); }
+
+  std::vector<Block> getBlocks() {
+    std::vector<Block> blocks;
+    auto add = [&blocks](const Block block) {
+      const auto it = std::find(blocks.begin(), blocks.end(), block);
+      if (it == blocks.end()) {
+        blocks.push_back(block);
+      }
+    };
+    for (const auto& connection : m_connections) {
+      add(connection.getSrc());
+      add(connection.getDst());
+    }
+    return blocks;
   }
 
  private:

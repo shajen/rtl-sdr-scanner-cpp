@@ -16,3 +16,5 @@ std::string generateRandomHash();
 void average(const float* input, float* output, int size, int groupSize);
 
 int roundUp(const int value, const int factor);
+
+int roundDown(const int value, const int factor);

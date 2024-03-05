@@ -1,6 +1,7 @@
 #include "radio_utils.h"
 
 #include <logger.h>
+#include <utils/utils.h>
 
 #include <numeric>
 
@@ -157,4 +158,39 @@ int getDecimatorFactor(Frequency oldStep, Frequency newStep) {
     factor = factor << 1;
   }
   return factor;
+}
+
+Frequency getRangeSplitSampleRate(Frequency sampleRate) {
+  if (10000000 <= sampleRate) {
+    return roundDown(sampleRate, 1000000);
+  } else if (1000000 <= sampleRate) {
+    return roundDown(sampleRate, 500000);
+  } else if (100000 <= sampleRate) {
+    return roundDown(sampleRate, 100000);
+  } else {
+    return sampleRate;
+  }
+}
+
+std::vector<FrequencyRange> splitRange(const FrequencyRange& range, Frequency sampleRate) {
+  const auto bandwidth = range.second - range.first;
+  if (bandwidth <= sampleRate) {
+    return {range};
+  } else {
+    std::vector<FrequencyRange> ranges;
+    for (Frequency f = range.first; f < range.second; f += sampleRate) {
+      ranges.emplace_back(f, f + sampleRate);
+    }
+    return ranges;
+  }
+}
+
+std::vector<FrequencyRange> splitRanges(const std::vector<FrequencyRange>& ranges, Frequency sampleRate) {
+  std::vector<FrequencyRange> results;
+  for (const auto& range : ranges) {
+    for (const auto& _range : splitRange(range, sampleRate)) {
+      results.push_back(_range);
+    }
+  }
+  return results;
 }

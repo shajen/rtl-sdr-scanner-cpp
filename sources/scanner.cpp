@@ -6,15 +6,23 @@
 constexpr auto LABEL = "scanner";
 
 Scanner::Scanner(const Config& config, const Device& device, Mqtt& mqtt, const int recordersCount)
-    : m_device(config, device, mqtt, m_notification, recordersCount), m_ranges(device.m_ranges), m_isRunning(true), m_thread([this]() { worker(); }) {
+    : m_device(config, device, mqtt, m_notification, recordersCount),
+      m_ranges(splitRanges(device.m_ranges, getRangeSplitSampleRate(device.m_sampleRate))),
+      m_isRunning(true),
+      m_thread([this]() { worker(); }) {
   Logger::info(LABEL, "starting");
   Logger::info(LABEL, "ignored ranges: {}", colored(GREEN, "{}", config.ignoredRanges().size()));
   for (const auto& range : config.ignoredRanges()) {
     Logger::info(LABEL, "ignored range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
   }
-  Logger::info(LABEL, "scanned ranges: {}", colored(GREEN, "{}", m_ranges.size()));
+  Logger::info(LABEL, "scan ranges: {}", colored(GREEN, "{}", device.m_ranges.size()));
+  for (const auto& range : device.m_ranges) {
+    Logger::info(LABEL, "scan range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
+  }
+  Logger::info(LABEL, "sample rate: {}, split sample rate: {}", formatFrequency(device.m_sampleRate), formatFrequency(getRangeSplitSampleRate(device.m_sampleRate)));
+  Logger::info(LABEL, "splitted scan ranges: {}", colored(GREEN, "{}", m_ranges.size()));
   for (const auto& range : m_ranges) {
-    Logger::info(LABEL, "scanned range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
+    Logger::info(LABEL, "splitted scan range: {} - {}", formatFrequency(range.first), formatFrequency(range.second));
   }
   Logger::info(LABEL, "started");
 }
@@ -40,9 +48,11 @@ void Scanner::worker() {
         m_device.setFrequencyRange(range);
 
         const auto startScanningTime = getTime();
-        bool work = true;
-        while (getTime() <= startScanningTime + RANGE_SCANNING_TIME && work && m_isRunning) {
-          work = !m_device.updateRecordings(m_notification.wait());
+        bool isRecording = true;
+        while ((getTime() <= startScanningTime + RANGE_SCANNING_TIME || isRecording) && m_isRunning) {
+          const auto notification = m_notification.wait();
+          isRecording = !notification.empty();
+          m_device.updateRecordings(notification);
         }
         if (!m_isRunning) {
           break;

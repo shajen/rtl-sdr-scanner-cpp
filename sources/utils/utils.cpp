@@ -52,4 +52,12 @@ void average(const float* input, float* output, int size, int groupSize) {
   }
 }
 
-int roundUp(const int value, const int factor) { return static_cast<int>(std::ceil(static_cast<float>(value) / factor) * factor); }
+int roundUp(const int value, const int factor) {
+  if (value % factor == 0) {
+    return value;
+  } else {
+    return (value / factor + 1) * factor;
+  }
+}
+
+int roundDown(const int value, const int factor) { return value / factor * factor; }

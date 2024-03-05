@@ -85,3 +85,32 @@ TEST(RadioUtils, TunedFrequency) {
   EXPECT_EQ(getTunedFrequency(1500, 1000), 2000);
   EXPECT_EQ(getTunedFrequency(1501, 1000), 2000);
 }
+
+TEST(RadioUtils, RangeSplitSampleRate) {
+  EXPECT_EQ(getRangeSplitSampleRate(81920000), 81000000);
+  EXPECT_EQ(getRangeSplitSampleRate(80000000), 80000000);
+  EXPECT_EQ(getRangeSplitSampleRate(40960000), 40000000);
+  EXPECT_EQ(getRangeSplitSampleRate(40000000), 40000000);
+  EXPECT_EQ(getRangeSplitSampleRate(20480000), 20000000);
+  EXPECT_EQ(getRangeSplitSampleRate(20000000), 20000000);
+  EXPECT_EQ(getRangeSplitSampleRate(10240000), 10000000);
+  EXPECT_EQ(getRangeSplitSampleRate(10000000), 10000000);
+  EXPECT_EQ(getRangeSplitSampleRate(3200000), 3000000);
+  EXPECT_EQ(getRangeSplitSampleRate(2880000), 2500000);
+  EXPECT_EQ(getRangeSplitSampleRate(2560000), 2500000);
+  EXPECT_EQ(getRangeSplitSampleRate(2160000), 2000000);
+  EXPECT_EQ(getRangeSplitSampleRate(2048000), 2000000);
+  EXPECT_EQ(getRangeSplitSampleRate(1920000), 1500000);
+  EXPECT_EQ(getRangeSplitSampleRate(1720000), 1500000);
+  EXPECT_EQ(getRangeSplitSampleRate(1024000), 1000000);
+  EXPECT_EQ(getRangeSplitSampleRate(250000), 200000);
+}
+
+TEST(RadioUtils, SplitRanges) {
+  using Ranges = std::vector<FrequencyRange>;
+  EXPECT_EQ(splitRange({140000000, 160000000}, 20000000), Ranges({{140000000, 160000000}}));
+  EXPECT_EQ(splitRange({140000000, 180000000}, 20000000), Ranges({{140000000, 160000000}, {160000000, 180000000}}));
+  EXPECT_EQ(splitRange({140000000, 200000000}, 20000000), Ranges({{140000000, 160000000}, {160000000, 180000000}, {180000000, 200000000}}));
+  EXPECT_EQ(splitRange({140000000, 145000000}, 2000000), Ranges({{140000000, 142000000}, {142000000, 144000000}, {144000000, 146000000}}));
+  EXPECT_EQ(splitRange({140000000, 150000000}, 2000000), Ranges({{140000000, 142000000}, {142000000, 144000000}, {144000000, 146000000}, {146000000, 148000000}, {148000000, 150000000}}));
+}

@@ -1,6 +1,7 @@
 #include "sdr_device.h"
 
 #include <config.h>
+#include <gnuradio/block_detail.h>
 #include <gnuradio/blocks/float_to_char.h>
 #include <gnuradio/blocks/stream_to_vector.h>
 #include <gnuradio/fft/fft_v.h>
@@ -54,32 +55,34 @@ SdrDevice::~SdrDevice() {
 }
 
 void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
+  m_frequencyRange = {0, 0};
   const auto frequency = (frequencyRange.first + frequencyRange.second) / 2;
   m_noiseLearner->setProcessing(false);
   m_transmission->setProcessing(false);
   if (DEBUG_SAVE_FULL_RAW_IQ) m_rawFileSink->stopRecording();
 
-  m_frequencyRange = {0, 0};
-  for (int i = 0; i < 10; ++i) {
-    try {
-      m_source->set_frequency(0, frequency);
-      Logger::info(LABEL, "set frequency range: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first), formatFrequency(frequencyRange.second), formatFrequency(frequency));
-      break;
-    } catch (std::exception& e) {
-    }
-  }
   if (!m_isInitialized) {
-    Logger::info(LABEL, "waiting, initial sleep: {} ms", INITIAL_DELAY.count());
+    Logger::info(LABEL, "waiting, initial sleep: {}", colored(GREEN, "{} ms", INITIAL_DELAY.count()));
     std::this_thread::sleep_for(INITIAL_DELAY);
+    Logger::info(LABEL, "finished, initial sleep");
     m_isInitialized = true;
   }
-  m_frequencyRange = frequencyRange;
+
+  if (setCenterFrequency(frequency)) {
+    Logger::debug(LABEL, "set frequency range: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first), formatFrequency(frequencyRange.second), formatFrequency(frequency));
+  } else {
+    Logger::warn(LABEL, "set frequency range failed: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first), formatFrequency(frequencyRange.second), formatFrequency(frequency));
+  }
+
   if (DEBUG_SAVE_FULL_RAW_IQ) m_rawFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
   m_transmission->setProcessing(true);
   m_noiseLearner->setProcessing(true);
+
+  resetBuffers();
+  m_frequencyRange = frequencyRange;
 }
 
-bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts) {
+void SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts) {
   const auto isWaitingForRecording = [&sortedShifts](const Frequency shift) {
     return std::find_if(sortedShifts.begin(), sortedShifts.end(), [shift](const FrequencyFlush shiftFlush) {
              // improve auto formatter
@@ -141,13 +144,16 @@ bool SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
       ignoredTransmissions.erase(it++);
     }
   }
+}
 
-  for (auto& recorder : m_recorders) {
-    if (recorder->isRecording()) {
+bool SdrDevice::setCenterFrequency(Frequency frequency) {
+  for (int i = 0; i < 10; ++i) {
+    try {
+      m_source->set_frequency(0, frequency);
       return true;
+    } catch (std::exception& e) {
     }
   }
-
   return false;
 }
 
@@ -172,15 +178,25 @@ void SdrDevice::setupPowerChain(const Config& config, TransmissionNotification& 
   const auto psd = std::make_shared<PSD>(fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, m_frequencyRange, indexToFrequency);
   m_transmission = std::make_shared<Transmission>(config, fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
+  m_connector.connect<Block>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
 
   const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));
-  m_connector.connect<std::shared_ptr<gr::basic_block>>(psd, spectrogram);
+  m_connector.connect<Block>(psd, spectrogram);
 }
 
 void SdrDevice::setupRawFileChain() {
   if (DEBUG_SAVE_FULL_RAW_IQ) {
     m_rawFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
-    m_connector.connect<std::shared_ptr<gr::basic_block>>(m_source, m_rawFileSink);
+    m_connector.connect<Block>(m_source, m_rawFileSink);
+  }
+}
+
+void SdrDevice::resetBuffers() {
+  for (const auto& block : m_connector.getBlocks()) {
+    const auto detail = block->detail();
+    for (int i = 0; i < detail->ninputs(); ++i) {
+      const auto input = detail->input(i);
+      input->update_read_pointer(input->items_available());
+    }
   }
 }

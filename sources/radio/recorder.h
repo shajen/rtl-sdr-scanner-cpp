@@ -17,8 +17,8 @@
 class Recorder {
  public:
   Recorder() = delete;
-  Recorder(const Connection&) = delete;
-  Recorder& operator=(const Connection&) = delete;
+  Recorder(const Recorder&) = delete;
+  Recorder& operator=(const Recorder&) = delete;
 
   Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std::shared_ptr<gr::block> source, Frequency sampleRate, DataController& dataController);
   ~Recorder();

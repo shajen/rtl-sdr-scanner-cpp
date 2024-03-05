@@ -22,12 +22,14 @@ class SdrDevice {
   ~SdrDevice();
 
   void setFrequencyRange(FrequencyRange frequencyRange);
-  bool updateRecordings(const std::vector<FrequencyFlush> sortedShifts);
+  void updateRecordings(const std::vector<FrequencyFlush> sortedShifts);
 
  private:
+  bool setCenterFrequency(Frequency frequency);
   Frequency getFrequency() const;
   void setupPowerChain(const Config& config, TransmissionNotification& notification);
   void setupRawFileChain();
+  void resetBuffers();
 
   const Frequency m_sampleRate;
   bool m_isInitialized;
