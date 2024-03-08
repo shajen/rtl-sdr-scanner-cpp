@@ -15,7 +15,13 @@
 constexpr auto LABEL = "sdr";
 
 SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, TransmissionNotification& notification, const int recordersCount)
-    : m_sampleRate(device.m_sampleRate), m_isInitialized(false), m_frequencyRange({0, 0}), m_dataController(mqtt, device.getName()), m_tb(gr::make_top_block("sdr")), m_connector(m_tb) {
+    : m_sampleRate(device.m_sampleRate),
+      m_isInitialized(false),
+      m_frequencyRange({0, 0}),
+      m_dataController(mqtt, device.getName()),
+      m_tb(gr::make_top_block("sdr")),
+      m_rawFileSink(nullptr),
+      m_connector(m_tb) {
   Logger::info(LABEL, "starting");
   Logger::info(
       LABEL,
@@ -25,23 +31,13 @@ SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, Tra
       formatFrequency(m_sampleRate),
       colored(GREEN, "{}", recordersCount));
 
-  m_source = gr::soapy::source::make(fmt::format("driver={},serial={}", device.m_driver, device.m_serial), "fc32", 1);
-
-  setupPowerChain(config, notification);
-  setupRawFileChain();
-
-  for (int i = 0; i < recordersCount; ++i) {
-    m_recorders.push_back(std::make_unique<Recorder>(config, m_tb, m_source, m_sampleRate, m_dataController));
-  }
+  m_source = std::make_shared<SdrSource>(device);
+  setupChains(config, notification);
 
   Logger::info(LABEL, "recording bandwidth: {}", formatFrequency(config.recordingBandwidth()));
-  m_source->set_gain_mode(0, false);
-  for (const auto& [key, value] : device.m_gains) {
-    Logger::info(LABEL, "set gain, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value));
-    m_source->set_gain(0, key.c_str(), value);
+  for (int i = 0; i < recordersCount; ++i) {
+    m_recorders.push_back(std::make_unique<Recorder>(config, m_tb, m_blocker, m_sampleRate, m_dataController));
   }
-  Logger::info(LABEL, "sample rate: {}", formatFrequency(m_sampleRate));
-  m_source->set_sample_rate(0, m_sampleRate);
 
   m_tb->start();
   Logger::info(LABEL, "started");
@@ -55,12 +51,6 @@ SdrDevice::~SdrDevice() {
 }
 
 void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
-  m_frequencyRange = {0, 0};
-  const auto frequency = (frequencyRange.first + frequencyRange.second) / 2;
-  m_noiseLearner->setProcessing(false);
-  m_transmission->setProcessing(false);
-  if (DEBUG_SAVE_FULL_RAW_IQ) m_rawFileSink->stopRecording();
-
   if (!m_isInitialized) {
     Logger::info(LABEL, "waiting, initial sleep: {}", colored(GREEN, "{} ms", INITIAL_DELAY.count()));
     std::this_thread::sleep_for(INITIAL_DELAY);
@@ -68,18 +58,23 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
     m_isInitialized = true;
   }
 
-  if (setCenterFrequency(frequency)) {
+  m_blocker->setBlocking(true);
+  if (m_rawFileSink) m_rawFileSink->stopRecording();
+
+  const auto frequency = (frequencyRange.first + frequencyRange.second) / 2;
+  if (m_source->setCenterFrequency(frequency)) {
     Logger::debug(LABEL, "set frequency range: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first), formatFrequency(frequencyRange.second), formatFrequency(frequency));
   } else {
     Logger::warn(LABEL, "set frequency range failed: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first), formatFrequency(frequencyRange.second), formatFrequency(frequency));
   }
 
-  if (DEBUG_SAVE_FULL_RAW_IQ) m_rawFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
-  m_transmission->setProcessing(true);
-  m_noiseLearner->setProcessing(true);
-
   resetBuffers();
+  m_source->resetBuffers();
+  m_noiseLearner->resetBuffers();
+  m_transmission->resetBuffers();
+  if (m_rawFileSink) m_rawFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
   m_frequencyRange = frequencyRange;
+  m_blocker->setBlocking(false);
 }
 
 void SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts) {
@@ -146,20 +141,9 @@ void SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
   }
 }
 
-bool SdrDevice::setCenterFrequency(Frequency frequency) {
-  for (int i = 0; i < 10; ++i) {
-    try {
-      m_source->set_frequency(0, frequency);
-      return true;
-    } catch (std::exception& e) {
-    }
-  }
-  return false;
-}
-
 Frequency SdrDevice::getFrequency() const { return (m_frequencyRange.first + m_frequencyRange.second) / 2; }
 
-void SdrDevice::setupPowerChain(const Config& config, TransmissionNotification& notification) {
+void SdrDevice::setupChains(const Config& config, TransmissionNotification& notification) {
   const auto fftSize = getFft(m_sampleRate, SIGNAL_DETECTION_MAX_STEP);
   const auto step = static_cast<double>(m_sampleRate) / fftSize;
   const auto indexStep = static_cast<Frequency>(std::ceil(config.recordingBandwidth() / (static_cast<double>(m_sampleRate) / fftSize)));
@@ -172,31 +156,28 @@ void SdrDevice::setupPowerChain(const Config& config, TransmissionNotification& 
   };
   Logger::info(LABEL, "signal detection, fft: {}, step: {}, decimator factor: {}", colored(GREEN, "{}", fftSize), formatFrequency(step), colored(GREEN, "{}", decimatorFactor));
 
+  m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), fftSize * decimatorFactor);
   const auto decimator = std::make_shared<Decimator<gr_complex>>(fftSize, decimatorFactor);
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(fftSize, gr::fft::window::hamming(fftSize), true);
   const auto psd = std::make_shared<PSD>(fftSize, m_sampleRate);
-  m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, m_frequencyRange, indexToFrequency);
+  m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, std::bind(&SdrDevice::getFrequency, this), indexToFrequency);
   m_transmission = std::make_shared<Transmission>(config, fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
-  m_connector.connect<Block>(m_source, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
-
   const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));
-  m_connector.connect<Block>(psd, spectrogram);
-}
 
-void SdrDevice::setupRawFileChain() {
+  m_connector.connect<Block>(m_source, m_blocker);
+  m_connector.connect<Block>(m_blocker, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
+  m_connector.connect<Block>(psd, spectrogram);
+
   if (DEBUG_SAVE_FULL_RAW_IQ) {
     m_rawFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
-    m_connector.connect<Block>(m_source, m_rawFileSink);
+    m_connector.connect<Block>(m_blocker, m_rawFileSink);
   }
 }
 
 void SdrDevice::resetBuffers() {
   for (const auto& block : m_connector.getBlocks()) {
     const auto detail = block->detail();
-    for (int i = 0; i < detail->ninputs(); ++i) {
-      const auto input = detail->input(i);
-      input->update_read_pointer(input->items_available());
-    }
+    detail->reset_nitem_counters();
   }
 }

@@ -20,16 +20,15 @@ class NoiseLearner : virtual public gr::sync_block {
   };
 
  public:
-  NoiseLearner(const int itemSize, const FrequencyRange& frequencyRange, std::function<Frequency(const int index)> indexToFrequency);
+  NoiseLearner(const int itemSize, std::function<Frequency()> getFrequency, std::function<Frequency(const int index)> indexToFrequency);
 
   int work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items) override;
-
-  void setProcessing(const bool isProcessing);
+  void resetBuffers();
 
  private:
   const int m_itemSize;
-  const FrequencyRange& m_frequencyRange;
+  const std::function<Frequency()> m_getFrequency;
   const std::function<Frequency(const int index)> m_indexToFrequency;
-  std::atomic<bool> m_isProcessing;
+  std::mutex m_mutex;
   std::map<Frequency, Noise> m_noise;
 };

@@ -22,17 +22,12 @@ Transmission::Transmission(
       m_notification(notification),
       m_indexToFrequency(indexToFrequency),
       m_indexToShift(indexToShift),
-      m_isIndexInRange(isIndexInRange),
-      m_isProcessing(false) {
+      m_isIndexInRange(isIndexInRange) {
   Logger::info(LABEL, "group size: {}", colored(GREEN, "{}", m_groupSize));
 }
 
 int Transmission::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star&) {
   const float* input_buf = static_cast<const float*>(input_items[0]);
-
-  if (!m_isProcessing) {
-    return noutput_items;
-  }
 
   std::unique_lock<std::mutex> lock(m_mutex);
   for (int i = 0; i < noutput_items; ++i) {
@@ -42,16 +37,13 @@ int Transmission::work(int noutput_items, gr_vector_const_void_star& input_items
   return noutput_items;
 }
 
-void Transmission::setProcessing(const bool isProcessing) {
-  if (!isProcessing) {
-    std::unique_lock<std::mutex> lock(m_mutex);
-    for (const auto& [index, signal] : m_signals) {
-      Logger::info(LABEL, "stop, frequency: {}, center frequency: {}", formatFrequency(m_indexToFrequency(index), BLUE), formatFrequency(m_indexToFrequency(signal.getIndex()), BLUE));
-    }
-    m_signals.clear();
+void Transmission::resetBuffers() {
+  std::unique_lock<std::mutex> lock(m_mutex);
+  for (const auto& [index, signal] : m_signals) {
+    Logger::info(LABEL, "stop, frequency: {}, center frequency: {}", formatFrequency(m_indexToFrequency(index), BLUE), formatFrequency(m_indexToFrequency(signal.getIndex()), BLUE));
   }
+  m_signals.clear();
   m_averager.reset();
-  m_isProcessing = isProcessing;
 }
 
 void Transmission::process(const float* power) {

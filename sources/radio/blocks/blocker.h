@@ -16,5 +16,5 @@ class Blocker : virtual public gr::sync_block {
 
  private:
   const int m_itemSize;
-  std::atomic_bool m_isBlocking;
+  std::atomic<bool> m_isBlocking;
 };

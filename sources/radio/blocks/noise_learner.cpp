@@ -30,26 +30,18 @@ bool NoiseLearner::Noise::add(const float* data, const int size) {
   return false;
 }
 
-NoiseLearner::NoiseLearner(int itemSize, const FrequencyRange& frequencyRange, std::function<Frequency(const int index)> indexToFrequency)
+NoiseLearner::NoiseLearner(int itemSize, std::function<Frequency()> getFrequency, std::function<Frequency(const int index)> indexToFrequency)
     : gr::sync_block("NoiseLearner", gr::io_signature::make(1, 1, sizeof(float) * itemSize), gr::io_signature::make(1, 1, sizeof(float) * itemSize)),
       m_itemSize(itemSize),
-      m_frequencyRange(frequencyRange),
-      m_indexToFrequency(indexToFrequency),
-      m_isProcessing(false) {}
+      m_getFrequency(getFrequency),
+      m_indexToFrequency(indexToFrequency) {}
 
 int NoiseLearner::work(int noutput_items, gr_vector_const_void_star& input_items, gr_vector_void_star& output_items) {
   const float* input_buf = static_cast<const float*>(input_items[0]);
   float* output_buf = static_cast<float*>(output_items[0]);
 
-  if (!m_isProcessing) {
-    for (int i = 0; i < noutput_items; ++i) {
-      const auto fitIndex = i * m_itemSize;
-      setNoData(&output_buf[fitIndex], m_itemSize);
-    }
-    return noutput_items;
-  }
-
-  const auto frequency = (m_frequencyRange.first + m_frequencyRange.second) / 2;
+  std::unique_lock<std::mutex> lock(m_mutex);
+  const auto frequency = m_getFrequency();
   auto& noise = m_noise[frequency];
   for (int i = 0; i < noutput_items; ++i) {
     const auto fitIndex = i * m_itemSize;
@@ -77,4 +69,7 @@ int NoiseLearner::work(int noutput_items, gr_vector_const_void_star& input_items
   return noutput_items;
 }
 
-void NoiseLearner::setProcessing(const bool isProcessing) { m_isProcessing = isProcessing; }
+void NoiseLearner::resetBuffers() {
+  std::unique_lock<std::mutex> lock(m_mutex);
+  m_noise.clear();
+}

@@ -11,7 +11,9 @@ int Blocker::work(int noutput_items, gr_vector_const_void_star& input_items, gr_
   if (m_isBlocking) {
     return 0;
   } else {
-    std::memcpy(output_items[0], input_items[0], noutput_items * m_itemSize);
+    const uint8_t* in = static_cast<const uint8_t*>(input_items[0]);
+    uint8_t* out = static_cast<uint8_t*>(output_items[0]);
+    std::memcpy(out, in, noutput_items * m_itemSize);
     return noutput_items;
   }
 }
