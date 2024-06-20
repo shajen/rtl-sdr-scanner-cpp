@@ -20,7 +20,8 @@ SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, Tra
       m_frequencyRange({0, 0}),
       m_dataController(mqtt, device.getName()),
       m_tb(gr::make_top_block("sdr")),
-      m_rawFileSink(nullptr),
+      m_powerFileSink(nullptr),
+      m_rawIqFileSink(nullptr),
       m_connector(m_tb) {
   Logger::info(LABEL, "starting");
   Logger::info(
@@ -59,7 +60,8 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
   }
 
   m_blocker->setBlocking(true);
-  if (m_rawFileSink) m_rawFileSink->stopRecording();
+  if (m_powerFileSink) m_powerFileSink->stopRecording();
+  if (m_rawIqFileSink) m_rawIqFileSink->stopRecording();
 
   const auto frequency = (frequencyRange.first + frequencyRange.second) / 2;
   if (m_source->setCenterFrequency(frequency)) {
@@ -72,7 +74,8 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
   m_source->resetBuffers();
   m_noiseLearner->resetBuffers();
   m_transmission->resetBuffers();
-  if (m_rawFileSink) m_rawFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
+  if (m_powerFileSink) m_powerFileSink->startRecording(getRawFileName("full", "power", frequency, m_sampleRate));
+  if (m_rawIqFileSink) m_rawIqFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
   m_frequencyRange = frequencyRange;
   m_blocker->setBlocking(false);
 }
@@ -169,9 +172,13 @@ void SdrDevice::setupChains(const Config& config, TransmissionNotification& noti
   m_connector.connect<Block>(m_blocker, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
   m_connector.connect<Block>(psd, spectrogram);
 
+  if (DEBUG_SAVE_FULL_POWER) {
+    m_powerFileSink = std::make_shared<FileSink<float>>(fftSize, false);
+    m_connector.connect<Block>(psd, m_powerFileSink);
+  }
   if (DEBUG_SAVE_FULL_RAW_IQ) {
-    m_rawFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
-    m_connector.connect<Block>(m_blocker, m_rawFileSink);
+    m_rawIqFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
+    m_connector.connect<Block>(m_blocker, m_rawIqFileSink);
   }
 }
 

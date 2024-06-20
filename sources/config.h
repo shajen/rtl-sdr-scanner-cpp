@@ -10,6 +10,7 @@
 // INTERNAL SETTINGS
 constexpr auto CONFIG_FILE = "config.json";                               // user config file
 constexpr auto DEBUG_SAVE_FULL_RAW_IQ = false;                            // save orgignal sdr data as raw iq
+constexpr auto DEBUG_SAVE_FULL_POWER = false;                             // save orgignal sdr data as raw iq
 constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = false;                       // save recordings as raw iq
 constexpr auto INITIAL_DELAY = std::chrono::milliseconds(1000);           // delay after first start sdr device to start processing
 constexpr auto LOG_FILE_NAME = "log.txt";                                 // log filename

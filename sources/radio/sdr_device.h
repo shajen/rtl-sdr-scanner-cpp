@@ -42,7 +42,8 @@ class SdrDevice {
   std::shared_ptr<NoiseLearner> m_noiseLearner;
   std::shared_ptr<Transmission> m_transmission;
   std::vector<std::unique_ptr<Recorder>> m_recorders;
-  std::shared_ptr<FileSink<gr_complex>> m_rawFileSink;
+  std::shared_ptr<FileSink<float>> m_powerFileSink;
+  std::shared_ptr<FileSink<gr_complex>> m_rawIqFileSink;
   std::set<Frequency> ignoredTransmissions;
   Connector m_connector;
 };
