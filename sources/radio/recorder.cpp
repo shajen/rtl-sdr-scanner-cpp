@@ -19,7 +19,7 @@ Recorder::Recorder(const Config& config, std::shared_ptr<gr::top_block> tb, std:
       m_dataController(dataController),
       m_connector(tb) {
   std::vector<Block> blocks;
-  m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
+  m_blocker = std::make_shared<Blocker>(gr::io_signature::make(1, 1, sizeof(gr_complex)), true);
   m_shiftBlock = gr::blocks::rotator_cc::make();
   blocks.push_back(source);
   blocks.push_back(m_blocker);

@@ -37,7 +37,7 @@ SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, Tra
 
   Logger::info(LABEL, "recording bandwidth: {}", formatFrequency(config.recordingBandwidth()));
   for (int i = 0; i < recordersCount; ++i) {
-    m_recorders.push_back(std::make_unique<Recorder>(config, m_tb, m_blocker, m_sampleRate, m_dataController));
+    m_recorders.push_back(std::make_unique<Recorder>(config, m_tb, m_source, m_sampleRate, m_dataController));
   }
 
   m_tb->start();
@@ -57,6 +57,7 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
     std::this_thread::sleep_for(INITIAL_DELAY);
     Logger::info(LABEL, "finished, initial sleep");
     m_isInitialized = true;
+    m_blocker->setBlocking(false);
   }
 
   m_blocker->setBlocking(true);
@@ -70,13 +71,11 @@ void SdrDevice::setFrequencyRange(FrequencyRange frequencyRange) {
     Logger::warn(LABEL, "set frequency range failed: {} - {}, center frequency: {}", formatFrequency(frequencyRange.first), formatFrequency(frequencyRange.second), formatFrequency(frequency));
   }
 
-  resetBuffers();
-  m_source->resetBuffers();
-  m_noiseLearner->resetBuffers();
   m_transmission->resetBuffers();
   if (m_powerFileSink) m_powerFileSink->startRecording(getRawFileName("full", "power", frequency, m_sampleRate));
   if (m_rawIqFileSink) m_rawIqFileSink->startRecording(getRawFileName("full", "fc", frequency, m_sampleRate));
   m_frequencyRange = frequencyRange;
+  m_blocker->skip();
   m_blocker->setBlocking(false);
 }
 
@@ -159,32 +158,25 @@ void SdrDevice::setupChains(const Config& config, TransmissionNotification& noti
   };
   Logger::info(LABEL, "signal detection, fft: {}, step: {}, decimator factor: {}", colored(GREEN, "{}", fftSize), formatFrequency(step), colored(GREEN, "{}", decimatorFactor));
 
-  m_blocker = std::make_shared<Blocker>(sizeof(gr_complex), true);
   const auto s2c = gr::blocks::stream_to_vector::make(sizeof(gr_complex), fftSize * decimatorFactor);
+  m_blocker = std::make_shared<Blocker>(gr::io_signature::make(1, 1, sizeof(gr_complex) * fftSize * decimatorFactor), true);
   const auto decimator = std::make_shared<Decimator<gr_complex>>(fftSize, decimatorFactor);
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(fftSize, gr::fft::window::hamming(fftSize), true);
   const auto psd = std::make_shared<PSD>(fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, std::bind(&SdrDevice::getFrequency, this), indexToFrequency);
   m_transmission = std::make_shared<Transmission>(config, fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
-  const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));
+  m_connector.connect<Block>(m_source, s2c, m_blocker, decimator, fft, psd, m_noiseLearner, m_transmission);
 
-  m_connector.connect<Block>(m_source, m_blocker);
-  m_connector.connect<Block>(m_blocker, s2c, decimator, fft, psd, m_noiseLearner, m_transmission);
+  const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));
   m_connector.connect<Block>(psd, spectrogram);
 
   if (DEBUG_SAVE_FULL_POWER) {
     m_powerFileSink = std::make_shared<FileSink<float>>(fftSize, false);
     m_connector.connect<Block>(psd, m_powerFileSink);
   }
+
   if (DEBUG_SAVE_FULL_RAW_IQ) {
     m_rawIqFileSink = std::make_shared<FileSink<gr_complex>>(1, false);
-    m_connector.connect<Block>(m_blocker, m_rawIqFileSink);
-  }
-}
-
-void SdrDevice::resetBuffers() {
-  for (const auto& block : m_connector.getBlocks()) {
-    const auto detail = block->detail();
-    detail->reset_nitem_counters();
+    m_connector.connect<Block>(m_source, m_rawIqFileSink);
   }
 }
