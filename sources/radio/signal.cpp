@@ -21,6 +21,8 @@ void Signal::newData(const Index, const float avgPower, const Index rawIndex, co
 
 bool Signal::isMinimalTime(const std::chrono::milliseconds& now) const { return m_firstDataTime + m_config.recordingMinTime() <= now; }
 
+bool Signal::isMaximalTime(const std::chrono::milliseconds& now) const { return m_firstDataTime + TRANSMISSION_MAX_TIME <= now; }
+
 bool Signal::isTimeout(const std::chrono::milliseconds& now) const { return m_lastDataTime + m_config.recordingTimeout() <= now; }
 
 bool Signal::needFlush(const std::chrono::milliseconds& now) const { return m_lastDataTime == now && isMinimalTime(now); }

@@ -62,7 +62,7 @@ void Transmission::process(const float* power) {
 void Transmission::clearSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now) {
   for (auto it = m_signals.begin(); it != m_signals.cend();) {
     const auto& [index, signal] = *it;
-    if (signal.isTimeout(now)) {
+    if (signal.isTimeout(now) || signal.isMaximalTime(now)) {
       Logger::info(
           LABEL,
           "stop, frequency: {}, center frequency: {}, avg power: {}, raw power:{}",

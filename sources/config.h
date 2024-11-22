@@ -19,6 +19,7 @@ constexpr auto LOG_FILES_COUNT = 9;                                       // kee
 constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;                        // print stats every n frames
 constexpr auto RECORDER_FLUSH_INTERVAL = std::chrono::milliseconds(100);  // flush recordings to mqtt every 2 * n bytes
 constexpr auto RESAMPLER_THRESHOLD = 125;                                 // max interpolation or decimation factor of RESAMPLER
+constexpr auto TRANSMISSION_MAX_TIME = std::chrono::minutes(10);          // break transmission if longer that
 
 // SCANNING SETTINGS
 constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(2000);  // noise learnig time

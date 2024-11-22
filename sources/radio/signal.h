@@ -17,6 +17,7 @@ class Signal {
   void newData(const Index avgIndex, const float avgPower, const Index rawIndex, const float rawPower, const std::chrono::milliseconds& now);
 
   bool isMinimalTime(const std::chrono::milliseconds& now) const;
+  bool isMaximalTime(const std::chrono::milliseconds& now) const;
   bool isTimeout(const std::chrono::milliseconds& now) const;
   bool needFlush(const std::chrono::milliseconds& now) const;
   float getPower() const;
