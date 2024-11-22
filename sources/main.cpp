@@ -18,7 +18,7 @@ void handler(int) {
   isRunning = false;
 }
 
-int main(int, char**) {
+int main(int argc, char** argv) {
   dup2(fileno(fopen("/dev/null", "w")), fileno(stderr));
   SoapySDR_setLogLevel(SoapySDRLogLevel::SOAPY_SDR_WARNING);
   signal(SIGINT, handler);
@@ -27,19 +27,24 @@ int main(int, char**) {
   try {
     Logger::configure(spdlog::level::info, spdlog::level::info, LOG_FILE_NAME, LOG_FILE_SIZE, LOG_FILES_COUNT, true);
     Logger::info(LABEL, "{}", colored(GREEN, "{}", "starting"));
+    const std::string configFile = 2 <= argc ? argv[1] : "";
+    if (configFile.empty()) {
+      Logger::error(LABEL, "no config file argument provided");
+      return 1;
+    }
 
     const auto id = generateRandomHash();
     while (isRunning) {
       bool reload = false;
-      const Config config = Config::loadFromFile(CONFIG_FILE);
+      const Config config = Config::loadFromFile(configFile);
       Logger::configure(config.consoleLogLevel(), config.fileLogLevel(), LOG_FILE_NAME, LOG_FILE_SIZE, LOG_FILES_COUNT, config.isColorLogEnabled());
       Logger::info(LABEL, "config: {}", colored(GREEN, "{}", config.json().dump()));
       Logger::info(LABEL, "mqtt: {}", colored(GREEN, "{}", config.mqtt()));
 
       Mqtt mqtt(config);
-      RemoteController remoteController(config, id, mqtt, [&reload](const nlohmann::json& json) {
+      RemoteController remoteController(config, id, mqtt, [&reload, &configFile](const nlohmann::json& json) {
         Logger::info(LABEL, "reload config: {}", colored(GREEN, "{}", json.dump()));
-        Config::saveToFile(CONFIG_FILE, json);
+        Config::saveToFile(configFile, json);
         reload = true;
       });
       std::vector<std::unique_ptr<Scanner>> scanners;

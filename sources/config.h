@@ -8,7 +8,6 @@
 #include <string>
 
 // INTERNAL SETTINGS
-constexpr auto CONFIG_FILE = "config.json";                               // user config file
 constexpr auto DEBUG_SAVE_FULL_RAW_IQ = false;                            // save orgignal sdr data as raw iq
 constexpr auto DEBUG_SAVE_FULL_POWER = false;                             // save orgignal sdr data as raw iq
 constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = false;                       // save recordings as raw iq
