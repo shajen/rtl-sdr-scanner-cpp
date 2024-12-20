@@ -11,7 +11,7 @@ RUN git clone --depth 1 -b v0.8.0 https://github.com/krakenrf/librtlsdr /tmp/lib
     ldconfig
 
 WORKDIR /root/auto-sdr/
-COPY . .
+RUN git clone https://github.com/shajen/rtl-sdr-scanner-cpp ./
 RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release /root/auto-sdr && \
     cmake --build /root/auto-sdr/build -j$(nproc) && \
     strip /root/auto-sdr/build/auto_sdr && \
