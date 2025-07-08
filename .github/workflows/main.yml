@@ -51,7 +51,7 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/arm/v7,linux/arm64/v8,linux/amd64
+          platforms: linux/arm64/v8,linux/amd64
           tags: ${{ env.IMAGE }}:${{ github.ref_name }}
           cache-from: type=local,src=cache
           cache-to: type=local,dest=cache,mode=max
@@ -61,7 +61,7 @@ jobs:
         with:
           context: .
           push: true
-          platforms: linux/arm/v7,linux/arm64/v8,linux/amd64
+          platforms: linux/arm64/v8,linux/amd64
           tags: |
             ${{ env.IMAGE }}:latest
             ${{ env.IMAGE }}:${{ github.ref_name }}
