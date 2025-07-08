@@ -46,7 +46,7 @@ jobs:
         run: |
           docker run --rm ${{ env.IMAGE }}:test
       - name: Push development version
-        if: ${{ github.ref_type == 'branch' && github.ref_name == vars.CI_BRANCH }}
+        if: ${{ github.ref_type == 'branch' && contains(vars.CI_BRANCH, github.ref_name) }}
         uses: docker/build-push-action@v5
         with:
           context: .
