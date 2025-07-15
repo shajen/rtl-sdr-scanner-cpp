@@ -1,100 +1,25 @@
 # Introduction
 
+This project is part of a larger `SDR` project called [https://github.com/shajen/sdr-hub](https://github.com/shajen/sdr-hub). Please familiar with it before starting work.
+
 This project contains sdr scanner written in `c++` to **scan and record multiple interesting frequencies bandwidth in the same time** (eg. 108 MHz, 144 MHz, 440 Mhz,  etc). This is possible by switching quickly between frequencies bandwidth.
 
 Sdr scanner also allows you to record multiple transmissions simultaneously (if they are transmitted on the same band). For example, if one transmission is on 145.200 MHz and the other is on 145.600 MHz, the scanner will record and save both!
-
-It also provides easy but very powerful **web panel** to explore recordings, spectrograms and configure sdr device.
 
 # Supported devices
 
 Sdr scanner use [SoapySDR](https://github.com/pothosware/SoapySDR) library to get data so it support all devices that are supported by `SoapySDR`. Full list of supported devices [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Supported-devices).
 
-# Supported modulation
-
-- `FM`
-- `AM`
-
-# YouTube
-
-[introduction video](https://www.youtube.com/watch?v=YzQ2N0VkKvE) - thanks to **Tech Minds**!
-
-[introduction video](http://www.youtube.com/watch?v=TSDbcb7wSjs) - old version
-
-# Screens
-
-## Sample data collected
-
-| Spectrogram | Transmission |
-| - | - |
-| ![](images/spectrograms.png?raw=1) | ![](images/transmissions.png?raw=1) |
-| ![](images/spectrogram.png?raw=1) | ![](images/transmission.png?raw=1) |
-
-## Configuration
-
-| App configuration | Groups |
-| - | - |
-| ![](images/config.png?raw=1) | ![](images/groups.png?raw=1) |
-
 # Quickstart
 
-## Install docker
+Instructions [here](https://github.com/shajen/sdr-hub?tab=readme-ov-file#quickstart).
 
-If you do not have `docker` installed, follow the instructions [here](https://docs.docker.com/desktop/) to install `docker` and `docker compose`.
+# Build from sources
 
-## Run
-
+Clone repository and run:
 ```
-git clone https://github.com/shajen/rtl-sdr-scanner-cpp.git ~/sdr
-cd ~/sdr
-nano .env # customize settings if you want: timezone, admin account and other
-docker compose up -d
+docker build -t shajen/sdr-scanner .
 ```
-
-## Stop
-
-```
-cd ~/sdr
-docker compose down
-```
-
-## Web panel
-
-Default web panel address is [http://localhost:8000/](http://localhost:8000/), default login: `admin`, password: `password`. Useful links:
-- [configuration](http://localhost:8000/sdr/config/)
-- [configuration manual](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Configuration)
-- [admin panel](http://localhost:8000/admin/)
-- [spectrograms](http://localhost:8000/sdr/spectrograms/) (wait for data to collect after start and configure)
-- [transmissions](http://localhost:8000/sdr/transmissions/) (wait for data to collect after start and configure)
-
-Sources of panel [here](https://github.com/shajen/monitor).
-
-## Update
-
-To update to latest version just update git, images and run it.
-```
-cd ~/sdr
-docker compose down
-git pull
-docker compose pull
-docker compose up -d
-```
-
-## Stop and remove data
-
-It removes all collected data and configuration!
-```
-cd ~/sdr
-docker compose down --volumes
-```
-
-# AI
-
-It uses `AI` model from [https://www.tensorflow.org/lite/inference_with_metadata/task_library/audio_classifier](https://www.tensorflow.org/lite/inference_with_metadata/task_library/audio_classifier) to classify whether a transmission is speech or noise.
-
-# Wiki
-
-Many useful instructions and information are on the [wiki](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki).
 
 # Contributing
 
@@ -112,11 +37,11 @@ NOTE: Be sure to merge the **latest** from **upstream** before making a pull req
 
 If you enjoy this project and want to thanks, please use follow link:
 
-[<img src="images/paypal.jpg" width="100">](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
-[<img src="images/revolut.jpg" width="100">](https://revolut.me/borysm2b)
-<img src="images/btc.png" width="100">
+- [PayPal](https://www.paypal.com/donate/?hosted_button_id=6JQ963AU688QN)
 
-BTC address: 18UDYg9mu26K2E3U479eMvMZXPDpswR7Jn
+- [Revolut](https://revolut.me/borysm2b)
+
+- BTC address: 18UDYg9mu26K2E3U479eMvMZXPDpswR7Jn
 
 # License
 
