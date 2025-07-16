@@ -39,6 +39,9 @@ jobs:
       - name: Build app
         uses: docker/build-push-action@v5
         with:
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
           context: .
           cache-from: type=local,src=cache
           cache-to: type=local,dest=cache,mode=max
@@ -49,6 +52,9 @@ jobs:
         if: ${{ github.ref_type == 'branch' && contains(vars.CI_BRANCH, github.ref_name) }}
         uses: docker/build-push-action@v5
         with:
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
           context: .
           push: true
           platforms: linux/arm64/v8,linux/amd64
@@ -59,6 +65,9 @@ jobs:
         if: ${{ github.ref_type == 'tag' }}
         uses: docker/build-push-action@v5
         with:
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
           context: .
           push: true
           platforms: linux/arm64/v8,linux/amd64

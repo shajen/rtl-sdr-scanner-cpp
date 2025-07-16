@@ -52,5 +52,12 @@ COPY --from=build /usr/local/lib/SoapySDR/modules0.8/libsdrPlaySupport.so /usr/l
 COPY --from=build /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
 COPY --from=build /root/auto-sdr/build/auto_sdr.debug /usr/bin/auto_sdr.debug
 RUN ldconfig
+ARG VERSION=""
+ARG COMMIT=""
+ARG CHANGES=""
+RUN echo "$(TZ=UTC date +"%Y-%m-%dT%H:%M:%S%z")" | tee /sdr_scanner_build_time && \
+    echo "$VERSION" | tee /sdr_scanner_version && \
+    echo "$COMMIT" | tee /sdr_scanner_commit && \
+    echo "$CHANGES" | tee /sdr_scanner_changes
 COPY entrypoint/run.sh /entrypoint/run.sh
 CMD ["/entrypoint/run.sh"]
