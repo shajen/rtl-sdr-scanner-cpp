@@ -13,17 +13,14 @@ bool NoiseLearner::Noise::add(const float* data, const int size) {
     return true;
   }
   if (static_cast<int>(m_threshold.size()) < size) {
-    m_threshold.resize(size, 0.0f);
+    m_threshold.resize(size, -std::numeric_limits<float>::max());
   }
   const auto now = getTime();
   for (int i = 0; i < size; ++i) {
-    m_threshold[i] += data[i];
+    m_threshold[i] = std::max(m_threshold[i], data[i]);
   }
   m_samples++;
   if (m_startLearningTime + NOISE_LEARNING_TIME <= now) {
-    for (int i = 0; i < size; ++i) {
-      m_threshold[i] = m_threshold[i] / m_samples;
-    }
     m_isReady = true;
     return true;
   }
