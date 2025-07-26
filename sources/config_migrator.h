@@ -12,6 +12,5 @@ class ConfigMigrator {
   ~ConfigMigrator() = delete;
 
   static void applyVersion(nlohmann::json& config, const int version);
-  static void applyVersion1(nlohmann::json& config);
   static void applyVersion2(nlohmann::json& config);
 };

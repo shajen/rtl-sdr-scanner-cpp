@@ -1,4 +1,5 @@
 {
+    "devices": [],
     "ignored_frequencies": [],
     "output": {
         "color_log_enabled": true,
@@ -11,6 +12,5 @@
         "min_time_ms": 2000,
         "step": 2500
     },
-    "scanned_frequencies": [],
-    "version": 2
+    "version": 1
 }
