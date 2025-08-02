@@ -78,6 +78,7 @@ class Config {
   const std::chrono::milliseconds m_recordingMinTime;
   const std::chrono::milliseconds m_recordingTimeout;
   const Frequency m_recordingTuningStep;
+  const int m_workers;
 
   const std::string m_mqttHostname;
   const int m_mqttPort;

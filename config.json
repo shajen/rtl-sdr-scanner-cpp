@@ -12,5 +12,6 @@
         "min_time_ms": 2000,
         "step": 2500
     },
-    "version": 1
+    "version": 1,
+    "workers": 0
 }

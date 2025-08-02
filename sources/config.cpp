@@ -80,6 +80,7 @@ Config::Config(const nlohmann::json& json)
       m_recordingMinTime(std::chrono::milliseconds(readKey<int>(json, {"recording", "min_time_ms"}))),
       m_recordingTimeout(std::chrono::milliseconds(readKey<int>(json, {"recording", "max_noise_time_ms"}))),
       m_recordingTuningStep(readKey<Frequency>(json, {"recording", "step"})),
+      m_workers(readKey<int>(json, {"workers"})),
       m_mqttHostname(getEnv("MQTT_HOST")),
       m_mqttPort(stoi(getEnv("MQTT_PORT_TCP"))),
       m_mqttUsername(getEnv("MQTT_USER")),
@@ -133,8 +134,9 @@ spdlog::level::level_enum Config::fileLogLevel() const { return m_fileLogLevel; 
 
 std::vector<FrequencyRange> Config::ignoredRanges() const { return m_ignoredRanges; }
 int Config::recordersCount() const {
-  const auto cores = std::thread::hardware_concurrency();
-  return std::max(1, static_cast<int>(cores / 2));
+  const auto max_workers = static_cast<int>(std::thread::hardware_concurrency() / 2);
+  const auto workers = std::max(0, std::min(m_workers, max_workers));
+  return workers == 0 ? max_workers : workers;
 }
 Frequency Config::recordingBandwidth() const { return m_recordingBandwidth; }
 std::chrono::milliseconds Config::recordingMinTime() const { return m_recordingMinTime; }
