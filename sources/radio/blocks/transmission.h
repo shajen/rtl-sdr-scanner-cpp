@@ -16,6 +16,7 @@ class Transmission : virtual public gr::sync_block {
  public:
   Transmission(
       const Config& config,
+      const Device& device,
       const int itemSize,
       const int groupSize,
       TransmissionNotification& notification,
@@ -36,6 +37,7 @@ class Transmission : virtual public gr::sync_block {
   std::vector<FrequencyFlush> getSortedTransmissions(const std::chrono::milliseconds now) const;
 
   const Config& m_config;
+  const Device& m_device;
   const int m_itemSize;
   const int m_groupSize;
   Averager m_averager;

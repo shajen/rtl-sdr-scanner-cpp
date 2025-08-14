@@ -23,6 +23,8 @@ struct Device {
   std::string m_driver{};
   Frequency m_sampleRate{};
   std::vector<FrequencyRange> m_ranges{};
+  float m_startLevel{};
+  float m_stopLevel{};
 
   std::string getName() const { return m_driver + "_" + m_serial; }
 };

@@ -25,12 +25,12 @@ constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(2000);  // noise 
 constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(200);   // waiting time for transmission in single scanning range
 
 // SIGNAL DETECTION SETTINGS
-constexpr auto GROUPING_X = 21;                  // average n frames in frequency domain
-constexpr auto GROUPING_Y = 21;                  // average n frames in time domain
-constexpr auto RECORDING_START_THRESHOLD = 5;    // start recording if average power greather than n
-constexpr auto RECORDING_STOP_THRESHOLD = 3;     // stop recording if average power lower than n
-constexpr auto SIGNAL_DETECTION_FPS = 50;        // reduce cpu usage
-constexpr auto SIGNAL_DETECTION_MAX_STEP = 250;  // max step after fft
+constexpr auto GROUPING_X = 21;                    // average n frames in frequency domain
+constexpr auto GROUPING_Y = 21;                    // average n frames in time domain
+constexpr auto DEFAULT_RECORDING_START_LEVEL = 8;  // start recording if average power greather than n
+constexpr auto DEFAULT_RECORDING_STOP_LEVEL = 5;   // stop recording if average power lower than n
+constexpr auto SIGNAL_DETECTION_FPS = 50;          // reduce cpu usage
+constexpr auto SIGNAL_DETECTION_MAX_STEP = 250;    // max step after fft
 
 // SPECTROGRAM SETTINGS
 constexpr auto SPECTROGRAM_PREFERRED_MAX_STEP = 1000;                        // spectrogram preferred max step

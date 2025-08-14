@@ -8,6 +8,7 @@ constexpr auto LABEL = "transmission";
 
 Transmission::Transmission(
     const Config& config,
+    const Device& device,
     const int itemSize,
     const int groupSize,
     TransmissionNotification& notification,
@@ -16,6 +17,7 @@ Transmission::Transmission(
     std::function<bool(const int Index)> isIndexInRange)
     : gr::sync_block("Transmission", gr::io_signature::make(1, 1, sizeof(float) * itemSize), gr::io_signature::make(0, 0, 0)),
       m_config(config),
+      m_device(device),
       m_itemSize(itemSize),
       m_groupSize(groupSize),
       m_averager(itemSize, GROUPING_Y),
@@ -80,7 +82,7 @@ void Transmission::clearSignals(const float* avgPower, const float* rawPower, co
 void Transmission::addSignals(const float* avgPower, const float* rawPower, const std::chrono::milliseconds now) {
   std::vector<Index> indexes;
   for (int i = 0; i < m_itemSize; ++i) {
-    if (RECORDING_START_THRESHOLD <= avgPower[i] && m_isIndexInRange(i) && !isIndexIgnored(i)) {
+    if (m_device.m_startLevel <= avgPower[i] && m_isIndexInRange(i) && !isIndexIgnored(i)) {
       indexes.push_back(i);
     }
   }
@@ -95,7 +97,7 @@ void Transmission::addSignals(const float* avgPower, const float* rawPower, cons
           formatFrequency(m_indexToFrequency(bestIndex), BLUE),
           formatPower(avgPower[bestIndex], BLUE),
           formatPower(rawPower[bestIndex], BLUE));
-      m_signals.insert({bestIndex, {m_config, m_indexToFrequency, m_indexToShift, now}});
+      m_signals.insert({bestIndex, {m_config, m_device, m_indexToFrequency, m_indexToShift, now}});
     }
   }
 }
@@ -125,7 +127,7 @@ Transmission::Index Transmission::getBestIndex(Index index) const {
   for (size_t i = min; i < max; ++i) {
     const auto& row = m_averager.data().at(i);
     const auto bestIndex = getMaxIndex(row.data(), row.size(), index, m_groupSize);
-    if (RECORDING_START_THRESHOLD <= row[bestIndex]) {
+    if (m_device.m_startLevel <= row[bestIndex]) {
       Logger::debug(LABEL, "best index, id: {:2d}, frequency: {}, power: {}", i, formatFrequency(m_indexToFrequency(bestIndex), BROWN), formatPower(row[bestIndex], BROWN));
       buffer.push_back(bestIndex);
     }

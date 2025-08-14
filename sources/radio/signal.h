@@ -11,7 +11,11 @@ class Signal {
 
  public:
   Signal(
-      const Config& config, const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now);
+      const Config& config,
+      const Device& device,
+      const std::function<Frequency(const Index index)>& indexToFrequency,
+      const std::function<Frequency(const Index index)>& indexToShift,
+      const std::chrono::milliseconds& now);
   ~Signal();
 
   void newData(const Index avgIndex, const float avgPower, const Index rawIndex, const float rawPower, const std::chrono::milliseconds& now);
@@ -27,6 +31,7 @@ class Signal {
 
  private:
   const Config& m_config;
+  const Device& m_device;
   std::function<Frequency(const Index index)> m_indexToFrequency;
   std::function<Frequency(const Index index)> m_indexToShift;
   std::chrono::milliseconds m_firstDataTime;

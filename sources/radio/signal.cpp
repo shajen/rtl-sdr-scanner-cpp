@@ -4,17 +4,21 @@
 #include <utils/utils.h>
 
 Signal::Signal(
-    const Config& config, const std::function<Frequency(const Index index)>& indexToFrequency, const std::function<Frequency(const Index index)>& indexToShift, const std::chrono::milliseconds& now)
-    : m_config(config), m_indexToFrequency(indexToFrequency), m_indexToShift(indexToShift), m_firstDataTime(now), m_lastDataTime(now), m_power(0.0) {}
+    const Config& config,
+    const Device& device,
+    const std::function<Frequency(const Index index)>& indexToFrequency,
+    const std::function<Frequency(const Index index)>& indexToShift,
+    const std::chrono::milliseconds& now)
+    : m_config(config), m_device(device), m_indexToFrequency(indexToFrequency), m_indexToShift(indexToShift), m_firstDataTime(now), m_lastDataTime(now), m_power(0.0) {}
 
 Signal::~Signal() {}
 
 void Signal::newData(const Index, const float avgPower, const Index rawIndex, const float rawPower, const std::chrono::milliseconds& now) {
   m_power = avgPower;
-  if (RECORDING_STOP_THRESHOLD <= avgPower) {
+  if (m_device.m_stopLevel <= avgPower) {
     m_lastDataTime = now;
   }
-  if (RECORDING_START_THRESHOLD <= rawPower) {
+  if (m_device.m_startLevel <= rawPower) {
     m_indexes.push_back(rawIndex);
   }
 }

@@ -24,7 +24,7 @@ std::string removeZerosFromBegging(const std::string& string) {
 std::string generateRandomHash() {
   auto generator = boost::uuids::random_generator();
   auto uuid = boost::uuids::to_string(generator());
-  std::remove(uuid.begin(), uuid.end(), '-');
+  std::ignore = std::remove(uuid.begin(), uuid.end(), '-');
   return uuid;
 }
 

@@ -33,7 +33,7 @@ SdrDevice::SdrDevice(const Config& config, const Device& device, Mqtt& mqtt, Tra
       colored(GREEN, "{}", recordersCount));
 
   m_source = std::make_shared<SdrSource>(device);
-  setupChains(config, notification);
+  setupChains(config, device, notification);
 
   Logger::info(LABEL, "recording bandwidth: {}", formatFrequency(config.recordingBandwidth()));
   for (int i = 0; i < recordersCount; ++i) {
@@ -145,7 +145,7 @@ void SdrDevice::updateRecordings(const std::vector<FrequencyFlush> sortedShifts)
 
 Frequency SdrDevice::getFrequency() const { return (m_frequencyRange.first + m_frequencyRange.second) / 2; }
 
-void SdrDevice::setupChains(const Config& config, TransmissionNotification& notification) {
+void SdrDevice::setupChains(const Config& config, const Device& device, TransmissionNotification& notification) {
   const auto fftSize = getFft(m_sampleRate, SIGNAL_DETECTION_MAX_STEP);
   const auto step = static_cast<double>(m_sampleRate) / fftSize;
   const auto indexStep = static_cast<Frequency>(std::ceil(config.recordingBandwidth() / (static_cast<double>(m_sampleRate) / fftSize)));
@@ -164,7 +164,7 @@ void SdrDevice::setupChains(const Config& config, TransmissionNotification& noti
   const auto fft = gr::fft::fft_v<gr_complex, true>::make(fftSize, gr::fft::window::hamming(fftSize), true);
   const auto psd = std::make_shared<PSD>(fftSize, m_sampleRate);
   m_noiseLearner = std::make_shared<NoiseLearner>(fftSize, std::bind(&SdrDevice::getFrequency, this), indexToFrequency);
-  m_transmission = std::make_shared<Transmission>(config, fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
+  m_transmission = std::make_shared<Transmission>(config, device, fftSize, indexStep, notification, indexToFrequency, indexToShift, isIndexInRange);
   m_connector.connect<Block>(m_source, s2c, m_blocker, decimator, fft, psd, m_noiseLearner, m_transmission);
 
   const auto spectrogram = std::make_shared<Spectrogram>(fftSize, m_sampleRate, m_dataController, std::bind(&SdrDevice::getFrequency, this));

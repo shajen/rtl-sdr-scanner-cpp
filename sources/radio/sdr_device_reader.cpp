@@ -1,5 +1,6 @@
 #include "sdr_device_reader.h"
 
+#include <config.h>
 #include <logger.h>
 #include <utils/utils.h>
 
@@ -68,6 +69,8 @@ void SdrDeviceReader::createSoapyDevices(nlohmann::json& json, const SoapySDR::K
   json["driver"] = driver;
   json["serial"] = serial;
   json["enabled"] = true;
+  json["start_recording_level"] = DEFAULT_RECORDING_START_LEVEL;
+  json["stop_recording_level"] = DEFAULT_RECORDING_STOP_LEVEL;
 
   const auto sampleRates = getSampleRates(sdr);
   json["sample_rates"] = sampleRates;
@@ -128,6 +131,8 @@ Device SdrDeviceReader::readDevice(const nlohmann::json& json) {
   Device device;
   device.m_driver = json.at("driver").get<std::string>();
   device.m_enabled = json.at("enabled").get<bool>();
+  device.m_startLevel = json.at("start_recording_level").get<float>();
+  device.m_stopLevel = json.at("stop_recording_level").get<float>();
   for (const auto& item : json.at("gains")) {
     const auto key = item.at("name").get<std::string>();
     const auto value = item.at("value").get<float>();

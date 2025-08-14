@@ -28,7 +28,7 @@ class SdrDevice {
 
  private:
   Frequency getFrequency() const;
-  void setupChains(const Config& config, TransmissionNotification& notification);
+  void setupChains(const Config& config, const Device& device, TransmissionNotification& notification);
 
   const Frequency m_sampleRate;
   bool m_isInitialized;
