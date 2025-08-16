@@ -8,7 +8,7 @@ Sdr scanner also allows you to record multiple transmissions simultaneously (if 
 
 # Supported devices
 
-Sdr scanner use [SoapySDR](https://github.com/pothosware/SoapySDR) library to get data so it support all devices that are supported by `SoapySDR`. Full list of supported devices [here](https://github.com/shajen/rtl-sdr-scanner-cpp/wiki/Supported-devices).
+Sdr scanner use [SoapySDR](https://github.com/pothosware/SoapySDR) library to get data so it support all devices that are supported by `SoapySDR`. Full list of supported devices [here](https://github.com/pothosware/SoapyOsmo/wiki).
 
 # Quickstart
 
