@@ -25,11 +25,16 @@ WORKDIR /root/auto-sdr/
 COPY CMakeLists.txt CMakeLists.txt
 COPY tests tests
 COPY sources sources
-RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-g" /root/auto-sdr && \
+
+FROM build AS build_release
+RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release /root/auto-sdr && \
     cmake --build /root/auto-sdr/build -j$(nproc) && \
-    mv /root/auto-sdr/build/auto_sdr /root/auto-sdr/build/auto_sdr.debug && \
-    strip /root/auto-sdr/build/auto_sdr.debug -o /root/auto-sdr/build/auto_sdr && \
+    strip /root/auto-sdr/build/auto_sdr && \
     strip /root/auto-sdr/build/auto_sdr_test
+
+FROM build AS build_debug
+RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Debug /root/auto-sdr && \
+    cmake --build /root/auto-sdr/build -j$(nproc)
 
 FROM ubuntu:24.04 AS run
 ENV DEBIAN_FRONTEND=noninteractive
@@ -41,7 +46,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/
 
 FROM run AS test
-COPY --from=build /root/auto-sdr/build/auto_sdr_test /usr/bin/auto_sdr_test
+COPY --from=build_release /root/auto-sdr/build/auto_sdr_test /usr/bin/auto_sdr_test
 CMD /usr/bin/auto_sdr_test
 
 FROM run
@@ -49,8 +54,8 @@ COPY ./config.json /config/config.json
 COPY --from=build /usr/local/lib/libsdrplay_api.so* /usr/local/lib/
 COPY --from=build /usr/local/bin/sdrplay_apiService /usr/local/bin/
 COPY --from=build /usr/local/lib/SoapySDR/modules0.8/libsdrPlaySupport.so /usr/local/lib/SoapySDR/modules0.8/
-COPY --from=build /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
-COPY --from=build /root/auto-sdr/build/auto_sdr.debug /usr/bin/auto_sdr.debug
+COPY --from=build_release /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
+COPY --from=build_debug /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr.debug
 RUN ldconfig
 ARG VERSION=""
 ARG COMMIT=""
