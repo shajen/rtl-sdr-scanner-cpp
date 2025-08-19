@@ -13,13 +13,13 @@ Signal::Signal(
 
 Signal::~Signal() {}
 
-void Signal::newData(const Index, const float avgPower, const Index rawIndex, const float rawPower, const std::chrono::milliseconds& now) {
+void Signal::newData(const Index avgIndex, const float avgPower, const Index, const float, const std::chrono::milliseconds& now) {
   m_power = avgPower;
   if (m_device.m_stopLevel <= avgPower) {
     m_lastDataTime = now;
   }
-  if (m_device.m_startLevel <= rawPower) {
-    m_indexes.push_back(rawIndex);
+  if (m_device.m_startLevel <= avgPower) {
+    m_indexes.push_back(avgIndex);
   }
 }
 
