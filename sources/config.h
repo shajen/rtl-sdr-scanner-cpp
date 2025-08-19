@@ -22,7 +22,7 @@ constexpr auto TRANSMISSION_MAX_TIME = std::chrono::minutes(10);          // bre
 
 // SCANNING SETTINGS
 constexpr auto NOISE_LEARNING_TIME = std::chrono::milliseconds(2000);  // noise learnig time
-constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(200);   // waiting time for transmission in single scanning range
+constexpr auto RANGE_SCANNING_TIME = std::chrono::milliseconds(500);   // waiting time for transmission in single scanning range
 
 // SIGNAL DETECTION SETTINGS
 constexpr auto GROUPING_X = 21;                    // average n frames in frequency domain
