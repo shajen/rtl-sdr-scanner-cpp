@@ -84,6 +84,22 @@ TEST(RadioUtils, TunedFrequency) {
   EXPECT_EQ(getTunedFrequency(1499, 1000), 1000);
   EXPECT_EQ(getTunedFrequency(1500, 1000), 2000);
   EXPECT_EQ(getTunedFrequency(1501, 1000), 2000);
+
+  EXPECT_EQ(getTunedFrequency(499, 500), 500);
+  EXPECT_EQ(getTunedFrequency(500, 500), 500);
+  EXPECT_EQ(getTunedFrequency(501, 500), 500);
+
+  EXPECT_EQ(getTunedFrequency(749, 500), 500);
+  EXPECT_EQ(getTunedFrequency(750, 500), 1000);
+  EXPECT_EQ(getTunedFrequency(751, 500), 1000);
+
+  EXPECT_EQ(getTunedFrequency(999, 500), 1000);
+  EXPECT_EQ(getTunedFrequency(1000, 500), 1000);
+  EXPECT_EQ(getTunedFrequency(1001, 500), 1000);
+
+  EXPECT_EQ(getTunedFrequency(1249, 500), 1000);
+  EXPECT_EQ(getTunedFrequency(1250, 500), 1500);
+  EXPECT_EQ(getTunedFrequency(1251, 500), 1500);
 }
 
 TEST(RadioUtils, RangeSplitSampleRate) {
