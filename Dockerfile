@@ -5,18 +5,18 @@ RUN apt-get update && \
 
 WORKDIR /sdrplay_api
 COPY sdrplay/*.run .
-RUN chmod +x ./SDRplay_RSP_API-`arch`-3.07.run && \
-    ./SDRplay_RSP_API-`arch`-3.07.run --tar xvf && \
+RUN chmod +x ./SDRplay_RSP_API-Linux-3.15.2.run && \
+    ./SDRplay_RSP_API-Linux-3.15.2.run --tar xvf && \
     cp -rf inc/sdrplay_api*h /usr/local/include/ && \
-    cp -rf `arch`/sdrplay_apiService /usr/local/bin && \
-    cp -rf `arch`/libsdrplay_api.so* /usr/local/lib/ && \
-    ln -s /usr/local/lib/libsdrplay_api.so.3.07 /usr/local/lib/libsdrplay_api.so && \
+    cp -rf `dpkg --print-architecture`/sdrplay_apiService /usr/local/bin && \
+    cp -rf `dpkg --print-architecture`/libsdrplay_api.so* /usr/local/lib/ && \
+    ln -s /usr/local/lib/libsdrplay_api.so.3.15 /usr/local/lib/libsdrplay_api.so && \
     chmod 644 /usr/local/include/* && \
     chmod 644 /usr/local/lib/libsdrplay_api.so* && \
     ldconfig
 
 WORKDIR /soapy_sdrplay
-RUN git clone --branch soapy-sdrplay3-0.4.2 https://github.com/pothosware/SoapySDRPlay3.git /soapy_sdrplay && \
+RUN git clone --branch soapy-sdrplay3-0.5.2 https://github.com/pothosware/SoapySDRPlay3.git /soapy_sdrplay && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release . && \
     cmake --build build -j$(nproc) && \
     cmake --install build
