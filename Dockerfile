@@ -16,8 +16,9 @@ RUN chmod +x ./SDRplay_RSP_API-Linux-3.15.2.run && \
     ldconfig
 
 WORKDIR /soapy_sdrplay
-RUN git clone --branch soapy-sdrplay3-0.5.2 https://github.com/pothosware/SoapySDRPlay3.git /soapy_sdrplay && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release . && \
+RUN --mount=type=cache,target=/root/.cache/ccache,id=ccache \
+    git clone --branch soapy-sdrplay3-0.5.2 https://github.com/pothosware/SoapySDRPlay3.git /soapy_sdrplay && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache . && \
     cmake --build build -j$(nproc) && \
     cmake --install build
 
@@ -27,13 +28,15 @@ COPY tests tests
 COPY sources sources
 
 FROM build AS build_release
-RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release /root/auto-sdr && \
+RUN --mount=type=cache,target=/root/.cache/ccache,id=ccache \
+    cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache /root/auto-sdr && \
     cmake --build /root/auto-sdr/build -j$(nproc) && \
     strip /root/auto-sdr/build/auto_sdr && \
     strip /root/auto-sdr/build/auto_sdr_test
 
 FROM build AS build_debug
-RUN cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Debug /root/auto-sdr && \
+RUN --mount=type=cache,target=/root/.cache/ccache,id=ccache \
+    cmake -B /root/auto-sdr/build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache /root/auto-sdr && \
     cmake --build /root/auto-sdr/build -j$(nproc)
 
 FROM ubuntu:24.04 AS run
