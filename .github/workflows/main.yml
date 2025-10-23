@@ -36,7 +36,6 @@ jobs:
           target: test
           tags: ${{ env.IMAGE }}:test
           cache-from: ${{ env.CACHE_FROM }}
-          cache-to: ${{ env.CACHE_TO }}
       - name: Build app
         uses: docker/build-push-action@v6
         with:
@@ -45,7 +44,6 @@ jobs:
             COMMIT=${{ github.sha }}
           context: .
           cache-from: ${{ env.CACHE_FROM }}
-          cache-to: ${{ env.CACHE_TO }}
       - name: Run test
         run: |
           docker run --rm ${{ env.IMAGE }}:test
