@@ -35,7 +35,7 @@ std::vector<nlohmann::json> getGains(SoapySDR::Device* sdr) {
 }
 
 void SdrDeviceReader::updateSoapyDevice(nlohmann::json& json, const SoapySDR::Kwargs args) {
-  const auto serial = removeZerosFromBegging(args.at("serial"));
+  const auto serial = args.at("serial");
   const auto driver = args.at("driver");
   Logger::info(LABEL, "update device, driver: {}, serial: {}", colored(GREEN, "{}", driver), colored(GREEN, "{}", serial));
 
@@ -57,7 +57,7 @@ void SdrDeviceReader::updateSoapyDevice(nlohmann::json& json, const SoapySDR::Kw
 }
 
 void SdrDeviceReader::createSoapyDevices(nlohmann::json& json, const SoapySDR::Kwargs args) {
-  const auto serial = removeZerosFromBegging(args.at("serial"));
+  const auto serial = args.at("serial");
   const auto driver = args.at("driver");
   Logger::info(LABEL, "creating device, driver: {}, serial: {}", colored(GREEN, "{}", driver), colored(GREEN, "{}", serial));
 
@@ -111,8 +111,8 @@ void SdrDeviceReader::scanSoapyDevices(nlohmann::json& json) {
   for (uint32_t i = 0; i < results.size(); ++i) {
     try {
       auto& devices = json.at("devices");
-      const auto serial = removeZerosFromBegging(results[i].at("serial"));
-      const auto f = [serial](nlohmann::json& device) { return removeZerosFromBegging(device.at("serial").get<std::string>()) == serial; };
+      const auto serial = results[i].at("serial");
+      const auto f = [serial](nlohmann::json& device) { return device.at("serial").get<std::string>() == serial; };
       const auto it = std::find_if(devices.begin(), devices.end(), f);
       if (it != devices.end()) {
         updateSoapyDevice(*it, results[i]);
@@ -138,7 +138,7 @@ Device SdrDeviceReader::readDevice(const nlohmann::json& json) {
     const auto value = item.at("value").get<float>();
     device.m_gains.emplace_back(key, value);
   }
-  device.m_serial = removeZerosFromBegging(json.at("serial").get<std::string>());
+  device.m_serial = json.at("serial").get<std::string>();
   device.m_sampleRate = json.at("sample_rate").get<Frequency>();
   for (const auto& item : json.at("ranges")) {
     const auto start = item.at("start").get<Frequency>();
