@@ -53,7 +53,9 @@ COPY --from=build_release /root/auto-sdr/build/auto_sdr_test /usr/bin/auto_sdr_t
 CMD /usr/bin/auto_sdr_test
 
 FROM run
-COPY ./config.json /config/config.json
+RUN mkdir -p /app && \
+    mkdir -p /config
+COPY config.example.json /config/
 COPY --from=build /usr/local/lib/libsdrplay_api.so* /usr/local/lib/
 COPY --from=build /usr/local/bin/sdrplay_apiService /usr/local/bin/
 COPY --from=build /usr/local/lib/SoapySDR/modules0.8/libsdrPlaySupport.so /usr/local/lib/SoapySDR/modules0.8/
@@ -67,5 +69,6 @@ RUN echo "$(TZ=UTC date +"%Y-%m-%dT%H:%M:%S%z")" | tee /sdr_scanner_build_time &
     echo "$VERSION" | tee /sdr_scanner_version && \
     echo "$COMMIT" | tee /sdr_scanner_commit && \
     echo "$CHANGES" | tee /sdr_scanner_changes
+WORKDIR /app
 COPY entrypoint.sh /entrypoint/entrypoint.sh
 CMD ["/entrypoint/entrypoint.sh"]
