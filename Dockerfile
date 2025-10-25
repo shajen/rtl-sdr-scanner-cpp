@@ -67,5 +67,5 @@ RUN echo "$(TZ=UTC date +"%Y-%m-%dT%H:%M:%S%z")" | tee /sdr_scanner_build_time &
     echo "$VERSION" | tee /sdr_scanner_version && \
     echo "$COMMIT" | tee /sdr_scanner_commit && \
     echo "$CHANGES" | tee /sdr_scanner_changes
-COPY entrypoint/run.sh /entrypoint/run.sh
-CMD ["/entrypoint/run.sh"]
+COPY entrypoint.sh /entrypoint/entrypoint.sh
+CMD ["/entrypoint/entrypoint.sh"]
