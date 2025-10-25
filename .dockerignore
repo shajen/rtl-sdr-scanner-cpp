@@ -1,2 +1,9 @@
-**/.git
-**/.vscode
+.dockerignore
+.gitignore
+.vscode
+**/.git*
+**/*.MD
+data
+Dockerfile
+patches
+tools
