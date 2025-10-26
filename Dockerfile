@@ -61,7 +61,9 @@ COPY --from=build /usr/local/bin/sdrplay_apiService /usr/local/bin/
 COPY --from=build /usr/local/lib/SoapySDR/modules0.8/libsdrPlaySupport.so /usr/local/lib/SoapySDR/modules0.8/
 COPY --from=build_release /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr
 COPY --from=build_debug /root/auto-sdr/build/auto_sdr /usr/bin/auto_sdr.debug
-RUN ldconfig
+RUN ldconfig && \
+    chown -R ubuntu:ubuntu /app/ && \
+    chown -R ubuntu:ubuntu /config/
 ARG VERSION=""
 ARG COMMIT=""
 ARG CHANGES=""
@@ -70,5 +72,5 @@ RUN echo "$(TZ=UTC date +"%Y-%m-%dT%H:%M:%S%z")" | tee /sdr_scanner_build_time &
     echo "$COMMIT" | tee /sdr_scanner_commit && \
     echo "$CHANGES" | tee /sdr_scanner_changes
 WORKDIR /app
-COPY entrypoint.sh /entrypoint/entrypoint.sh
+COPY entrypoint/* /entrypoint/
 CMD ["/entrypoint/entrypoint.sh"]

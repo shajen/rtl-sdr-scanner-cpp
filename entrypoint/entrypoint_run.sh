@@ -6,4 +6,4 @@ if [ ! -f /app/config.json ]; then
 fi
 
 sdrplay_apiService &
-exec /usr/bin/auto_sdr /app/config.json
+/usr/bin/auto_sdr /app/config.json
