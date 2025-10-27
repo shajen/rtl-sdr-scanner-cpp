@@ -57,8 +57,7 @@ class Config {
   std::chrono::milliseconds recordingTimeout() const;
   Frequency recordingTuningStep() const;
 
-  std::string mqttHostname() const;
-  int mqttPort() const;
+  std::string mqttUrl() const;
   std::string mqttUsername() const;
   std::string mqttPassword() const;
 
@@ -80,8 +79,7 @@ class Config {
   const Frequency m_recordingTuningStep;
   const int m_workers;
 
-  const std::string m_mqttHostname;
-  const int m_mqttPort;
+  const std::string m_mqttUrl;
   const std::string m_mqttUsername;
   const std::string m_mqttPassword;
 };

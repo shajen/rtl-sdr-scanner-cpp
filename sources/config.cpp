@@ -81,8 +81,7 @@ Config::Config(const nlohmann::json& json)
       m_recordingTimeout(std::chrono::milliseconds(readKey<int>(json, {"recording", "max_noise_time_ms"}))),
       m_recordingTuningStep(readKey<Frequency>(json, {"recording", "step"})),
       m_workers(readKey<int>(json, {"workers"})),
-      m_mqttHostname(getEnv("MQTT_HOST")),
-      m_mqttPort(stoi(getEnv("MQTT_PORT_TCP"))),
+      m_mqttUrl(getEnv("MQTT_URL")),
       m_mqttUsername(getEnv("MQTT_USER")),
       m_mqttPassword(getEnv("MQTT_PASSWORD")) {}
 
@@ -124,7 +123,7 @@ void Config::saveToFile(const std::string& path, const nlohmann::json& json) {
 }
 
 nlohmann::json Config::json() const { return m_json; }
-std::string Config::mqtt() const { return fmt::format("{}@{}:{}", m_mqttUsername, m_mqttHostname, m_mqttPort); };
+std::string Config::mqtt() const { return fmt::format("{}@{}", m_mqttUsername, m_mqttUrl); };
 
 std::vector<Device> Config::devices() const { return m_devices; }
 
@@ -143,7 +142,6 @@ std::chrono::milliseconds Config::recordingMinTime() const { return m_recordingM
 std::chrono::milliseconds Config::recordingTimeout() const { return m_recordingTimeout; }
 Frequency Config::recordingTuningStep() const { return m_recordingTuningStep; }
 
-std::string Config::mqttHostname() const { return m_mqttHostname; }
-int Config::mqttPort() const { return m_mqttPort; }
+std::string Config::mqttUrl() const { return m_mqttUrl; }
 std::string Config::mqttUsername() const { return m_mqttUsername; }
 std::string Config::mqttPassword() const { return m_mqttPassword; }

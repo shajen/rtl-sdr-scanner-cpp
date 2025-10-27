@@ -22,11 +22,7 @@ find_package(Gnuradio COMPONENTS
     soapy
 )
 find_package(nlohmann_json REQUIRED)
-
-find_library(MOSQUITTO_LIB mosquitto)
-if(NOT MOSQUITTO_LIB)
-  message(FATAL_ERROR "mosquitto library not found")
-endif()
+find_package(PahoMqttCpp REQUIRED)
 
 file(GLOB_RECURSE SOURCES
     "${PROJECT_SOURCE_DIR}/sources/*.h"
@@ -50,9 +46,9 @@ target_link_libraries(auto_sdr
     gnuradio::gnuradio-fft
     gnuradio::gnuradio-filter
     gnuradio::gnuradio-soapy
-    mosquitto
     nlohmann_json::nlohmann_json
     spdlog::spdlog
+    PahoMqttCpp::paho-mqttpp3
 )
 
 add_executable(auto_sdr_test ${TEST_SOURCES} "tests/test_main.cpp")

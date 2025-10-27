@@ -1,7 +1,7 @@
 FROM ubuntu:24.04 AS build
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl git zip build-essential cmake ccache tzdata libspdlog-dev libliquid-dev nlohmann-json3-dev libmosquitto-dev libgtest-dev libgmock-dev libusb-1.0-0-dev libfftw3-dev libboost-all-dev libsoapysdr-dev gnuradio gnuradio-dev libsndfile1-dev
+    apt-get install -y --no-install-recommends ca-certificates curl git zip build-essential cmake ccache tzdata libspdlog-dev libliquid-dev nlohmann-json3-dev libgtest-dev libgmock-dev libusb-1.0-0-dev libfftw3-dev libboost-all-dev libsoapysdr-dev gnuradio gnuradio-dev libsndfile1-dev libssl-dev libpaho-mqtt-dev libpaho-mqttpp-dev
 
 WORKDIR /sdrplay_api
 COPY sdrplay/*.run .
@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/root/.cache/ccache,id=ccache \
 FROM ubuntu:24.04 AS run
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y tzdata libspdlog1.12 libliquid1 nlohmann-json3-dev libmosquitto1 libusb-1.0-0 libfftw3-bin && \
+    apt-get install -y tzdata ca-certificates libspdlog1.12 libliquid1 nlohmann-json3-dev libusb-1.0-0 libfftw3-bin libssl3t64 libpaho-mqtt1.3 libpaho-mqttpp3-1 && \
     apt-get install -y --no-install-recommends gnuradio libsoapysdr0.8 soapysdr0.8-module-all && \
     apt-get purge -y soapysdr0.8-module-audio soapysdr0.8-module-uhd && \
     apt-get clean all && \

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <config.h>
-#include <mosquitto.h>
+#include <mqtt/client.h>
 
 #include <atomic>
 #include <functional>
@@ -23,16 +23,19 @@ class Mqtt {
   void setMessageCallback(const std::string& topic, std::function<void(const std::string&)> callback);
 
  private:
-  void onConnect();
-  void onDisconnect();
-  void onMessage(const mosquitto_message* message);
+  void connect();
+  void onConnected();
+  void onDisconnected();
+  void onMessage(const std::string& topic, const std::string& data);
   void subscribe(const std::string& topic);
 
-  mosquitto* m_client;
+  const Config& m_config;
+  mqtt::client m_client;
   std::atomic_bool m_isRunning;
   std::thread m_thread;
   std::mutex m_mutex;
   std::queue<std::tuple<std::string, std::vector<uint8_t>, int>> m_messages;
   std::set<std::string> m_topics;
+  std::set<std::string> m_waitingTopics;
   std::vector<std::pair<std::string, std::function<void(const std::string&)>>> m_callbacks;
 };
