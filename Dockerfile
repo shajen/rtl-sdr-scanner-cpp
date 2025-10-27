@@ -50,7 +50,7 @@ RUN apt-get update && \
 
 FROM run AS test
 COPY --from=build_release /root/auto-sdr/build/auto_sdr_test /usr/bin/auto_sdr_test
-CMD /usr/bin/auto_sdr_test
+CMD ["/usr/bin/auto_sdr_test"]
 
 FROM run
 RUN mkdir -p /app && \
