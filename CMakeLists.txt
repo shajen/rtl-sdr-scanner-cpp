@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic -Wno-mi
 
 find_package(Boost REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(SoapySDR REQUIRED)
 find_package(Gnuradio COMPONENTS
     blocks
     fft
