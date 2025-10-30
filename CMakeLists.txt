@@ -24,6 +24,7 @@ find_package(Gnuradio COMPONENTS
 )
 find_package(nlohmann_json REQUIRED)
 find_package(PahoMqttCpp REQUIRED)
+find_package(CLI11 CONFIG REQUIRED)
 
 file(GLOB_RECURSE SOURCES
     "${PROJECT_SOURCE_DIR}/sources/*.h"
@@ -50,6 +51,7 @@ target_link_libraries(auto_sdr
     nlohmann_json::nlohmann_json
     spdlog::spdlog
     PahoMqttCpp::paho-mqttpp3
+    CLI11::CLI11
 )
 
 add_executable(auto_sdr_test ${TEST_SOURCES} "tests/test_main.cpp")

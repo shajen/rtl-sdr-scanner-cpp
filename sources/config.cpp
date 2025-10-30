@@ -23,20 +23,6 @@ spdlog::level::level_enum parseLogLevel(const std::string& level) {
   return spdlog::level::level_enum::off;
 }
 
-std::string getEnv(const std::string& key) {
-  const auto value = std::getenv(key.c_str());
-  if (value) {
-    if (key.find("PASSWORD") == std::string::npos) {
-      Logger::info(LABEL, "read env variable, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", value));
-    } else {
-      Logger::info(LABEL, "read env variable, key: {}, value: {}", colored(GREEN, "{}", key), colored(GREEN, "{}", "*****"));
-    }
-    return {value};
-  } else {
-    throw std::runtime_error(fmt::format("key not found in env: {}", key));
-  }
-}
-
 template <typename T>
 T readKey(const nlohmann::json& json, const std::vector<std::string>& keys) {
   std::string key;
@@ -69,8 +55,9 @@ std::vector<FrequencyRange> readIgnoredRanges(const nlohmann::json& json) {
   }
 }
 
-Config::Config(const nlohmann::json& json)
+Config::Config(const nlohmann::json& json, const ArgConfig& argConfig)
     : m_json(json),
+      m_argConfig(argConfig),
       m_devices(SdrDeviceReader::readDevices(json)),
       m_isColorLogEnabled(readKey<bool>(json, {"output", "color_log_enabled"})),
       m_consoleLogLevel(parseLogLevel(readKey<std::string>(json, {"output", "console_log_level"}))),
@@ -80,12 +67,9 @@ Config::Config(const nlohmann::json& json)
       m_recordingMinTime(std::chrono::milliseconds(readKey<int>(json, {"recording", "min_time_ms"}))),
       m_recordingTimeout(std::chrono::milliseconds(readKey<int>(json, {"recording", "max_noise_time_ms"}))),
       m_recordingTuningStep(readKey<Frequency>(json, {"recording", "step"})),
-      m_workers(readKey<int>(json, {"workers"})),
-      m_mqttUrl(getEnv("MQTT_URL")),
-      m_mqttUsername(getEnv("MQTT_USER")),
-      m_mqttPassword(getEnv("MQTT_PASSWORD")) {}
+      m_workers(readKey<int>(json, {"workers"})) {}
 
-Config Config::loadFromFile(const std::string& path) {
+Config Config::loadFromFile(const std::string& path, const ArgConfig& argConfig) {
   constexpr auto BUFFER_SIZE = 1024 * 1024;
   FILE* file = fopen(path.c_str(), "r");
 
@@ -98,7 +82,7 @@ Config Config::loadFromFile(const std::string& path) {
       ConfigMigrator::update(json);
       SdrDeviceReader::scanSoapyDevices(json);
       ConfigMigrator::sort(json);
-      return Config(json);
+      return Config(json, argConfig);
     } catch (const nlohmann::json::parse_error& exception) {
       throw std::runtime_error(fmt::format("can not parse config file, invalid json format: {}", path));
     }
@@ -123,7 +107,7 @@ void Config::saveToFile(const std::string& path, const nlohmann::json& json) {
 }
 
 nlohmann::json Config::json() const { return m_json; }
-std::string Config::mqtt() const { return fmt::format("{}@{}", m_mqttUsername, m_mqttUrl); };
+std::string Config::mqtt() const { return fmt::format("{}@{}", m_argConfig.mqttUser, m_argConfig.mqttUrl); };
 
 std::vector<Device> Config::devices() const { return m_devices; }
 
@@ -142,6 +126,6 @@ std::chrono::milliseconds Config::recordingMinTime() const { return m_recordingM
 std::chrono::milliseconds Config::recordingTimeout() const { return m_recordingTimeout; }
 Frequency Config::recordingTuningStep() const { return m_recordingTuningStep; }
 
-std::string Config::mqttUrl() const { return m_mqttUrl; }
-std::string Config::mqttUsername() const { return m_mqttUsername; }
-std::string Config::mqttPassword() const { return m_mqttPassword; }
+std::string Config::mqttUrl() const { return m_argConfig.mqttUrl; }
+std::string Config::mqttUsername() const { return m_argConfig.mqttUser; }
+std::string Config::mqttPassword() const { return m_argConfig.mqttPassword; }

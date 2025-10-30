@@ -12,9 +12,6 @@ constexpr auto DEBUG_SAVE_FULL_RAW_IQ = false;                            // sav
 constexpr auto DEBUG_SAVE_FULL_POWER = false;                             // save orgignal sdr data as raw iq
 constexpr auto DEBUG_SAVE_RECORDING_RAW_IQ = false;                       // save recordings as raw iq
 constexpr auto INITIAL_DELAY = std::chrono::milliseconds(1000);           // delay after first start sdr device to start processing
-constexpr auto LOG_FILE_NAME = "sdr_scanner.log";                         // log filename
-constexpr auto LOG_FILE_SIZE = 10 * 1024 * 1024;                          // single log file max size
-constexpr auto LOG_FILES_COUNT = 9;                                       // keep last n log files
 constexpr auto PERFORMANCE_LOGGER_INTERVAL = 1000;                        // print stats every n frames
 constexpr auto RECORDER_FLUSH_INTERVAL = std::chrono::milliseconds(100);  // flush recordings to mqtt every 2 * n bytes
 constexpr auto RESAMPLER_THRESHOLD = 125;                                 // max interpolation or decimation factor of RESAMPLER
@@ -37,9 +34,19 @@ constexpr auto SPECTROGRAM_PREFERRED_MAX_STEP = 1000;                        // 
 constexpr auto SPECTROGRAM_MAX_FFT = 16384;                                  // spectrogram fft limit
 constexpr auto SPECTROGRAM_SEND_INTERVAL = std::chrono::milliseconds(1000);  // send spectrogram data interval
 
+struct ArgConfig {
+  std::string configFile;
+  std::string logFileName = "sdr_scanner.log";  // default log filename
+  int logFileCount = 9;                         // default keep last n log files
+  int logFileSize = 10 * 1024 * 1024;           // default single log file max size
+  std::string mqttUrl;
+  std::string mqttUser;
+  std::string mqttPassword;
+};
+
 class Config {
  public:
-  static Config loadFromFile(const std::string& path);
+  static Config loadFromFile(const std::string& path, const ArgConfig& argConfig);
   static void saveToFile(const std::string& path, const nlohmann::json& json);
   nlohmann::json json() const;
   std::string mqtt() const;
@@ -62,9 +69,10 @@ class Config {
   std::string mqttPassword() const;
 
  private:
-  Config(const nlohmann::json& json);
+  Config(const nlohmann::json& json, const ArgConfig& argConfig);
 
   const nlohmann::json m_json;
+  const ArgConfig& m_argConfig;
 
   const std::vector<Device> m_devices;
 
@@ -78,8 +86,4 @@ class Config {
   const std::chrono::milliseconds m_recordingTimeout;
   const Frequency m_recordingTuningStep;
   const int m_workers;
-
-  const std::string m_mqttUrl;
-  const std::string m_mqttUsername;
-  const std::string m_mqttPassword;
 };

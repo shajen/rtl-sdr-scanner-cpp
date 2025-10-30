@@ -1,7 +1,7 @@
 FROM ubuntu:24.04 AS build
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl git zip build-essential cmake ccache tzdata libspdlog-dev libliquid-dev nlohmann-json3-dev libgtest-dev libgmock-dev libusb-1.0-0-dev libfftw3-dev libboost-all-dev libsoapysdr-dev gnuradio gnuradio-dev libsndfile1-dev libssl-dev libpaho-mqtt-dev libpaho-mqttpp-dev
+    apt-get install -y --no-install-recommends ca-certificates curl git zip build-essential cmake ccache tzdata libspdlog-dev libliquid-dev nlohmann-json3-dev libgtest-dev libgmock-dev libusb-1.0-0-dev libfftw3-dev libboost-all-dev libsoapysdr-dev gnuradio gnuradio-dev libsndfile1-dev libssl-dev libpaho-mqtt-dev libpaho-mqttpp-dev libcli11-dev
 
 WORKDIR /sdrplay_api
 COPY sdrplay/*.run .

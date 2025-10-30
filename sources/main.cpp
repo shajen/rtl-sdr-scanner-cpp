@@ -6,6 +6,7 @@
 #include <scanner.h>
 #include <signal.h>
 
+#include <CLI/CLI.hpp>
 #include <memory>
 #include <thread>
 
@@ -19,32 +20,40 @@ void handler(int) {
 }
 
 int main(int argc, char** argv) {
+  CLI::App app("sdr-scanner");
+  argv = app.ensure_utf8(argv);
+
+  ArgConfig argConfig;
+  app.add_option("--config", argConfig.configFile, "config file")->required()->check(CLI::ExistingFile);
+  app.add_option("--log-file", argConfig.logFileName, "log file");
+  app.add_option("--log-file-count", argConfig.logFileCount, "log file count")->check(CLI::PositiveNumber);
+  app.add_option("--log-file-size", argConfig.logFileSize, "log file size")->check(CLI::PositiveNumber);
+  app.add_option("--mqtt-url", argConfig.mqttUrl, "mqtt url")->required();
+  app.add_option("--mqtt-user", argConfig.mqttUser, "mqtt username")->required();
+  app.add_option("--mqtt-password", argConfig.mqttPassword, "mqtt password")->required();
+  CLI11_PARSE(app, argc, argv);
+
   dup2(fileno(fopen("/dev/null", "w")), fileno(stderr));
   SoapySDR_setLogLevel(SoapySDRLogLevel::SOAPY_SDR_WARNING);
   signal(SIGINT, handler);
   signal(SIGTERM, handler);
 
   try {
-    Logger::configure(spdlog::level::info, spdlog::level::info, LOG_FILE_NAME, LOG_FILE_SIZE, LOG_FILES_COUNT, true);
+    Logger::configure(spdlog::level::info, spdlog::level::info, argConfig.logFileName, argConfig.logFileSize, argConfig.logFileCount, true);
     Logger::info(LABEL, "{}", colored(GREEN, "{}", "starting"));
-    const std::string configFile = 2 <= argc ? argv[1] : "";
-    if (configFile.empty()) {
-      Logger::error(LABEL, "no config file argument provided");
-      return 1;
-    }
 
     const auto id = generateRandomHash();
     while (isRunning) {
       bool reload = false;
-      const Config config = Config::loadFromFile(configFile);
-      Logger::configure(config.consoleLogLevel(), config.fileLogLevel(), LOG_FILE_NAME, LOG_FILE_SIZE, LOG_FILES_COUNT, config.isColorLogEnabled());
+      const Config config = Config::loadFromFile(argConfig.configFile, argConfig);
+      Logger::configure(config.consoleLogLevel(), config.fileLogLevel(), argConfig.logFileName, argConfig.logFileSize, argConfig.logFileCount, config.isColorLogEnabled());
       Logger::info(LABEL, "config: {}", colored(GREEN, "{}", config.json().dump()));
       Logger::info(LABEL, "mqtt: {}", colored(GREEN, "{}", config.mqtt()));
 
       Mqtt mqtt(config);
-      RemoteController remoteController(config, id, mqtt, [&reload, &configFile](const nlohmann::json& json) {
+      RemoteController remoteController(config, id, mqtt, [&reload, &argConfig](const nlohmann::json& json) {
         Logger::info(LABEL, "reload config: {}", colored(GREEN, "{}", json.dump()));
-        Config::saveToFile(configFile, json);
+        Config::saveToFile(argConfig.configFile, json);
         reload = true;
       });
       std::vector<std::unique_ptr<Scanner>> scanners;
