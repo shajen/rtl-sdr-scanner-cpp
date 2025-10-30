@@ -36,6 +36,7 @@ constexpr auto SPECTROGRAM_SEND_INTERVAL = std::chrono::milliseconds(1000);  // 
 
 struct ArgConfig {
   std::string configFile;
+  std::string id;
   std::string logFileName = "sdr_scanner.log";  // default log filename
   int logFileCount = 9;                         // default keep last n log files
   int logFileSize = 10 * 1024 * 1024;           // default single log file max size
@@ -51,6 +52,7 @@ class Config {
   nlohmann::json json() const;
   std::string mqtt() const;
 
+  std::string getId() const;
   std::vector<Device> devices() const;
 
   bool isColorLogEnabled() const;
@@ -74,6 +76,7 @@ class Config {
   const nlohmann::json m_json;
   const ArgConfig& m_argConfig;
 
+  const std::string m_id;
   const std::vector<Device> m_devices;
 
   const bool m_isColorLogEnabled;

@@ -58,6 +58,7 @@ std::vector<FrequencyRange> readIgnoredRanges(const nlohmann::json& json) {
 Config::Config(const nlohmann::json& json, const ArgConfig& argConfig)
     : m_json(json),
       m_argConfig(argConfig),
+      m_id(!argConfig.id.empty() ? argConfig.id : generateRandomHash()),
       m_devices(SdrDeviceReader::readDevices(json)),
       m_isColorLogEnabled(readKey<bool>(json, {"output", "color_log_enabled"})),
       m_consoleLogLevel(parseLogLevel(readKey<std::string>(json, {"output", "console_log_level"}))),
@@ -109,6 +110,7 @@ void Config::saveToFile(const std::string& path, const nlohmann::json& json) {
 nlohmann::json Config::json() const { return m_json; }
 std::string Config::mqtt() const { return fmt::format("{}@{}", m_argConfig.mqttUser, m_argConfig.mqttUrl); };
 
+std::string Config::getId() const { return m_id; }
 std::vector<Device> Config::devices() const { return m_devices; }
 
 bool Config::isColorLogEnabled() const { return m_isColorLogEnabled; }

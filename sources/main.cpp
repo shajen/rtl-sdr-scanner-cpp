@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
 
   ArgConfig argConfig;
   app.add_option("--config", argConfig.configFile, "config file")->required()->check(CLI::ExistingFile);
+  app.add_option("--id", argConfig.id);
   app.add_option("--log-file", argConfig.logFileName, "log file");
   app.add_option("--log-file-count", argConfig.logFileCount, "log file count")->check(CLI::PositiveNumber);
   app.add_option("--log-file-size", argConfig.logFileSize, "log file size")->check(CLI::PositiveNumber);
@@ -42,7 +43,6 @@ int main(int argc, char** argv) {
     Logger::configure(spdlog::level::info, spdlog::level::info, argConfig.logFileName, argConfig.logFileSize, argConfig.logFileCount, true);
     Logger::info(LABEL, "{}", colored(GREEN, "{}", "starting"));
 
-    const auto id = generateRandomHash();
     while (isRunning) {
       bool reload = false;
       const Config config = Config::loadFromFile(argConfig.configFile, argConfig);
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
       Logger::info(LABEL, "mqtt: {}", colored(GREEN, "{}", config.mqtt()));
 
       Mqtt mqtt(config);
-      RemoteController remoteController(config, id, mqtt, [&reload, &argConfig](const nlohmann::json& json) {
+      RemoteController remoteController(config, mqtt, [&reload, &argConfig](const nlohmann::json& json) {
         Logger::info(LABEL, "reload config: {}", colored(GREEN, "{}", json.dump()));
         Config::saveToFile(argConfig.configFile, json);
         reload = true;
