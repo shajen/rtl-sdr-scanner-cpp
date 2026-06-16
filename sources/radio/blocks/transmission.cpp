@@ -84,6 +84,9 @@ void Transmission::addSignals(const float* avgPower, const float* rawPower, cons
   for (const auto& index : indexes) {
     if (!containsWithMargin(m_signals, index, m_groupSize)) {
       const auto bestIndex = getBestIndex(index);
+      if (isIndexIgnored(bestIndex)) {
+        continue;
+      }
       const auto bestTunedFrequency = getTunedFrequency(m_indexToFrequency(bestIndex), m_config.recordingTuningStep());
       Logger::info(
           LABEL,
