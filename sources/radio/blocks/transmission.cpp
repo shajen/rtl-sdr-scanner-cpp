@@ -143,15 +143,7 @@ Transmission::Index Transmission::getBestIndex(Index index) const {
   return mostFrequentIndex;
 }
 
-bool Transmission::isIndexIgnored(const Index& index) const {
-  const auto frequency = m_indexToFrequency(index);
-  for (const auto& range : m_config.ignoredRanges()) {
-    if (range.contains(frequency)) {
-      return true;
-    }
-  }
-  return false;
-}
+bool Transmission::isIndexIgnored(const Index& index) const { return m_config.isFrequencyIgnored(m_indexToFrequency(index)); }
 
 std::vector<Recording> Transmission::getSortedTransmissions(const std::chrono::milliseconds now) const {
   std::vector<Index> indexes;

@@ -3,7 +3,9 @@
 #include <logger.h>
 #include <utils/utils.h>
 
+#include <algorithm>
 #include <filesystem>
+#include <iterator>
 #include <numeric>
 
 namespace {
@@ -208,4 +210,56 @@ std::vector<FrequencyRange> splitRanges(const std::vector<FrequencyRange>& range
     }
   }
   return results;
+}
+
+std::vector<FrequencyRange> filterRangesOverlapping(const std::vector<FrequencyRange>& ranges, const std::vector<FrequencyRange>& bounds) {
+  if (bounds.empty()) {
+    return ranges;
+  }
+  std::vector<FrequencyRange> results;
+  results.reserve(ranges.size());
+  for (const auto& range : ranges) {
+    for (const auto& bound : bounds) {
+      if (range.start <= bound.stop && bound.start <= range.stop) {
+        results.push_back(range);
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+std::vector<FrequencyRange> mergeOverlappingRanges(std::vector<FrequencyRange> ranges) {
+  if (ranges.size() <= 1) {
+    return ranges;
+  }
+  std::sort(ranges.begin(), ranges.end(), [](const FrequencyRange& a, const FrequencyRange& b) {
+    if (a.start != b.start) {
+      return a.start < b.start;
+    }
+    return a.stop < b.stop;
+  });
+  std::vector<FrequencyRange> merged;
+  merged.reserve(ranges.size());
+  merged.push_back(ranges.front());
+  for (size_t i = 1; i < ranges.size(); ++i) {
+    auto& last = merged.back();
+    if (ranges[i].start <= last.stop) {
+      last.stop = std::max(last.stop, ranges[i].stop);
+    } else {
+      merged.push_back(ranges[i]);
+    }
+  }
+  return merged;
+}
+
+bool isFrequencyInRanges(const std::vector<FrequencyRange>& ranges, Frequency frequency) {
+  if (ranges.empty()) {
+    return false;
+  }
+  const auto it = std::upper_bound(ranges.begin(), ranges.end(), frequency, [](Frequency value, const FrequencyRange& range) { return value < range.start; });
+  if (it == ranges.begin()) {
+    return false;
+  }
+  return std::prev(it)->contains(frequency);
 }

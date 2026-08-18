@@ -3,6 +3,7 @@
 #include <config_migrator.h>
 #include <logger.h>
 #include <radio/sdr_device_reader.h>
+#include <utils/radio_utils.h>
 #include <utils/utils.h>
 
 #include <fstream>
@@ -24,7 +25,11 @@ spdlog::level::level_enum parseLogLevel(const std::string& level) {
   return spdlog::level::level_enum::off;
 }
 
-Config::Config(const ArgConfig& argConfig, const FileConfig& fileConfig) : m_id(!argConfig.id.empty() ? argConfig.id : randomHex(8)), m_argConfig(argConfig), m_fileConfig(fileConfig) {}
+Config::Config(const ArgConfig& argConfig, const FileConfig& fileConfig)
+    : m_id(!argConfig.id.empty() ? argConfig.id : randomHex(8)),
+      m_argConfig(argConfig),
+      m_fileConfig(fileConfig),
+      m_ignoredRanges(buildIgnoredRanges(fileConfig)) {}
 std::string Config::mqtt() const { return fmt::format("{}@{}", m_argConfig.mqttUser, m_argConfig.mqttUrl); };
 
 std::string Config::getId() const { return m_id; }
@@ -34,13 +39,28 @@ bool Config::isColorLogEnabled() const { return m_fileConfig.output.color_log_en
 spdlog::level::level_enum Config::consoleLogLevel() const { return parseLogLevel(m_fileConfig.output.console_log_level); }
 spdlog::level::level_enum Config::fileLogLevel() const { return parseLogLevel(m_fileConfig.output.file_log_level); }
 
-std::vector<FrequencyRange> Config::ignoredRanges() const {
+std::vector<FrequencyRange> Config::buildIgnoredRanges(const FileConfig& fileConfig) {
+  std::vector<FrequencyRange> scanRanges;
+  for (const auto& device : fileConfig.devices) {
+    if (!device.enabled) {
+      continue;
+    }
+    scanRanges.insert(scanRanges.end(), device.ranges.begin(), device.ranges.end());
+  }
+
   std::vector<FrequencyRange> ranges;
-  for (const auto& range : m_fileConfig.ignored_frequencies) {
+  ranges.reserve(fileConfig.ignored_frequencies.size());
+  for (const auto& range : fileConfig.ignored_frequencies) {
     ranges.emplace_back(range.frequency - range.bandwidth / 2, range.frequency + range.bandwidth / 2);
   }
-  return ranges;
+  return mergeOverlappingRanges(filterRangesOverlapping(ranges, scanRanges));
 }
+
+std::size_t Config::ignoredFrequencyCount() const { return m_fileConfig.ignored_frequencies.size(); }
+
+const std::vector<FrequencyRange>& Config::ignoredRanges() const { return m_ignoredRanges; }
+
+bool Config::isFrequencyIgnored(Frequency frequency) const { return isFrequencyInRanges(m_ignoredRanges, frequency); }
 int Config::recordersCount() const {
   const auto max_workers = static_cast<int>(std::thread::hardware_concurrency());
   const auto auto_workers = max_workers / 2;
