@@ -13,7 +13,7 @@ Scanner::Scanner(const Config& config, const Device& device, RemoteController& r
       m_isRunning(true),
       m_thread([this]() { worker(); }) {
   Logger::info(LABEL, "starting");
-  Logger::info(LABEL, "ignored ranges: {}", colored(GREEN, "{}", config.ignoredRanges().size()));
+  Logger::info(LABEL, "ignored frequencies: {}, active ranges: {}", colored(GREEN, "{}", config.ignoredFrequencyCount()), colored(GREEN, "{}", config.ignoredRanges().size()));
   for (const auto& range : config.ignoredRanges()) {
     Logger::info(LABEL, "ignored range: {}", formatFrequencyRange(range));
   }

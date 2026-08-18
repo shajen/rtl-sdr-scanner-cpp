@@ -27,3 +27,9 @@ Frequency getRangeSplitSampleRate(Frequency sampleRate);
 std::vector<FrequencyRange> splitRange(const FrequencyRange& range, Frequency sampleRate);
 
 std::vector<FrequencyRange> splitRanges(const std::vector<FrequencyRange>& ranges, Frequency sampleRate);
+
+std::vector<FrequencyRange> filterRangesOverlapping(const std::vector<FrequencyRange>& ranges, const std::vector<FrequencyRange>& bounds);
+
+std::vector<FrequencyRange> mergeOverlappingRanges(std::vector<FrequencyRange> ranges);
+
+bool isFrequencyInRanges(const std::vector<FrequencyRange>& ranges, Frequency frequency);

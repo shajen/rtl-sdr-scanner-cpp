@@ -130,3 +130,32 @@ TEST(RadioUtils, SplitRanges) {
   EXPECT_EQ(splitRange({140000000, 145000000}, 2000000), Ranges({{140000000, 142000000}, {142000000, 144000000}, {144000000, 146000000}}));
   EXPECT_EQ(splitRange({140000000, 150000000}, 2000000), Ranges({{140000000, 142000000}, {142000000, 144000000}, {144000000, 146000000}, {146000000, 148000000}, {148000000, 150000000}}));
 }
+
+TEST(RadioUtils, FilterRangesOverlapping) {
+  using Ranges = std::vector<FrequencyRange>;
+  const Ranges scan({{432000000, 440000000}});
+  EXPECT_EQ(filterRangesOverlapping(Ranges({{100000000, 100025000}, {432350000, 432375000}, {450000000, 450025000}}), scan), Ranges({{432350000, 432375000}}));
+  EXPECT_EQ(filterRangesOverlapping(Ranges({{431990000, 432010000}}), scan), Ranges({{431990000, 432010000}}));
+  EXPECT_EQ(filterRangesOverlapping(Ranges({{432350000, 432375000}}), Ranges{}), Ranges({{432350000, 432375000}}));
+}
+
+TEST(RadioUtils, MergeOverlappingRanges) {
+  using Ranges = std::vector<FrequencyRange>;
+  EXPECT_EQ(mergeOverlappingRanges(Ranges({{100, 200}, {200, 300}, {400, 500}})), Ranges({{100, 300}, {400, 500}}));
+  EXPECT_EQ(mergeOverlappingRanges(Ranges({{150, 180}, {100, 160}, {170, 190}})), Ranges({{100, 190}}));
+  EXPECT_EQ(mergeOverlappingRanges(Ranges({{100, 120}, {130, 140}})), Ranges({{100, 120}, {130, 140}}));
+}
+
+TEST(RadioUtils, IsFrequencyInRanges) {
+  using Ranges = std::vector<FrequencyRange>;
+  const Ranges ranges({{100, 200}, {400, 500}});
+  EXPECT_FALSE(isFrequencyInRanges(ranges, 99));
+  EXPECT_TRUE(isFrequencyInRanges(ranges, 100));
+  EXPECT_TRUE(isFrequencyInRanges(ranges, 200));
+  EXPECT_FALSE(isFrequencyInRanges(ranges, 201));
+  EXPECT_FALSE(isFrequencyInRanges(ranges, 399));
+  EXPECT_TRUE(isFrequencyInRanges(ranges, 400));
+  EXPECT_TRUE(isFrequencyInRanges(ranges, 500));
+  EXPECT_FALSE(isFrequencyInRanges(ranges, 501));
+  EXPECT_FALSE(isFrequencyInRanges(Ranges{}, 100));
+}

@@ -6,6 +6,7 @@
 #include <radio/help_structures.h>
 
 #include <chrono>
+#include <cstddef>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -53,7 +54,9 @@ class Config {
   spdlog::level::level_enum consoleLogLevel() const;
   spdlog::level::level_enum fileLogLevel() const;
 
-  std::vector<FrequencyRange> ignoredRanges() const;
+  std::size_t ignoredFrequencyCount() const;
+  const std::vector<FrequencyRange>& ignoredRanges() const;
+  bool isFrequencyIgnored(Frequency frequency) const;
   int recordersCount() const;
   Frequency recordingBandwidth() const;
   std::chrono::milliseconds recordingMinTime() const;
@@ -73,7 +76,10 @@ class Config {
   bool dumpRecording() const;
 
  private:
+  static std::vector<FrequencyRange> buildIgnoredRanges(const FileConfig& fileConfig);
+
   const std::string m_id;
   const ArgConfig& m_argConfig;
   const FileConfig& m_fileConfig;
+  const std::vector<FrequencyRange> m_ignoredRanges;
 };
